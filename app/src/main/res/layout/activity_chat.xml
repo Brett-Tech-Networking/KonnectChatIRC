@@ -29,7 +29,7 @@
         android:layout_height="0dp"
         android:layout_below="@id/toolbar"
         android:layout_above="@id/chatEditText"
-        android:layout_alignParentBottom="true"
+        android:layout_alignParentBottom="false"
         android:padding="8dp"
         android:scrollbars="vertical"/>
 

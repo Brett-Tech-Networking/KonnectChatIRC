@@ -6,6 +6,7 @@ import org.pircbotx.exception.IrcException;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.MessageEvent;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
@@ -76,8 +77,9 @@ public class ChatActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             try {
-                                bot.sendIRC().quitServer("Disconnecting");
+                                bot.sendIRC().quitServer("Brett Tech Client");
                                 bot.close(); // Closes the bot connection
+                                finish();
                             } catch (Exception e) {
                                 e.printStackTrace();
                                 // Handle disconnection failure

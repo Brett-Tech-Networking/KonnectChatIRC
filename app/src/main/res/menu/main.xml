@@ -1,6 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+
+<!--Change Nick-->
+    <item
+        android:id="@+id/action_changeNick"
+        android:orderInCategory="100"
+        android:title="@string/change_nick"
+        app:showAsAction="never" />
+<!--Change Channel-->
+    <item
+        android:id="@+id/action_changeChannel"
+        android:orderInCategory="100"
+        android:title="@string/change_channel"
+        app:showAsAction="never" />
+<!--Settings-->
     <item
         android:id="@+id/action_settings"
         android:orderInCategory="100"
