@@ -1,0 +1,61 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace 'com.btech.konnectchatirc'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.btech.konnectchatirc"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+dependencies {
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.constraintlayout
+    implementation libs.lifecycle.livedata.ktx
+    implementation libs.lifecycle.viewmodel.ktx
+    implementation libs.navigation.fragment
+    implementation libs.navigation.ui
+    testImplementation libs.junit
+    androidTestImplementation libs.ext.junit
+    androidTestImplementation libs.espresso.core
+
+    implementation(libs.mxscho.pircbotx) {
+        // Exclude guava to avoid version conflicts
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+
+    // Include the Guava version compatible with PircBotX
+    implementation libs.guava.v210
+    implementation(libs.guava.jdk5)
+
+    // Ensure no other guava version is included
+    configurations.all {
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'com.google.guava', module: 'listenablefuture'
+    }
+}
+
