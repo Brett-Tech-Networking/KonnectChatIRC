@@ -1,5 +1,6 @@
 [versions]
 agp = "8.5.2"
+coreSplashscreen = "1.0.1"
 githubPircbotx = "2.1"
 guavaJdk5 = "17.0"
 guavaVersion = "23.0"
@@ -15,6 +16,7 @@ navigationFragment = "2.7.7"
 navigationUi = "2.7.7"
 
 [libraries]
+core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 guava-jdk5 = { module = "com.google.guava:guava-jdk5", version.ref = "guavaJdk5" }
 guava-v210 = { module = "com.google.guava:guava", version.ref = "guavaVersion" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

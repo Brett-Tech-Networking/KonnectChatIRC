@@ -6,12 +6,15 @@ import org.pircbotx.exception.IrcException;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.MessageEvent;
 
-import android.content.Intent;
+import android.content.Context;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -58,7 +61,16 @@ public class ChatActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             try {
-                                bot.sendIRC().message("#ThePlaceToChat", message);
+                                if (isNetworkAvailable()) {
+                                    bot.sendIRC().message("#ThePlaceToChat", message);
+                                } else {
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(ChatActivity.this, "No internet connection.", Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                                }
                             } catch (Exception e) {
                                 e.printStackTrace();
                                 // Handle message sending failure
@@ -79,7 +91,12 @@ public class ChatActivity extends AppCompatActivity {
                             try {
                                 bot.sendIRC().quitServer("Brett Tech Client");
                                 bot.close(); // Closes the bot connection
-                                finish();
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        finish(); // Ensure this is called on the main thread
+                                    }
+                                });
                             } catch (Exception e) {
                                 e.printStackTrace();
                                 // Handle disconnection failure
@@ -99,7 +116,24 @@ public class ChatActivity extends AppCompatActivity {
         }).start();
     }
 
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager =
+                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
+
     private void connectToIrcServer() {
+        if (!isNetworkAvailable()) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(ChatActivity.this, "No internet connection. Please check your settings.", Toast.LENGTH_LONG).show();
+                }
+            });
+            return;
+        }
+
         Configuration configuration = new Configuration.Builder()
                 .setName("CoolDudeBot") // Set the bot's name
                 .addServer("irc.theplacetochat.net") // Set the server
@@ -122,11 +156,21 @@ public class ChatActivity extends AppCompatActivity {
                 .buildConfiguration();
 
         bot = new PircBotX(configuration);
-        try {
-            bot.startBot();
-        } catch (IOException | IrcException e) {
-            e.printStackTrace();
-            // Handle connection failure
-        }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    bot.startBot();
+                } catch (IOException | IrcException e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(ChatActivity.this, "Error connecting to IRC server. Please try again later.", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }
+            }
+        }).start();
     }
 }
