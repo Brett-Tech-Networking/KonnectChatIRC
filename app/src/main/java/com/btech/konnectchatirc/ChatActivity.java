@@ -4,10 +4,9 @@ import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.exception.IrcException;
 import org.pircbotx.hooks.ListenerAdapter;
-import org.pircbotx.hooks.events.MessageEvent;
+import org.pircbotx.hooks.events.*;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -139,7 +138,21 @@ public class ChatActivity extends AppCompatActivity {
                 .addServer("irc.theplacetochat.net") // Set the server
                 .addAutoJoinChannel("#ThePlaceToChat") // Set the channel
                 .setServerPort(6667) // IRC port, adjust as needed
+                .setRealName("BrettTechClient")
                 .addListener(new ListenerAdapter() {
+                    @Override
+                    public void onConnect(ConnectEvent event) {
+                        // Handle successful connection
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                chatMessages.add("Connected to IRC server.");
+                                chatAdapter.notifyDataSetChanged();
+                                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                            }
+                        });
+                    }
+
                     @Override
                     public void onMessage(MessageEvent event) {
                         // Handle incoming messages
@@ -148,7 +161,75 @@ public class ChatActivity extends AppCompatActivity {
                             public void run() {
                                 chatMessages.add(event.getUser().getNick() + ": " + event.getMessage());
                                 chatAdapter.notifyDataSetChanged();
-                                chatRecyclerView.scrollToPosition(chatMessages.size() - 1); // Scroll to the latest message
+                                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onJoin(JoinEvent event) {
+                        // Handle user join
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                String userNick = event.getUser().getNick();
+                                String channel = event.getChannel().getName();
+                                chatMessages.add(userNick + " has joined the channel " + channel + ".");
+                                chatAdapter.notifyDataSetChanged();
+                                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                            }
+                        });
+                    }
+
+
+                    @Override
+                    public void onPart(PartEvent event) {
+                        // Handle user part
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                chatMessages.add(event.getUser().getNick() + " has left the channel.");
+                                chatAdapter.notifyDataSetChanged();
+                                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onKick(KickEvent event) {
+                        // Handle user kick
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                chatMessages.add(event.getRecipient().getNick() + " was kicked by " + event.getUser().getNick() + " for " + event.getReason());
+                                chatAdapter.notifyDataSetChanged();
+                                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onUnknown(UnknownEvent event) {
+                        // Handle raw server responses
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                chatMessages.add("SERVER: " + event.getLine());
+                                chatAdapter.notifyDataSetChanged();
+                                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onDisconnect(DisconnectEvent event) {
+                        // Handle disconnection
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                chatMessages.add("Disconnected from IRC server.");
+                                chatAdapter.notifyDataSetChanged();
+                                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
                             }
                         });
                     }
