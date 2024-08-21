@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class ChatActivity extends AppCompatActivity {
 
@@ -30,6 +31,7 @@ public class ChatActivity extends AppCompatActivity {
     private ChatAdapter chatAdapter;
     private List<String> chatMessages;
     private RecyclerView chatRecyclerView;
+    private String userNick;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,12 +48,14 @@ public class ChatActivity extends AppCompatActivity {
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);
 
+        userNick = "Guest" + (1000 + (int) (Math.random() * 9000 ));
+
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String message = chatEditText.getText().toString();
                 if (!message.isEmpty()) {
-                    chatMessages.add("Me: " + message);
+                    chatMessages.add(userNick + ": " + message);  // Add ": " to separate the nickname and the message
                     chatAdapter.notifyDataSetChanged();
                     chatEditText.setText("");
 
@@ -83,22 +87,30 @@ public class ChatActivity extends AppCompatActivity {
         disconnectButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (bot != null) {
+                String message = chatEditText.getText().toString();
+                if (!message.isEmpty()) {
+                    chatMessages.add(userNick + ": " + message);  // Add ": " to separate the nickname and the message
+                    chatAdapter.notifyDataSetChanged();
+                    chatEditText.setText("");
+
+                    // Send message to IRC server
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
                             try {
-                                bot.sendIRC().quitServer("Brett Tech Client");
-                                bot.close(); // Closes the bot connection
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        finish(); // Ensure this is called on the main thread
-                                    }
-                                });
+                                if (isNetworkAvailable()) {
+                                    bot.sendIRC().message("#ThePlaceToChat", message);
+                                } else {
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(ChatActivity.this, "No internet connection.", Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                                }
                             } catch (Exception e) {
                                 e.printStackTrace();
-                                // Handle disconnection failure
+                                // Handle message sending failure
                             }
                         }
                     }).start();
@@ -134,7 +146,7 @@ public class ChatActivity extends AppCompatActivity {
         }
 
         Configuration configuration = new Configuration.Builder()
-                .setName("CoolDudeBot") // Set the bot's name
+                .setName(userNick) // Set the bot's name
                 .addServer("irc.theplacetochat.net") // Set the server
                 .addAutoJoinChannel("#ThePlaceToChat") // Set the channel
                 .setServerPort(6667) // IRC port, adjust as needed
@@ -159,7 +171,7 @@ public class ChatActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                chatMessages.add(event.getUser().getNick() + ": " + event.getMessage());
+                                chatMessages.add(userNick + ": " + event.getMessage());
                                 chatAdapter.notifyDataSetChanged();
                                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
                             }
