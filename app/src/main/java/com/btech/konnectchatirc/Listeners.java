@@ -18,6 +18,7 @@ public class Listeners extends ListenerAdapter {
     public void onConnect(ConnectEvent event) {
         runOnUiThread(() -> {
             chatActivity.addChatMessage("Connected to IRC server.");
+            chatActivity.addChatMessage("A TPTC Client");
         });
     }
 
@@ -35,6 +36,7 @@ public class Listeners extends ListenerAdapter {
         runOnUiThread(() -> {
             String userNick = event.getUser().getNick();
             String channel = event.getChannel().getName();
+            chatActivity.updateChannelName(channel);
             chatActivity.addChatMessage(userNick + " has joined the channel " + channel + ".");
         });
     }
@@ -42,7 +44,9 @@ public class Listeners extends ListenerAdapter {
     @Override
     public void onPart(PartEvent event) {
         runOnUiThread(() -> {
-            chatActivity.addChatMessage(event.getUser().getNick() + " has left the channel.");
+            String userNick = event.getUser().getNick();
+            String channel = event.getChannel().getName();
+            chatActivity.addChatMessage(userNick + " has left the channel " + channel + ".");
         });
     }
 
@@ -70,4 +74,12 @@ public class Listeners extends ListenerAdapter {
     private void runOnUiThread(Runnable runnable) {
         new Handler(Looper.getMainLooper()).post(runnable);
     }
+
+    @Override
+    public void onNickChange(NickChangeEvent event) {
+        runOnUiThread(() -> {
+            chatActivity.addChatMessage(event.getOldNick() + " is now known as " + event.getNewNick());
+        });
+    }
+
 }

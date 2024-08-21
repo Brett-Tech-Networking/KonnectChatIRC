@@ -43,7 +43,22 @@
         android:layout_alignParentStart="true"
         android:layout_toStartOf="@id/sendButton"
         android:hint="Type your message"
-        android:textColor="@color/red"/>
+        android:textColor="@color/red"
+        android:layout_above="@id/ChannelName"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- TextView to display the channel name -->
+    <TextView
+        android:id="@+id/ChannelName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="9sp"
+        android:textStyle="bold"
+        android:text=""
+        android:textColor="@color/red"
+        android:layout_alignParentBottom="true"
+        android:layout_marginLeft="5dp"
+        android:layout_marginBottom="1dp"/>
 
     <!-- Send Button to send messages -->
     <Button
