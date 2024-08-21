@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="300dp"
+    android:layout_height="wrap_content"
+    android:background="@drawable/rounded_background"
+    android:columnCount="3"
+    android:rowCount="2"
+    android:padding="10dp"
+    android:layout_gravity="center"
+    android:visibility="gone">
+
+    <!-- First Row of Buttons -->
+    <Button
+        android:id="@+id/btnNick"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_columnWeight="1"
+        android:layout_row="0"
+        android:text="Nick"
+        android:layout_margin="4dp"/>
+
+    <Button
+        android:id="@+id/btnKick"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_columnWeight="1"
+        android:layout_row="0"
+        android:text="Kick"
+        android:layout_margin="4dp"/>
+
+    <Button
+        android:id="@+id/btnJoin"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_columnWeight="1"
+        android:layout_row="0"
+        android:text="Join"
+        android:layout_margin="4dp"/>
+
+    <!-- Second Row of Buttons -->
+    <Button
+        android:id="@+id/btnKill"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_columnWeight="1"
+        android:layout_row="0"
+        android:text="Kill"
+        android:layout_margin="4dp"/>
+
+    <Button
+        android:id="@+id/btnBan"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_columnWeight="1"
+        android:layout_row="1"
+        android:text="Ban"
+        android:layout_margin="4dp"/>
+
+    <!-- Placeholder View for Alignment (to fill the third column in the second row) -->
+    <View
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_row="1"
+        android:layout_column="2"/>
+</GridLayout>

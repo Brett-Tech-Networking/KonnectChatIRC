@@ -3,15 +3,21 @@ package com.btech.konnectchatirc;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.exception.IrcException;
-import android.widget.TextView;
+
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -30,18 +36,60 @@ public class ChatActivity extends AppCompatActivity {
     private RecyclerView chatRecyclerView;
     private String userNick;
     private TextView channelNameTextView;
+    private View hoverPanel;
+    private ImageButton adminButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
-        chatRecyclerView = findViewById(R.id.chatRecyclerView);
+        // Initialize UI components
+        adminButton = findViewById(R.id.adminButton);
+        channelNameTextView = findViewById(R.id.ChannelName);
         chatEditText = findViewById(R.id.chatEditText);
         Button sendButton = findViewById(R.id.sendButton);
         Button disconnectButton = findViewById(R.id.disconnectButton);
-        channelNameTextView = findViewById(R.id.ChannelName);
 
+        // Inflate and set up hover panel
+        LayoutInflater inflater = LayoutInflater.from(this);
+        hoverPanel = inflater.inflate(R.layout.hover_panel, null);
+
+        // Get the layout parameters for hoverPanel
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+                dpToPx(300), // Width in pixels
+                dpToPx(400)  // Height in pixels
+        );
+
+        // Set rules to position hoverPanel
+        params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        params.addRule(RelativeLayout.CENTER_HORIZONTAL);
+
+        // Add top margin to move hoverPanel slightly down from the top
+        int topMargin = dpToPx(60); // Adjust the value as needed
+        params.setMargins(0, topMargin, 0, 0);
+
+        // Add hoverPanel to the root of activity_chat.xml
+        RelativeLayout rootLayout = findViewById(R.id.rootLayout); // Ensure your activity_chat.xml has an ID for the root layout
+        rootLayout.addView(hoverPanel, params);
+
+        // Find buttons inside hoverPanel
+        Button btnNick = hoverPanel.findViewById(R.id.btnNick);
+        Button btnKick = hoverPanel.findViewById(R.id.btnKick);
+        Button btnJoin = hoverPanel.findViewById(R.id.btnJoin);
+        Button btnKill = hoverPanel.findViewById(R.id.btnKill);
+        Button btnBan = hoverPanel.findViewById(R.id.btnBan);
+
+        // Set up hover panel visibility toggle
+        adminButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleHoverPanel();
+            }
+        });
+
+        // Set up chat RecyclerView
+        chatRecyclerView = findViewById(R.id.chatRecyclerView);
         chatMessages = new ArrayList<>();
         chatAdapter = new ChatAdapter(this, chatMessages);
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -50,18 +98,16 @@ public class ChatActivity extends AppCompatActivity {
         // Generate a random nickname
         userNick = "Guest" + (1000 + (int) (Math.random() * 9000));
 
+        // Send button functionality
         sendButton.setOnClickListener(v -> {
             String message = chatEditText.getText().toString();
             if (!message.isEmpty()) {
                 if (message.startsWith("/")) {
-                    // Handle command
                     handleCommand(message);
                 } else {
-                    // Handle regular message
                     addChatMessage(userNick + ": " + message);
                     chatEditText.setText("");
 
-                    // Send message to IRC server
                     new Thread(() -> {
                         try {
                             if (isNetworkAvailable()) {
@@ -77,7 +123,7 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
-
+        // Disconnect button functionality
         disconnectButton.setOnClickListener(v -> {
             if (bot != null) {
                 new Thread(() -> {
@@ -92,16 +138,17 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
-        // Connect to IRC server
+        // Start connection to IRC server
         new Thread(this::connectToIrcServer).start();
     }
+
     public String getRequestedNick() {
         return requestedNick;
     }
+
     public void setNickInputToRetry() {
         chatEditText.setText("/nick "); // Set the text to "/nick "
     }
-
 
     private boolean isNetworkAvailable() {
         ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -145,25 +192,20 @@ public class ChatActivity extends AppCompatActivity {
     public String getUserNick() {
         return userNick;
     }
-    private void handleCommand(String command) {
-        // Remove leading slash
-        String commandText = command.substring(1);
 
-        // Split command and arguments
+    private void handleCommand(String command) {
+        String commandText = command.substring(1);
         String[] parts = commandText.split(" ", 2);
         String commandName = parts[0].toLowerCase();
         String args = parts.length > 1 ? parts[1] : "";
 
         switch (commandName) {
             case "nick":
-                // Change nickname command
                 changeNick(args);
                 break;
             case "join":
-                // Join channel command
                 joinChannel(args);
                 break;
-            // Add more commands as needed
             default:
                 addChatMessage("Unknown command: " + commandName);
                 break;
@@ -181,14 +223,17 @@ public class ChatActivity extends AppCompatActivity {
 
         requestedNick = newNick; // Set the requested nickname
 
-        // Change nickname
         new Thread(() -> {
             try {
                 if (isNetworkAvailable()) {
                     if (bot.isConnected()) {
-                        // Send the nickname change request
+                        // Send the nickname change command to the IRC server
                         bot.sendRaw().rawLine("NICK " + newNick);
-                        chatEditText.setText(""); // Clear input
+                        runOnUiThread(() -> {
+                            // Update local nickname and UI
+                            updateLocalNick(newNick);
+                            chatEditText.setText(""); // Clear input
+                        });
                     } else {
                         runOnUiThread(() -> addChatMessage("Bot is not connected to the server."));
                     }
@@ -204,9 +249,8 @@ public class ChatActivity extends AppCompatActivity {
 
     public void updateLocalNick(String newNick) {
         userNick = newNick; // Update local nickname
-        runOnUiThread(() -> addChatMessage("Nickname changed to: " + newNick));
+        // runOnUiThread(() -> addChatMessage("Nickname changed to: " + newNick));
     }
-
 
     private void joinChannel(String channel) {
         if (channel.isEmpty()) {
@@ -214,7 +258,6 @@ public class ChatActivity extends AppCompatActivity {
             chatEditText.setText("");
             return;
         }
-        // Join channel
         new Thread(() -> {
             try {
                 if (isNetworkAvailable()) {
@@ -228,9 +271,49 @@ public class ChatActivity extends AppCompatActivity {
             }
         }).start();
     }
+
     public void updateChannelName(String channelName) {
-        runOnUiThread(() -> {
-            channelNameTextView.setText(channelName);
-        });
+        runOnUiThread(() -> channelNameTextView.setText(channelName));
+    }
+
+    private void toggleHoverPanel() {
+        if (hoverPanel.getVisibility() == View.GONE) {
+            hoverPanel.setVisibility(View.VISIBLE);
+            Animation fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
+            hoverPanel.startAnimation(fadeIn);
+        } else {
+            Animation fadeOut = AnimationUtils.loadAnimation(this, R.anim.fade_out);
+            fadeOut.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {}
+
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    hoverPanel.setVisibility(View.GONE);
+                }
+
+                @Override
+                public void onAnimationRepeat(Animation animation) {}
+            });
+            hoverPanel.startAnimation(fadeOut);
+        }
+    }
+
+    private void handleAdminAction(String action) {
+        switch (action) {
+            case "Nick":
+                setNickInputToRetry();
+                toggleHoverPanel();
+                break;
+            case "Kick":
+                // handle Kick action
+                break;
+            // Add cases for other actions
+        }
+    }
+
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
     }
 }
