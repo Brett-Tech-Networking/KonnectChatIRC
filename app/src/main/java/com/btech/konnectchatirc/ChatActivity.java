@@ -4,10 +4,12 @@ import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.exception.IrcException;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -79,6 +81,8 @@ public class ChatActivity extends AppCompatActivity {
         Button btnJoin = hoverPanel.findViewById(R.id.btnJoin);
         Button btnKill = hoverPanel.findViewById(R.id.btnKill);
         Button btnBan = hoverPanel.findViewById(R.id.btnBan);
+
+        btnNick.setOnClickListener(v -> showNickChangeDialog());
 
         // Set up hover panel visibility toggle
         adminButton.setOnClickListener(new View.OnClickListener() {
@@ -285,7 +289,8 @@ public class ChatActivity extends AppCompatActivity {
             Animation fadeOut = AnimationUtils.loadAnimation(this, R.anim.fade_out);
             fadeOut.setAnimationListener(new Animation.AnimationListener() {
                 @Override
-                public void onAnimationStart(Animation animation) {}
+                public void onAnimationStart(Animation animation) {
+                }
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
@@ -293,7 +298,8 @@ public class ChatActivity extends AppCompatActivity {
                 }
 
                 @Override
-                public void onAnimationRepeat(Animation animation) {}
+                public void onAnimationRepeat(Animation animation) {
+                }
             });
             hoverPanel.startAnimation(fadeOut);
         }
@@ -315,5 +321,33 @@ public class ChatActivity extends AppCompatActivity {
     private int dpToPx(int dp) {
         float density = getResources().getDisplayMetrics().density;
         return Math.round(dp * density);
+    }
+
+    private void showNickChangeDialog() {
+        // Create an AlertDialog builder
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Change Nickname");
+
+        // Set up the input
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
+
+        // Set up the buttons
+        builder.setPositiveButton("OK", (dialog, which) -> {
+            String newNick = input.getText().toString().trim();
+            if (!newNick.isEmpty()) {
+                changeNick(newNick);
+                hoverPanel.setVisibility(View.GONE);
+            } else {
+                Toast.makeText(ChatActivity.this, "Nickname cannot be empty", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        // Show the dialog
+        AlertDialog dialog = builder.create();
+        dialog.getWindow().getAttributes().windowAnimations = R.style.DialogAnimation;
+        dialog.show();
     }
 }
