@@ -36,10 +36,12 @@ public class Listeners extends ListenerAdapter {
         runOnUiThread(() -> {
             String userNick = event.getUser().getNick();
             String channel = event.getChannel().getName();
+            chatActivity.setActiveChannel(channel); // Update active channel
             chatActivity.updateChannelName(channel);
             chatActivity.addChatMessage(userNick + " has joined the channel " + channel + ".");
         });
     }
+
 
     @Override
     public void onPart(PartEvent event) {
@@ -81,5 +83,4 @@ public class Listeners extends ListenerAdapter {
             chatActivity.addChatMessage(event.getOldNick() + " is now known as " + event.getNewNick());
         });
     }
-
 }

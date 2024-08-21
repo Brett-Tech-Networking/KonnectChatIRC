@@ -3,7 +3,6 @@ package com.btech.konnectchatirc;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.exception.IrcException;
-
 import android.app.AlertDialog;
 import android.content.Context;
 import android.net.ConnectivityManager;
@@ -40,11 +39,18 @@ public class ChatActivity extends AppCompatActivity {
     private TextView channelNameTextView;
     private View hoverPanel;
     private ImageButton adminButton;
+    private Button btnKick;
+    private String activeChannel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
+
+        // Generate a random nickname before initializing the bot
+        userNick = "Guest" + (1000 + (int) (Math.random() * 9000));
+
+        initializeBot();
 
         // Initialize UI components
         adminButton = findViewById(R.id.adminButton);
@@ -53,14 +59,17 @@ public class ChatActivity extends AppCompatActivity {
         Button sendButton = findViewById(R.id.sendButton);
         Button disconnectButton = findViewById(R.id.disconnectButton);
 
+        // Initialize Kick class and set up button click listener
+        Kick kickHandler = new Kick(this, bot, this);
+
         // Inflate and set up hover panel
         LayoutInflater inflater = LayoutInflater.from(this);
         hoverPanel = inflater.inflate(R.layout.hover_panel, null);
 
         // Get the layout parameters for hoverPanel
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
-                dpToPx(300), // Width in pixels
-                dpToPx(400)  // Height in pixels
+                (int) (300 * getResources().getDisplayMetrics().density), // Width in pixels
+                (int) (400 * getResources().getDisplayMetrics().density)  // Height in pixels
         );
 
         // Set rules to position hoverPanel
@@ -68,7 +77,7 @@ public class ChatActivity extends AppCompatActivity {
         params.addRule(RelativeLayout.CENTER_HORIZONTAL);
 
         // Add top margin to move hoverPanel slightly down from the top
-        int topMargin = dpToPx(60); // Adjust the value as needed
+        int topMargin = (int) (60 * getResources().getDisplayMetrics().density); // Adjust the value as needed
         params.setMargins(0, topMargin, 0, 0);
 
         // Add hoverPanel to the root of activity_chat.xml
@@ -77,20 +86,16 @@ public class ChatActivity extends AppCompatActivity {
 
         // Find buttons inside hoverPanel
         Button btnNick = hoverPanel.findViewById(R.id.btnNick);
-        Button btnKick = hoverPanel.findViewById(R.id.btnKick);
         Button btnJoin = hoverPanel.findViewById(R.id.btnJoin);
         Button btnKill = hoverPanel.findViewById(R.id.btnKill);
         Button btnBan = hoverPanel.findViewById(R.id.btnBan);
+        btnKick = hoverPanel.findViewById(R.id.btnKick); // Initialize btnKick from hoverPanel
 
         btnNick.setOnClickListener(v -> showNickChangeDialog());
+        btnKick.setOnClickListener(v -> kickHandler.startKickProcess());
 
         // Set up hover panel visibility toggle
-        adminButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                toggleHoverPanel();
-            }
-        });
+        adminButton.setOnClickListener(v -> toggleHoverPanel());
 
         // Set up chat RecyclerView
         chatRecyclerView = findViewById(R.id.chatRecyclerView);
@@ -98,9 +103,6 @@ public class ChatActivity extends AppCompatActivity {
         chatAdapter = new ChatAdapter(this, chatMessages);
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);
-
-        // Generate a random nickname
-        userNick = "Guest" + (1000 + (int) (Math.random() * 9000));
 
         // Send button functionality
         sendButton.setOnClickListener(v -> {
@@ -115,7 +117,7 @@ public class ChatActivity extends AppCompatActivity {
                     new Thread(() -> {
                         try {
                             if (isNetworkAvailable()) {
-                                bot.sendIRC().message("#ThePlaceToChat", message);
+                                bot.sendIRC().message(activeChannel, message);
                             } else {
                                 runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No internet connection.", Toast.LENGTH_SHORT).show());
                             }
@@ -143,40 +145,26 @@ public class ChatActivity extends AppCompatActivity {
         });
 
         // Start connection to IRC server
-        new Thread(this::connectToIrcServer).start();
+        connectToIrcServer();
     }
 
-    public String getRequestedNick() {
-        return requestedNick;
-    }
+    private void initializeBot() {
+        if (bot == null) {
+            Configuration configuration = new Configuration.Builder()
+                    .setName(userNick) // Set the bot's name
+                    .addServer("irc.theplacetochat.net") // Set the server
+                    .addAutoJoinChannel("#ThePlaceToChat") // Set the channel
+                    .setServerPort(6667) // IRC port, adjust as needed
+                    .setRealName("TPTC IRC Client")
+                    .addListener(new Listeners(this)) // Pass this ChatActivity instance to Listeners
+                    .addListener(new NickChangeListener(this)) // Add the custom listener
+                    .buildConfiguration();
 
-    public void setNickInputToRetry() {
-        chatEditText.setText("/nick "); // Set the text to "/nick "
-    }
-
-    private boolean isNetworkAvailable() {
-        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+            bot = new PircBotX(configuration);
+        }
     }
 
     private void connectToIrcServer() {
-        if (!isNetworkAvailable()) {
-            runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No internet connection. Please check your settings.", Toast.LENGTH_LONG).show());
-            return;
-        }
-
-        Configuration configuration = new Configuration.Builder()
-                .setName(userNick) // Set the bot's name
-                .addServer("irc.theplacetochat.net") // Set the server
-                .addAutoJoinChannel("#ThePlaceToChat") // Set the channel
-                .setServerPort(6667) // IRC port, adjust as needed
-                .setRealName("TPTC IRC Client")
-                .addListener(new Listeners(this)) // Pass this ChatActivity instance to Listeners
-                .addListener(new NickChangeListener(this)) // Add the custom listener
-                .buildConfiguration();
-
-        bot = new PircBotX(configuration);
         new Thread(() -> {
             try {
                 bot.startBot();
@@ -187,6 +175,20 @@ public class ChatActivity extends AppCompatActivity {
         }).start();
     }
 
+    public String getRequestedNick() {
+        return requestedNick;
+    }
+
+    public void setNickInputToRetry() {
+        chatEditText.setText("/nick "); // Set the text to "/nick "
+    }
+
+    public boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
+
     public void addChatMessage(String message) {
         chatMessages.add(message);
         chatAdapter.notifyDataSetChanged();
@@ -195,6 +197,14 @@ public class ChatActivity extends AppCompatActivity {
 
     public String getUserNick() {
         return userNick;
+    }
+
+    public String getActiveChannel() {
+        return activeChannel;
+    }
+
+    public void setActiveChannel(String channel) {
+        this.activeChannel = channel;
     }
 
     private void handleCommand(String command) {
@@ -253,7 +263,6 @@ public class ChatActivity extends AppCompatActivity {
 
     public void updateLocalNick(String newNick) {
         userNick = newNick; // Update local nickname
-        // runOnUiThread(() -> addChatMessage("Nickname changed to: " + newNick));
     }
 
     private void joinChannel(String channel) {
@@ -267,6 +276,8 @@ public class ChatActivity extends AppCompatActivity {
                 if (isNetworkAvailable()) {
                     bot.sendIRC().joinChannel(channel);
                     runOnUiThread(() -> addChatMessage("Joined channel: " + channel));
+                    activeChannel = channel;
+                    updateChannelName(channel);
                 } else {
                     runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No internet connection.", Toast.LENGTH_SHORT).show());
                 }
@@ -289,8 +300,7 @@ public class ChatActivity extends AppCompatActivity {
             Animation fadeOut = AnimationUtils.loadAnimation(this, R.anim.fade_out);
             fadeOut.setAnimationListener(new Animation.AnimationListener() {
                 @Override
-                public void onAnimationStart(Animation animation) {
-                }
+                public void onAnimationStart(Animation animation) {}
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
@@ -298,29 +308,10 @@ public class ChatActivity extends AppCompatActivity {
                 }
 
                 @Override
-                public void onAnimationRepeat(Animation animation) {
-                }
+                public void onAnimationRepeat(Animation animation) {}
             });
             hoverPanel.startAnimation(fadeOut);
         }
-    }
-
-    private void handleAdminAction(String action) {
-        switch (action) {
-            case "Nick":
-                setNickInputToRetry();
-                toggleHoverPanel();
-                break;
-            case "Kick":
-                // handle Kick action
-                break;
-            // Add cases for other actions
-        }
-    }
-
-    private int dpToPx(int dp) {
-        float density = getResources().getDisplayMetrics().density;
-        return Math.round(dp * density);
     }
 
     private void showNickChangeDialog() {
