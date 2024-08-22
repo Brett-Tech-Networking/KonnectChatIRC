@@ -44,7 +44,7 @@ public class ChatActivity extends AppCompatActivity {
     private View operatorPanel;
     private Button operatorButton;
     private ImageButton adminButton;
-    private Button btnKick;
+    private Button btnKill;
     private String activeChannel;
     private final Set<String> processedMessages = new HashSet<>();
 
@@ -64,7 +64,7 @@ public class ChatActivity extends AppCompatActivity {
         Button sendButton = findViewById(R.id.sendButton);
         Button disconnectButton = findViewById(R.id.disconnectButton);
 
-        // Inflate and set up hover panel
+        // Inflate hover panel and operator panel
         LayoutInflater inflater = LayoutInflater.from(this);
         hoverPanel = inflater.inflate(R.layout.hover_panel, null);
         operatorPanel = inflater.inflate(R.layout.operator_panel, null);
@@ -90,28 +90,23 @@ public class ChatActivity extends AppCompatActivity {
 
         operatorPanel.setVisibility(View.GONE); // Initially hide operatorPanel
 
-        // Initialize Kick class and set up button click listener
-        Kick kickHandler = new Kick(this, bot, this);
-
-        // Initialize Kill class and set up button click listener
-        Kill killHandler = new Kill(this, bot, this);
-
-        // Initialize Identify class and set up button click listener
-        Identify identifyHandler = new Identify(this, bot, this);
-
-        // Find buttons inside hoverPanel
+        // Initialize buttons from hover panel
         Button btnNick = hoverPanel.findViewById(R.id.btnNick);
         Button btnJoin = hoverPanel.findViewById(R.id.btnJoin);
-        Button btnKill = hoverPanel.findViewById(R.id.btnKill);
-        Button btnBan = hoverPanel.findViewById(R.id.btnBan);
-        btnKick = hoverPanel.findViewById(R.id.btnKick); // Initialize btnKick from hoverPanel
+        Button btnKick = hoverPanel.findViewById(R.id.btnKick);
         Button btnIdent = hoverPanel.findViewById(R.id.btnIdent);
-        operatorButton = hoverPanel.findViewById(R.id.btnOperator); // Initialize operator button from hoverPanel
+        operatorButton = hoverPanel.findViewById(R.id.btnOperator);
 
+        // Initialize buttons from operator panel
+        btnKill = operatorPanel.findViewById(R.id.btnKill);
+
+        // Set click listeners for hover panel buttons
         btnNick.setOnClickListener(v -> showNickChangeDialog());
-        btnKick.setOnClickListener(v -> kickHandler.startKickProcess());
-        btnKill.setOnClickListener(v -> killHandler.startKillProcess());
-        btnIdent.setOnClickListener(v -> identifyHandler.startIdentifyProcess());
+        btnKick.setOnClickListener(v -> new Kick(this, bot, this).startKickProcess());
+        btnIdent.setOnClickListener(v -> new Identify(this, bot, this).startIdentifyProcess());
+
+        // Set click listener for kill button in operator panel
+        btnKill.setOnClickListener(v -> new Kill(this, bot, this).startKillProcess());
 
         // Operator button functionality
         operatorButton.setOnClickListener(v -> {
@@ -127,6 +122,7 @@ public class ChatActivity extends AppCompatActivity {
         chatAdapter = new ChatAdapter(this, chatMessages);
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);
+
 
         // Send button functionality
         sendButton.setOnClickListener(v -> {

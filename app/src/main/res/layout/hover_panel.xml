@@ -98,12 +98,6 @@
                     android:text="Kick"
                     android:layout_margin="4dp"/>
 
-                <Button
-                    android:id="@+id/btnKill"
-                    android:layout_width="140dp"
-                    android:layout_height="wrap_content"
-                    android:text="Kill"
-                    android:layout_margin="4dp"/>
             </LinearLayout>
 
             <LinearLayout
