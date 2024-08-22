@@ -33,6 +33,10 @@
             android:name=".ChatActivity"
             android:theme="@style/Theme.KonnectChatIRC.NoActionBar"
             android:exported="false" />
+        <activity
+            android:name=".OperatorPanelActivity"
+            android:theme="@style/Theme.KonnectChatIRC.NoActionBar"
+            android:exported="false" />
 
     </application>
 

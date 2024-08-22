@@ -5,6 +5,7 @@ import org.pircbotx.PircBotX;
 import org.pircbotx.exception.IrcException;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -40,6 +41,8 @@ public class ChatActivity extends AppCompatActivity {
     private String userNick;
     private TextView channelNameTextView;
     private View hoverPanel;
+    private View operatorPanel;
+    private Button operatorButton;
     private ImageButton adminButton;
     private Button btnKick;
     private String activeChannel;
@@ -64,24 +67,28 @@ public class ChatActivity extends AppCompatActivity {
         // Inflate and set up hover panel
         LayoutInflater inflater = LayoutInflater.from(this);
         hoverPanel = inflater.inflate(R.layout.hover_panel, null);
+        operatorPanel = inflater.inflate(R.layout.operator_panel, null);
 
-        // Get the layout parameters for hoverPanel
+        // Get the layout parameters for hoverPanel and operatorPanel
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
                 (int) (300 * getResources().getDisplayMetrics().density), // Width in pixels
                 (int) (450 * getResources().getDisplayMetrics().density)  // Height in pixels
         );
 
-        // Set rules to position hoverPanel
+        // Set rules to position hoverPanel and operatorPanel
         params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
         params.addRule(RelativeLayout.CENTER_HORIZONTAL);
 
-        // Add top margin to move hoverPanel slightly down from the top
+        // Add top margin to move panels slightly down from the top
         int topMargin = (int) (60 * getResources().getDisplayMetrics().density); // Adjust the value as needed
         params.setMargins(0, topMargin, 0, 0);
 
-        // Add hoverPanel to the root of activity_chat.xml
+        // Add panels to the root of activity_chat.xml
         RelativeLayout rootLayout = findViewById(R.id.rootLayout); // Ensure your activity_chat.xml has an ID for the root layout
         rootLayout.addView(hoverPanel, params);
+        rootLayout.addView(operatorPanel, params);
+
+        operatorPanel.setVisibility(View.GONE); // Initially hide operatorPanel
 
         // Initialize Kick class and set up button click listener
         Kick kickHandler = new Kick(this, bot, this);
@@ -99,11 +106,17 @@ public class ChatActivity extends AppCompatActivity {
         Button btnBan = hoverPanel.findViewById(R.id.btnBan);
         btnKick = hoverPanel.findViewById(R.id.btnKick); // Initialize btnKick from hoverPanel
         Button btnIdent = hoverPanel.findViewById(R.id.btnIdent);
+        operatorButton = hoverPanel.findViewById(R.id.btnOperator); // Initialize operator button from hoverPanel
 
         btnNick.setOnClickListener(v -> showNickChangeDialog());
         btnKick.setOnClickListener(v -> kickHandler.startKickProcess());
         btnKill.setOnClickListener(v -> killHandler.startKillProcess());
         btnIdent.setOnClickListener(v -> identifyHandler.startIdentifyProcess());
+
+        // Operator button functionality
+        operatorButton.setOnClickListener(v -> {
+            fadeOutPanel(hoverPanel, () -> fadeInPanel(operatorPanel));
+        });
 
         // Set up hover panel visibility toggle
         adminButton.setOnClickListener(v -> toggleHoverPanel());
@@ -303,25 +316,51 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void toggleHoverPanel() {
-        if (hoverPanel.getVisibility() == View.GONE) {
-            hoverPanel.setVisibility(View.VISIBLE);
-            Animation fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
-            hoverPanel.startAnimation(fadeIn);
+        if (operatorPanel.getVisibility() == View.VISIBLE) {
+            fadeOutPanel(operatorPanel, null);
+        } else if (hoverPanel.getVisibility() == View.GONE) {
+            fadeInPanel(hoverPanel);
         } else {
+            fadeOutPanel(hoverPanel, null);
+        }
+    }
+
+    private void fadeInPanel(View panel) {
+        if (panel.getVisibility() == View.GONE) {
+            panel.setVisibility(View.VISIBLE);
+            Animation fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
+            panel.startAnimation(fadeIn);
+        }
+    }
+
+    private void fadeOutPanel(View panel, Runnable onAnimationEnd) {
+        if (panel.getVisibility() == View.VISIBLE) {
             Animation fadeOut = AnimationUtils.loadAnimation(this, R.anim.fade_out);
             fadeOut.setAnimationListener(new Animation.AnimationListener() {
                 @Override
-                public void onAnimationStart(Animation animation) {}
-
-                @Override
-                public void onAnimationEnd(Animation animation) {
-                    hoverPanel.setVisibility(View.GONE);
+                public void onAnimationStart(Animation animation) {
+                    // Optional: any action before animation starts
                 }
 
                 @Override
-                public void onAnimationRepeat(Animation animation) {}
+                public void onAnimationEnd(Animation animation) {
+                    panel.setVisibility(View.GONE);
+                    if (onAnimationEnd != null) {
+                        onAnimationEnd.run();
+                    }
+                }
+
+                @Override
+                public void onAnimationRepeat(Animation animation) {
+                    // Not used
+                }
             });
-            hoverPanel.startAnimation(fadeOut);
+            panel.startAnimation(fadeOut);
+        } else {
+            // If the panel is already gone, just run the end action
+            if (onAnimationEnd != null) {
+                onAnimationEnd.run();
+            }
         }
     }
 
@@ -352,6 +391,7 @@ public class ChatActivity extends AppCompatActivity {
         dialog.getWindow().getAttributes().windowAnimations = R.style.DialogAnimation;
         dialog.show();
     }
+
     public boolean hasMessageBeenProcessed(String message) {
         return processedMessages.contains(message);
     }
@@ -359,6 +399,4 @@ public class ChatActivity extends AppCompatActivity {
     public void markMessageAsProcessed(String message) {
         processedMessages.add(message);
     }
-
-
 }
