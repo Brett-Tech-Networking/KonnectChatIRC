@@ -1,80 +1,163 @@
 <?xml version="1.0" encoding="utf-8"?>
-<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="300dp"
-    android:layout_height="wrap_content"
-    android:background="@drawable/rounded_background"
-    android:columnCount="2"
-    android:padding="10dp"
-    android:layout_gravity="center"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:visibility="gone">
 
-    <!-- First Row of Buttons -->
-    <Button
-        android:id="@+id/btnNick"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_columnWeight="1"
-        android:layout_row="0"
-        android:layout_column="0"
-        android:text="Nick"
-        android:layout_margin="4dp"/>
+    <!-- Main Content ScrollView -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/rounded_background"
+        android:padding="10dp">
 
-    <Button
-        android:id="@+id/btnKick"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_columnWeight="1"
-        android:layout_row="0"
-        android:layout_column="1"
-        android:text="Kick"
-        android:layout_margin="4dp"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-    <!-- Second Row of Buttons -->
-    <Button
-        android:id="@+id/btnJoin"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_columnWeight="1"
-        android:layout_row="1"
-        android:layout_column="0"
-        android:text="Join"
-        android:layout_margin="4dp"/>
+            <!-- Nickserv Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nickserv"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:layout_marginBottom="4dp"
+                android:layout_gravity="center_horizontal"/>
 
-    <Button
-        android:id="@+id/btnKill"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_columnWeight="1"
-        android:layout_row="1"
-        android:layout_column="1"
-        android:text="Kill"
-        android:layout_margin="4dp"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
 
-    <!-- Third Row of Buttons -->
-    <Button
-        android:id="@+id/btnBan"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_columnWeight="1"
-        android:layout_row="2"
-        android:layout_column="0"
-        android:text="Ban"
-        android:layout_margin="4dp"/>
-    <Button
-        android:id="@+id/btnIdent"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_columnWeight="1"
-        android:layout_row="2"
-        android:layout_column="1"
-        android:text="Identify"
-        android:layout_margin="4dp"/>
+                <Button
+                    android:id="@+id/btnNick"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="Nick"
+                    android:layout_margin="4dp"/>
 
-    <!-- Placeholder View for Alignment (to fill the second column in the third row) -->
-    <View
-        android:layout_width="0dp"
+                <Button
+                    android:id="@+id/btnIdent"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="Identify"
+                    android:layout_margin="4dp"/>
+            </LinearLayout>
+
+            <!-- Chanserv Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Chanserv"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:layout_marginBottom="4dp"
+                android:layout_gravity="center_horizontal"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btnJoin"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="Join"
+                    android:layout_margin="4dp"/>
+
+                <!-- Placeholder View for Alignment (to fill the second column) -->
+                <View
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <!-- Moderator Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Moderator"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:layout_marginBottom="4dp"
+                android:layout_gravity="center_horizontal"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnKick"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="Kick"
+                    android:layout_margin="4dp"/>
+
+                <Button
+                    android:id="@+id/btnKill"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="Kill"
+                    android:layout_margin="4dp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
+
+                <Button
+                    android:id="@+id/btnBan"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="Ban"
+                    android:layout_margin="4dp"/>
+
+                <!-- Placeholder View for Alignment (to fill the second column) -->
+                <View
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/nothing1"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="nothing 1"
+                    android:layout_margin="4dp"
+                    android:visibility="invisible"
+                    />
+
+                <Button
+                    android:id="@+id/nothing2"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="nothing 2"
+                    android:layout_margin="4dp"
+                    android:visibility="invisible"/>
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Operator Button at the Bottom Right -->
+    <Button
+        android:id="@+id/btnOperator"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_columnWeight="1"
-        android:layout_row="2"
-        android:layout_column="1"/>
-</GridLayout>
+        android:text="OPERATOR"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:backgroundTint="@android:color/holo_blue_dark"
+        android:textColor="@android:color/white"/>
+</FrameLayout>
