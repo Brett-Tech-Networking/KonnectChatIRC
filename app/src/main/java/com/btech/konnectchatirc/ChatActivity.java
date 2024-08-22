@@ -26,7 +26,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ChatActivity extends AppCompatActivity {
 
@@ -41,6 +43,7 @@ public class ChatActivity extends AppCompatActivity {
     private ImageButton adminButton;
     private Button btnKick;
     private String activeChannel;
+    private final Set<String> processedMessages = new HashSet<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +52,6 @@ public class ChatActivity extends AppCompatActivity {
 
         // Generate a random nickname before initializing the bot
         userNick = "Guest" + (1000 + (int) (Math.random() * 9000));
-
         initializeBot();
 
         // Initialize UI components
@@ -58,9 +60,6 @@ public class ChatActivity extends AppCompatActivity {
         chatEditText = findViewById(R.id.chatEditText);
         Button sendButton = findViewById(R.id.sendButton);
         Button disconnectButton = findViewById(R.id.disconnectButton);
-
-        // Initialize Kick class and set up button click listener
-        Kick kickHandler = new Kick(this, bot, this);
 
         // Inflate and set up hover panel
         LayoutInflater inflater = LayoutInflater.from(this);
@@ -84,15 +83,27 @@ public class ChatActivity extends AppCompatActivity {
         RelativeLayout rootLayout = findViewById(R.id.rootLayout); // Ensure your activity_chat.xml has an ID for the root layout
         rootLayout.addView(hoverPanel, params);
 
+        // Initialize Kick class and set up button click listener
+        Kick kickHandler = new Kick(this, bot, this);
+
+        // Initialize Kill class and set up button click listener
+        Kill killHandler = new Kill(this, bot, this);
+
+        // Initialize Identify class and set up button click listener
+        Identify identifyHandler = new Identify(this, bot, this);
+
         // Find buttons inside hoverPanel
         Button btnNick = hoverPanel.findViewById(R.id.btnNick);
         Button btnJoin = hoverPanel.findViewById(R.id.btnJoin);
         Button btnKill = hoverPanel.findViewById(R.id.btnKill);
         Button btnBan = hoverPanel.findViewById(R.id.btnBan);
         btnKick = hoverPanel.findViewById(R.id.btnKick); // Initialize btnKick from hoverPanel
+        Button btnIdent = hoverPanel.findViewById(R.id.btnIdent);
 
         btnNick.setOnClickListener(v -> showNickChangeDialog());
         btnKick.setOnClickListener(v -> kickHandler.startKickProcess());
+        btnKill.setOnClickListener(v -> killHandler.startKillProcess());
+        btnIdent.setOnClickListener(v -> identifyHandler.startIdentifyProcess());
 
         // Set up hover panel visibility toggle
         adminButton.setOnClickListener(v -> toggleHoverPanel());
@@ -341,4 +352,13 @@ public class ChatActivity extends AppCompatActivity {
         dialog.getWindow().getAttributes().windowAnimations = R.style.DialogAnimation;
         dialog.show();
     }
+    public boolean hasMessageBeenProcessed(String message) {
+        return processedMessages.contains(message);
+    }
+
+    public void markMessageAsProcessed(String message) {
+        processedMessages.add(message);
+    }
+
+
 }
