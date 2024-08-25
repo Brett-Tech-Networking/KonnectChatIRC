@@ -1,10 +1,9 @@
 package com.btech.konnectchatirc;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.util.Log;
 import android.widget.EditText;
-import android.widget.Toast;
+import android.app.AlertDialog;
 
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
@@ -35,7 +34,7 @@ public class Kill {
             if (!enteredNick.isEmpty()) {
                 promptForReason(enteredNick);
             } else {
-                Toast.makeText(context, "Nickname cannot be empty", Toast.LENGTH_SHORT).show();
+                chatActivity.processServerMessage("Server", "Nickname cannot be empty");
             }
         });
 
@@ -57,7 +56,7 @@ public class Kill {
             if (!reason.isEmpty()) {
                 executeKill(nick, reason);
             } else {
-                Toast.makeText(context, "Reason cannot be empty", Toast.LENGTH_SHORT).show();
+                chatActivity.processServerMessage("Server", "Reason cannot be empty");
             }
         });
 
@@ -77,28 +76,23 @@ public class Kill {
                         if (user != null) {
                             Log.d(TAG, "Executing kill command for user " + user.getNick() + " with reason: " + reason);
                             bot.sendRaw().rawLine("KILL " + user.getNick() + " :" + reason);
-                            chatActivity.runOnUiThread(() ->
-                                    Toast.makeText(context, "Killed " + nick, Toast.LENGTH_SHORT).show());
+                            chatActivity.processServerMessage("Server", "Kill command sent for " + nick + " with reason: " + reason);
                         } else {
                             Log.e(TAG, "User not found.");
-                            chatActivity.runOnUiThread(() ->
-                                    Toast.makeText(context, "Failed to execute kill command: User not found.", Toast.LENGTH_SHORT).show());
+                            chatActivity.processServerMessage("Server", "Failed to execute kill command: User not found.");
                         }
                     } else {
                         Log.e(TAG, "Bot is not connected to the server.");
-                        chatActivity.runOnUiThread(() ->
-                                Toast.makeText(context, "Bot is not connected to the server.", Toast.LENGTH_SHORT).show());
+                        chatActivity.processServerMessage("Server", "Bot is not connected to the server.");
                     }
                 } catch (Exception e) {
                     Log.e(TAG, "Failed to execute kill command.", e);
-                    chatActivity.runOnUiThread(() ->
-                            Toast.makeText(context, "Failed to execute kill command.", Toast.LENGTH_SHORT).show());
+                    chatActivity.processServerMessage("Server", "Failed to execute kill command.");
                 }
             }).start();
         } else {
             Log.e(TAG, "No network connection.");
-            chatActivity.runOnUiThread(() ->
-                    Toast.makeText(context, "No network connection.", Toast.LENGTH_SHORT).show());
+            chatActivity.processServerMessage("Server", "No network connection.");
         }
     }
 }

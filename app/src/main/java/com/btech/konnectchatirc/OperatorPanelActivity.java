@@ -1,12 +1,13 @@
 package com.btech.konnectchatirc;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.widget.Button;
-import org.pircbotx.PircBotX;
-import android.app.AlertDialog;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import org.pircbotx.PircBotX;
 
 public class OperatorPanelActivity extends Activity {
 
@@ -19,14 +20,32 @@ public class OperatorPanelActivity extends Activity {
 
         // Assuming the bot instance is passed through an Intent
         bot = (PircBotX) getIntent().getSerializableExtra("bot_instance");
+        if (bot == null) {
+            Toast.makeText(this, "Error: Bot instance not available", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
-        // Directly find the btnKill within the operator_panel layout
+        // Initialize the OperLogin button listener
+        Button btnOperLogin = findViewById(R.id.btnOperLogin);
+        btnOperLogin.setOnClickListener(v -> startOperLoginProcess());
+
+        // Initialize the Sajoin button listener
+        Button btnSajoin = findViewById(R.id.btnSajoin);
+        btnSajoin.setOnClickListener(v -> new Sajoin(OperatorPanelActivity.this, bot, OperatorPanelActivity.this).startSajoinProcess());
+
+        // Initialize the Kill button listener
         Button btnKill = findViewById(R.id.btnKill);
-
-        // Set the click listener for btnKill
         btnKill.setOnClickListener(v -> startKillProcess());
     }
 
+    // Method to handle OperLogin process
+    private void startOperLoginProcess() {
+        OperLogin operLogin = new OperLogin(this, bot, this);  // Create an instance of OperLogin
+        operLogin.startOperLoginProcess();  // Call the method to start the login process
+    }
+
+    // Kill functionality - Unchanged, just for reference
     private void startKillProcess() {
         AlertDialog.Builder nickDialog = new AlertDialog.Builder(this);
         nickDialog.setTitle("Enter Nickname");
@@ -74,11 +93,12 @@ public class OperatorPanelActivity extends Activity {
             new Thread(() -> {
                 try {
                     bot.sendRaw().rawLine("KILL " + nick + " :" + reason);
-                    runOnUiThread(() ->
-                            Toast.makeText(this, "Killed " + nick, Toast.LENGTH_SHORT).show());
+                    runOnUiThread(() -> {
+                        Toast.makeText(OperatorPanelActivity.this, "Killed " + nick, Toast.LENGTH_SHORT).show();
+                    });
                 } catch (Exception e) {
                     runOnUiThread(() ->
-                            Toast.makeText(this, "Failed to execute kill command.", Toast.LENGTH_SHORT).show());
+                            Toast.makeText(OperatorPanelActivity.this, "Failed to execute kill command.", Toast.LENGTH_SHORT).show());
                     e.printStackTrace();
                 }
             }).start();

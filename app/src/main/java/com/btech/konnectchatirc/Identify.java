@@ -3,6 +3,9 @@ package com.btech.konnectchatirc;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.util.Log;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.EditText;
 
 import org.pircbotx.PircBotX;
@@ -13,11 +16,15 @@ public class Identify {
     private final Context context;
     private final PircBotX bot;
     private final ChatActivity chatActivity;
+    private final View operatorPanel;
 
-    public Identify(Context context, PircBotX bot, ChatActivity chatActivity) {
+
+    public Identify(Context context, PircBotX bot, ChatActivity chatActivity, View operatorPanel) {
         this.context = context;
         this.bot = bot;
         this.chatActivity = chatActivity;
+        this.operatorPanel = operatorPanel;
+
     }
 
     public void startIdentifyProcess() {
@@ -72,5 +79,25 @@ public class Identify {
         } else {
             chatActivity.addChatMessage("No network connection.");
         }
+    }
+    private void fadeOutOperatorPanel() {
+        Animation fadeOut = AnimationUtils.loadAnimation(context, R.anim.fade_out);
+        operatorPanel.startAnimation(fadeOut);
+        fadeOut.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                // Optional: any action before animation starts
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                operatorPanel.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
     }
 }

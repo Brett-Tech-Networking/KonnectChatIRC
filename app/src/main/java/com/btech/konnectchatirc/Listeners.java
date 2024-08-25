@@ -14,6 +14,7 @@ public class Listeners extends ListenerAdapter {
     public Listeners(ChatActivity chatActivity) {
         this.chatActivity = chatActivity;
     }
+
     @Override
     public void onNotice(NoticeEvent event) {
         processServerMessage(event.getUser().getNick(), event.getNotice());
@@ -22,6 +23,14 @@ public class Listeners extends ListenerAdapter {
     @Override
     public void onServerResponse(ServerResponseEvent event) {
         String rawMessage = event.getRawLine().trim();
+
+        if (event.getCode() == 381) {
+            // Successful OPER login
+            chatActivity.processServerMessage("Server", "You are now an IRC Operator");
+        } else if (event.getCode() == 491) {
+            // Failed OPER login
+            chatActivity.processServerMessage("Server", "Failed to become an IRC Operator: " + event.getRawLine());
+        }
 
         // Exclude specific CAP ACK messages with exact matches
         if (rawMessage.matches(".*CAP.*ACK :Multi-prefix.*") || rawMessage.matches(".*CAP.*ACK :away-notify.*")) {
@@ -38,7 +47,8 @@ public class Listeners extends ListenerAdapter {
         if (code == 001 || code == 002 || code == 003 || code == 004 || code == 005 ||
                 code == 253 || code == 252 || code == 255 || code == 265 ||
                 code == 422 || code == 266 || code == 353 || code == 366 ||
-                code == 352 || code == 315 || code == 329 || code == 251 || code == 254) {
+                code == 352 || code == 315 || code == 329 || code == 251 ||
+                code == 254 || code == 324 || code == 333 || code == 332) {
             return; // Skip processing these messages
         }
 
@@ -56,24 +66,13 @@ public class Listeners extends ListenerAdapter {
 
     @Override
     public void onMessage(MessageEvent event) {
-        processServerMessage(event.getUser().getNick(), event.getMessage());
-        runOnUiThread(() -> {
-            String message = event.getMessage();
-            String senderNick = event.getUser().getNick();
+        String activeChannel = chatActivity.getActiveChannel();
+        String messageChannel = event.getChannel().getName();
 
-            // Log every message received
-            Log.d("IRCMessage", "Message from " + senderNick + ": " + message);
-
-            chatActivity.addChatMessage(senderNick + ": " + message);
-
-            // Check if the message is from NickServ
-            if (senderNick.equalsIgnoreCase("NickServ")) {
-                Log.d("NickServMessage", "NickServ message: " + message);
-                handleNickServResponse(message);
-            }
-        });
+        if (messageChannel.equalsIgnoreCase(activeChannel)) {
+            processServerMessage(event.getUser().getNick(), event.getMessage());
+        }
     }
-
 
     private void handleNickServResponse(String message) {
         // Log the message being processed
@@ -93,7 +92,7 @@ public class Listeners extends ListenerAdapter {
             chatActivity.addChatMessage(message);
         } else if (message.contains("sets mode: +r")) {
             chatActivity.addChatMessage("NickServ: Mode +r set, you are now recognized.");
-        }else {
+        } else {
             chatActivity.addChatMessage("NickServ: " + message);
         }
     }
@@ -103,9 +102,9 @@ public class Listeners extends ListenerAdapter {
         runOnUiThread(() -> {
             String userNick = event.getUser().getNick();
             String channel = event.getChannel().getName();
-            chatActivity.setActiveChannel(channel); // Update active channel
-            chatActivity.updateChannelName(channel);
-            chatActivity.addChatMessage(userNick + " has joined the channel " + channel + ".");
+            if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
+                chatActivity.addChatMessage(userNick + " has joined the channel " + channel + ".");
+            }
         });
     }
 
@@ -114,14 +113,18 @@ public class Listeners extends ListenerAdapter {
         runOnUiThread(() -> {
             String userNick = event.getUser().getNick();
             String channel = event.getChannel().getName();
-            chatActivity.addChatMessage(userNick + " has left the channel " + channel + ".");
+            if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
+                chatActivity.addChatMessage(userNick + " has left the channel " + channel + ".");
+            }
         });
     }
 
     @Override
     public void onKick(KickEvent event) {
         runOnUiThread(() -> {
-            chatActivity.addChatMessage(event.getRecipient().getNick() + " was kicked by " + event.getUser().getNick() + " for " + event.getReason());
+            if (event.getChannel().getName().equalsIgnoreCase(chatActivity.getActiveChannel())) {
+                chatActivity.addChatMessage(event.getRecipient().getNick() + " was kicked by " + event.getUser().getNick() + " for " + event.getReason());
+            }
         });
     }
 
@@ -138,9 +141,7 @@ public class Listeners extends ListenerAdapter {
             return; // Skip processing any CAP ACK message
         }
 
-       // processServerMessage("SERVER", event.getLine()); //shows huge block of connection info
-        runOnUiThread(() -> {
-        });
+        // processServerMessage("SERVER", event.getLine()); //shows huge block of connection info
     }
 
     @Override
@@ -160,6 +161,7 @@ public class Listeners extends ListenerAdapter {
     private void runOnUiThread(Runnable runnable) {
         new Handler(Looper.getMainLooper()).post(runnable);
     }
+
     private void processServerMessage(String sender, String message) {
         String cleanedMessage = message.replaceFirst("^(\\d{3} )?", "");
         runOnUiThread(() -> {

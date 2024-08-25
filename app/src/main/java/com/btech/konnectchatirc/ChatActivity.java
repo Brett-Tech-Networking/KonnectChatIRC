@@ -45,6 +45,8 @@ public class ChatActivity extends AppCompatActivity {
     private Button operatorButton;
     private ImageButton adminButton;
     private Button btnKill;
+    private Button btnOperLogin;
+    private Button btnSajoin;
     private String activeChannel;
     private final Set<String> processedMessages = new HashSet<>();
 
@@ -53,16 +55,19 @@ public class ChatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
+        // Initialize UI components
+        channelNameTextView = findViewById(R.id.ChannelName);
+        chatEditText = findViewById(R.id.chatEditText);
+        adminButton = findViewById(R.id.adminButton);
+        Button sendButton = findViewById(R.id.sendButton);
+        Button disconnectButton = findViewById(R.id.disconnectButton);
+
         // Generate a random nickname before initializing the bot
         userNick = "Guest" + (1000 + (int) (Math.random() * 9000));
         initializeBot();
 
-        // Initialize UI components
-        adminButton = findViewById(R.id.adminButton);
-        channelNameTextView = findViewById(R.id.ChannelName);
-        chatEditText = findViewById(R.id.chatEditText);
-        Button sendButton = findViewById(R.id.sendButton);
-        Button disconnectButton = findViewById(R.id.disconnectButton);
+        // Set the default channel
+        setActiveChannel("#ThePlaceToChat");
 
         // Inflate hover panel and operator panel
         LayoutInflater inflater = LayoutInflater.from(this);
@@ -99,16 +104,24 @@ public class ChatActivity extends AppCompatActivity {
 
         // Initialize buttons from operator panel
         btnKill = operatorPanel.findViewById(R.id.btnKill);
+        btnOperLogin = operatorPanel.findViewById(R.id.btnOperLogin);
+        btnSajoin = operatorPanel.findViewById(R.id.btnSajoin);
 
         // Set click listeners for hover panel buttons
         btnNick.setOnClickListener(v -> showNickChangeDialog());
         btnKick.setOnClickListener(v -> new Kick(this, bot, this).startKickProcess());
-        btnIdent.setOnClickListener(v -> new Identify(this, bot, this).startIdentifyProcess());
+        btnIdent.setOnClickListener(v -> new Identify(this, bot, this, v).startIdentifyProcess());
 
         // Set click listener for kill button in operator panel
         btnKill.setOnClickListener(v -> new Kill(this, bot, this).startKillProcess());
 
-        // Operator button functionality
+        // Set click listener for oper login button in operator panel
+        btnOperLogin.setOnClickListener(v -> new OperLogin(this, bot, this).startOperLoginProcess());
+
+        // Set click listener for sajoin button in operator panel
+        btnSajoin.setOnClickListener(v -> new Sajoin(this, bot, this).startSajoinProcess());
+
+        // Operator button functionality KEEP FADEOUT/ FADE IN OR THIS WILL BREAK *****************************************
         operatorButton.setOnClickListener(v -> {
             fadeOutPanel(hoverPanel, () -> fadeInPanel(operatorPanel));
         });
@@ -122,7 +135,6 @@ public class ChatActivity extends AppCompatActivity {
         chatAdapter = new ChatAdapter(this, chatMessages);
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);
-
 
         // Send button functionality
         sendButton.setOnClickListener(v -> {
@@ -138,6 +150,7 @@ public class ChatActivity extends AppCompatActivity {
                         try {
                             if (isNetworkAvailable()) {
                                 bot.sendIRC().message(activeChannel, message);
+                                resetActiveChannelToDefault();
                             } else {
                                 runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No internet connection.", Toast.LENGTH_SHORT).show());
                             }
@@ -172,10 +185,8 @@ public class ChatActivity extends AppCompatActivity {
         if (bot == null) {
             Configuration configuration = new Configuration.Builder()
                     .setName(userNick) // Set the bot's name
-                    .addServer("irc.theplacetochat.net") // Set the server
-                    .addAutoJoinChannel("#ThePlaceToChat") // Set the channel
-                    .setServerPort(6667) // IRC port, adjust as needed
                     .setRealName("TPTC IRC Client")
+                    .addServer("irc.theplacetochat.net", 6667) // Set the server and port
                     .addListener(new Listeners(this)) // Pass this ChatActivity instance to Listeners
                     .addListener(new NickChangeListener(this)) // Add the custom listener
                     .buildConfiguration();
@@ -188,12 +199,16 @@ public class ChatActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 bot.startBot();
+
+                // After the bot has started, set #ThePlaceToChat as the active channel
+                runOnUiThread(() -> setActiveChannel("#ThePlaceToChat"));
             } catch (IOException | IrcException e) {
                 e.printStackTrace();
                 runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Error connecting to IRC server. Please try again later.", Toast.LENGTH_LONG).show());
             }
         }).start();
     }
+
 
     public String getRequestedNick() {
         return requestedNick;
@@ -225,6 +240,11 @@ public class ChatActivity extends AppCompatActivity {
 
     public void setActiveChannel(String channel) {
         this.activeChannel = channel;
+        updateChannelName(channel);
+    }
+
+    public void resetActiveChannelToDefault() {
+        setActiveChannel("#ThePlaceToChat");
     }
 
     private void handleCommand(String command) {
@@ -394,5 +414,9 @@ public class ChatActivity extends AppCompatActivity {
 
     public void markMessageAsProcessed(String message) {
         processedMessages.add(message);
+    }
+
+    public void processServerMessage(String sender, String message) {
+        runOnUiThread(() -> addChatMessage(sender + ": " + message));
     }
 }
