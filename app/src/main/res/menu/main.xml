@@ -8,13 +8,15 @@
         android:id="@+id/action_changeNick"
         android:orderInCategory="100"
         android:title="@string/change_nick"
-        app:showAsAction="never" />
+        app:showAsAction="never"
+        android:visible="false"/>
 <!--Change Channel-->
     <item
         android:id="@+id/action_changeChannel"
         android:orderInCategory="100"
         android:title="@string/change_channel"
-        app:showAsAction="never" />
+        app:showAsAction="never"
+        android:visible="false"/>
 <!--Settings-->
     <item
         android:id="@+id/action_settings"

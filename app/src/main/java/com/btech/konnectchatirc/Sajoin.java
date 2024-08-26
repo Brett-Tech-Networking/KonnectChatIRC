@@ -16,17 +16,21 @@ public class Sajoin {
     private final PircBotX bot;
     private final Activity activity;
 
-    public Sajoin(Context context, PircBotX bot, Activity activity) {  // Accepts Activity now
+    public Sajoin(Context context, PircBotX bot, Activity activity) {
         this.context = context;
         this.bot = bot;
         this.activity = activity;
     }
 
     public void startSajoinProcess() {
-        promptForNick();
+        promptForNick(false); // false indicates this is for SAJOIN
     }
 
-    private void promptForNick() {
+    public void startSapartProcess() {
+        promptForNick(true); // true indicates this is for SAPART
+    }
+
+    private void promptForNick(boolean isSapart) {
         AlertDialog.Builder nickDialog = new AlertDialog.Builder(context);
         nickDialog.setTitle("Enter Nickname");
 
@@ -36,7 +40,7 @@ public class Sajoin {
         nickDialog.setPositiveButton("OK", (dialog, which) -> {
             String enteredNick = inputNick.getText().toString().trim();
             if (!enteredNick.isEmpty()) {
-                promptForChannel(enteredNick);
+                promptForChannel(enteredNick, isSapart);
             } else {
                 showMessage("Nickname cannot be empty");
             }
@@ -47,7 +51,7 @@ public class Sajoin {
         nickDialog.show();
     }
 
-    private void promptForChannel(String nick) {
+    private void promptForChannel(String nick, boolean isSapart) {
         AlertDialog.Builder channelDialog = new AlertDialog.Builder(context);
         channelDialog.setTitle("Enter Channel");
 
@@ -57,7 +61,11 @@ public class Sajoin {
         channelDialog.setPositiveButton("OK", (dialog, which) -> {
             String enteredChannel = inputChannel.getText().toString().trim();
             if (!enteredChannel.isEmpty()) {
-                executeSajoinCommand(nick, enteredChannel);
+                if (isSapart) {
+                    executeSapartCommand(nick, enteredChannel);
+                } else {
+                    executeSajoinCommand(nick, enteredChannel);
+                }
             } else {
                 showMessage("Channel cannot be empty");
             }
@@ -80,6 +88,25 @@ public class Sajoin {
                     Log.e(TAG, "Failed to send SAJOIN command.", e);
                     activity.runOnUiThread(() ->
                             Toast.makeText(context, "Failed to send SAJOIN command.", Toast.LENGTH_SHORT).show());
+                }
+            }).start();
+        } else {
+            showMessage("Bot is not connected to the server.");
+        }
+    }
+
+    private void executeSapartCommand(String nick, String channel) {
+        if (bot != null && bot.isConnected()) {
+            new Thread(() -> {
+                try {
+                    bot.sendRaw().rawLine("SAPART " + nick + " " + channel);
+                    activity.runOnUiThread(() -> {
+                        Toast.makeText(context, "Sent SAPART command for " + nick + " from " + channel, Toast.LENGTH_SHORT).show();
+                    });
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to send SAPART command.", e);
+                    activity.runOnUiThread(() ->
+                            Toast.makeText(context, "Failed to send SAPART command.", Toast.LENGTH_SHORT).show());
                 }
             }).start();
         } else {

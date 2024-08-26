@@ -106,6 +106,7 @@ public class ChatActivity extends AppCompatActivity {
         btnKill = operatorPanel.findViewById(R.id.btnKill);
         btnOperLogin = operatorPanel.findViewById(R.id.btnOperLogin);
         btnSajoin = operatorPanel.findViewById(R.id.btnSajoin);
+        Button btnSapart = operatorPanel.findViewById(R.id.btnSapart);
 
         // Set click listeners for hover panel buttons
         btnNick.setOnClickListener(v -> showNickChangeDialog());
@@ -120,6 +121,9 @@ public class ChatActivity extends AppCompatActivity {
 
         // Set click listener for sajoin button in operator panel
         btnSajoin.setOnClickListener(v -> new Sajoin(this, bot, this).startSajoinProcess());
+        // set sapart button
+        btnSapart.setOnClickListener(v -> new Sajoin(this, bot, this).startSapartProcess());
+
 
         // Operator button functionality KEEP FADEOUT/ FADE IN OR THIS WILL BREAK *****************************************
         operatorButton.setOnClickListener(v -> {
@@ -187,6 +191,7 @@ public class ChatActivity extends AppCompatActivity {
                     .setName(userNick) // Set the bot's name
                     .setRealName("TPTC IRC Client")
                     .addServer("irc.theplacetochat.net", 6667) // Set the server and port
+                    .addAutoJoinChannel("#ThePlaceToChat")
                     .addListener(new Listeners(this)) // Pass this ChatActivity instance to Listeners
                     .addListener(new NickChangeListener(this)) // Add the custom listener
                     .buildConfiguration();
