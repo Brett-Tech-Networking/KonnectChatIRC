@@ -17,39 +17,37 @@ public class Listeners extends ListenerAdapter {
 
     @Override
     public void onNotice(NoticeEvent event) {
-        processServerMessage(event.getUser().getNick(), event.getNotice());
+        String channel = event.getChannel() != null ? event.getChannel().getName() : "";
+        processServerMessage(event.getUser().getNick(), event.getNotice(), channel);
     }
 
     @Override
     public void onServerResponse(ServerResponseEvent event) {
         String rawMessage = event.getRawLine().trim();
-// Process the raw server response
-        String response = event.getRawLine().trim();
-        if (response.startsWith(":") && response.contains(" 005 ")) {
+
+        // Handle specific server responses if needed
+        if (rawMessage.startsWith(":") && rawMessage.contains(" 005 ")) {
             return;
         }
-        if (response.contains("MODE")) {
-            chatActivity.processServerMessage("SERVER", response);
+        if (rawMessage.contains("MODE")) {
+            processServerMessage("SERVER", rawMessage, chatActivity.getActiveChannel());
         }
+
         if (event.getCode() == 381) {
-            // Successful OPER login
-            chatActivity.processServerMessage("Server", "You are now an IRC Operator");
+            processServerMessage("Server", "You are now an IRC Operator", chatActivity.getActiveChannel());
         } else if (event.getCode() == 491) {
-            // Failed OPER login
-            chatActivity.processServerMessage("Server", "Failed to become an IRC Operator: " + event.getRawLine());
+            processServerMessage("Server", "Failed to become an IRC Operator: " + rawMessage, chatActivity.getActiveChannel());
         }
 
-        // Exclude specific CAP ACK messages with exact matches
+        // Skip CAP ACK messages
         if (rawMessage.matches(".*CAP.*ACK :Multi-prefix.*") || rawMessage.matches(".*CAP.*ACK :away-notify.*")) {
-            return; // Skip processing these CAP ACK messages
+            return;
         }
-
-        // Additional generic check for any CAP ACK messages
         if (rawMessage.contains("CAP") && rawMessage.contains("ACK")) {
-            return; // Skip processing any CAP ACK message
+            return;
         }
 
-        // Existing checks and processing logic
+        // Exclude unwanted codes
         int code = event.getCode();
         if (code == 001 || code == 002 || code == 003 || code == 004 || code == 005 ||
                 code == 253 || code == 252 || code == 255 || code == 265 ||
@@ -57,64 +55,32 @@ public class Listeners extends ListenerAdapter {
                 code == 352 || code == 315 || code == 329 || code == 251 ||
                 code == 254 || code == 324 || code == 333 || code == 332 ||
                 code == 322) {
-            return; // Skip processing these messages
+            return;
         }
 
-        // Process other server responses
-        processServerMessage("SERVER", code + ": " + rawMessage);
+        processServerMessage("SERVER", code + ": " + rawMessage, chatActivity.getActiveChannel());
     }
 
     @Override
     public void onConnect(ConnectEvent event) {
-        String serverAddress = event.getBot().getServerHostname(); // Get the server address dynamically
-        runOnUiThread(() -> {
-            chatActivity.addChatMessage("Connected to: " + serverAddress + " a TPTC Client");
-        });
+        String serverAddress = event.getBot().getServerHostname();
+        runOnUiThread(() -> chatActivity.addChatMessage("Connected to: " + serverAddress + " a TPTC Client"));
     }
 
     @Override
     public void onMessage(MessageEvent event) {
-        String activeChannel = chatActivity.getActiveChannel();
-        String messageChannel = event.getChannel().getName();
-
-        if (messageChannel.equalsIgnoreCase(activeChannel)) {
-            processServerMessage(event.getUser().getNick(), event.getMessage());
-        }
+        String channel = event.getChannel().getName();
+        processServerMessage(event.getUser().getNick(), event.getMessage(), channel);
     }
 
-    private void handleNickServResponse(String message) {
-        // Log the message being processed
-        Log.d("NickServResponse", "Processing NickServ message: " + message);
-
-        // Display the NickServ message directly in the chat
-        chatActivity.addChatMessage("NickServ: " + message);
-
-        // Further handling specific cases if needed
-        if (message.contains("Password accepted")) {
-            chatActivity.addChatMessage("Identification successful.");
-        } else if (message.contains("Password incorrect")) {
-            chatActivity.addChatMessage("Identification failed: Incorrect password.");
-        } else if (message.contains("isn't registered")) {
-            chatActivity.addChatMessage("Identification failed: Nickname isn't registered.");
-        } else if (message.contains("You are now logged in as")) {
-            chatActivity.addChatMessage(message);
-        } else if (message.contains("sets mode: +r")) {
-            chatActivity.addChatMessage("NickServ: Mode +r set, you are now recognized.");
-        } else {
-            chatActivity.addChatMessage("NickServ: " + message);
-        }
-    }
     @Override
     public void onMode(ModeEvent event) {
-        // Get the mode string and split it into individual mode changes
         String mode = event.getMode();
         String user = event.getUser().getNick();
         String channel = event.getChannel().getName();
 
-        // Initialize a variable to hold the action description
         String action = "";
 
-        // Check each mode and assign the appropriate action description
         if (mode.contains("+o")) {
             action = "opped";
         } else if (mode.contains("-o")) {
@@ -133,29 +99,29 @@ public class Listeners extends ListenerAdapter {
             action = "removed from half-operator status";
         }
 
-        String targetUser = event.getUser().getNick(); // The user who was affected by the mode change
-        String performingUser = event.getUserHostmask().getNick(); // The user who performed the action
+        String targetUser = event.getUser().getNick();
+        String performingUser = event.getUserHostmask().getNick();
         String message = targetUser + " was " + action + " in " + channel + " by " + performingUser;
-        chatActivity.processServerMessage("SERVER", message);
-    }
 
+        if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
+            processServerMessage("SERVER", message, channel);
+        }
+    }
 
     @Override
     public void onJoin(JoinEvent event) {
-        runOnUiThread(() -> {
-            String userNick = event.getUser().getNick();
-            String channel = event.getChannel().getName();
+        String userNick = event.getUser().getNick();
+        String channel = event.getChannel().getName();
 
+        runOnUiThread(() -> {
             if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
                 chatActivity.setActiveChannel(channel);
                 chatActivity.addChatMessage(userNick + " has joined the channel: " + channel);
-            } else {
+            } else if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
                 chatActivity.addChatMessage(userNick + " has joined the channel " + channel + ".");
             }
         });
     }
-
-
 
     @Override
     public void onPart(PartEvent event) {
@@ -170,63 +136,79 @@ public class Listeners extends ListenerAdapter {
 
     @Override
     public void onKick(KickEvent event) {
-        // Handle kick events
         String kicker = event.getUser().getNick();
         String kickedUser = event.getRecipient().getNick();
         String channel = event.getChannel().getName();
         String reason = event.getReason();
         String message = kickedUser + " was kicked from " + channel + " by " + kicker + " (" + reason + ")";
-        chatActivity.processServerMessage("SERVER", message);
+
+        if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
+            processServerMessage("SERVER", message, channel);
+        }
     }
 
     @Override
     public void onUnknown(UnknownEvent event) {
         String rawLine = event.getLine().trim();
 
-        // Apply the same filtering logic
         if (rawLine.matches(".*CAP.*ACK :Multi-prefix.*") || rawLine.matches(".*CAP.*ACK :away-notify.*")) {
-            return; // Skip processing these CAP ACK messages
+            return;
         }
 
         if (rawLine.contains("CAP") && rawLine.contains("ACK")) {
-            return; // Skip processing any CAP ACK message
+            return;
         }
 
-        // processServerMessage("SERVER", event.getLine()); //shows huge block of connection info
+        // Commented out to avoid overwhelming the chat with unnecessary server details
+        // processServerMessage("SERVER", rawLine, chatActivity.getActiveChannel());
     }
 
     @Override
     public void onDisconnect(DisconnectEvent event) {
-        runOnUiThread(() -> {
-            chatActivity.addChatMessage("Disconnected from IRC server.");
-        });
+        runOnUiThread(() -> chatActivity.addChatMessage("Disconnected from IRC server."));
     }
 
     @Override
     public void onNickChange(NickChangeEvent event) {
-        runOnUiThread(() -> {
-            chatActivity.addChatMessage(event.getOldNick() + " is now known as " + event.getNewNick());
-        });
+        runOnUiThread(() -> chatActivity.addChatMessage(event.getOldNick() + " is now known as " + event.getNewNick()));
     }
 
     private void runOnUiThread(Runnable runnable) {
         new Handler(Looper.getMainLooper()).post(runnable);
     }
 
-    private void processServerMessage(String sender, String message) {
-        String cleanedMessage = message.replaceFirst("^(\\d{3} )?", "");
-        runOnUiThread(() -> {
-            // Log every message received for debugging purposes
-            Log.d("IRCMessage", "Message from " + sender + ": " + message);
+    private void processServerMessage(String sender, String message, String channel) {
+        String activeChannel = chatActivity.getActiveChannel();
+        if (channel == null || channel.equalsIgnoreCase(activeChannel)) {
+            runOnUiThread(() -> {
+                Log.d("IRCMessage", "Message from " + sender + ": " + message);
+                chatActivity.addChatMessage(sender + ": " + message);
 
-            // Add the message to the chat UI
-            chatActivity.addChatMessage(sender + ": " + message);
+                if (sender.equalsIgnoreCase("NickServ")) {
+                    Log.d("NickServMessage", "NickServ message: " + message);
+                    handleNickServResponse(message);
+                }
+            });
+        }
+    }
 
-            // Specific handling for NickServ messages
-            if (sender.equalsIgnoreCase("NickServ")) {
-                Log.d("NickServMessage", "NickServ message: " + message);
-                handleNickServResponse(message);
-            }
-        });
+    private void handleNickServResponse(String message) {
+        Log.d("NickServResponse", "Processing NickServ message: " + message);
+
+        chatActivity.addChatMessage("NickServ: " + message);
+
+        if (message.contains("Password accepted")) {
+            chatActivity.addChatMessage("Identification successful.");
+        } else if (message.contains("Password incorrect")) {
+            chatActivity.addChatMessage("Identification failed: Incorrect password.");
+        } else if (message.contains("isn't registered")) {
+            chatActivity.addChatMessage("Identification failed: Nickname isn't registered.");
+        } else if (message.contains("You are now logged in as")) {
+            chatActivity.addChatMessage(message);
+        } else if (message.contains("sets mode: +r")) {
+            chatActivity.addChatMessage("NickServ: Mode +r set, you are now recognized.");
+        } else {
+            chatActivity.addChatMessage("NickServ: " + message);
+        }
     }
 }

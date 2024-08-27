@@ -1,6 +1,7 @@
 package com.btech.konnectchatirc;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,6 +33,12 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         String message = messages.get(position);
         holder.messageTextView.setText(message);
+        // Check if the message is a server message
+        if (isServerMessage(message)) {
+            holder.messageTextView.setTextColor(Color.parseColor("#00FF00")); // Lime color
+        } else {
+            holder.messageTextView.setTextColor(Color.parseColor("#FFFFFF")); // Default color (white)
+        }
     }
 
     @Override
@@ -46,5 +53,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
             super(itemView);
             messageTextView = itemView.findViewById(R.id.messageTextView);
         }
+    }
+    private boolean isServerMessage(String message) {
+        // You can add more keywords or patterns to identify server messages
+        return message.contains("joined") || message.contains("left") || message.contains("was kicked") ||
+                message.contains("was banned") || message.contains("was killed")
+                || message.contains("SERVER") || message.contains("Connected to")
+                || message.contains("was opped") || message.contains("was deopped")
+                || message.contains("was half-operator") || message.contains("connected")
+                || message.contains("owner status");
     }
 }

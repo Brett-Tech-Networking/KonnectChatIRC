@@ -499,11 +499,17 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void processServerMessage(String sender, String message) {
+        // Check if the message is related to the active channel
+        String activeChannel = getActiveChannel(); // Assuming getActiveChannel() method returns the active channel name
         if (message.startsWith("005")) {
             return; // Do nothing if it's a 005 message
         }
-        runOnUiThread(() -> addChatMessage(sender + ": " + message));
+        // Ensure the message contains the active channel name
+        if (message.contains(activeChannel)) {
+            runOnUiThread(() -> addChatMessage(sender + ": " + message));
+        }
     }
+
     private void acquireWakeLock() {
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChatActivity::WakeLock");
