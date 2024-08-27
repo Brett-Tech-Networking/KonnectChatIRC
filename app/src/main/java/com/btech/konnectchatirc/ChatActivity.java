@@ -176,6 +176,7 @@ public class ChatActivity extends AppCompatActivity {
                         runOnUiThread(this::finish);
                     } catch (Exception e) {
                         e.printStackTrace();
+                        runOnUiThread(this::finish); //goes back to home page even if already disconnected
                     }
                 }).start();
             }
