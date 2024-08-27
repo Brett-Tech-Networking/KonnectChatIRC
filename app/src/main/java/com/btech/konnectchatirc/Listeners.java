@@ -23,7 +23,14 @@ public class Listeners extends ListenerAdapter {
     @Override
     public void onServerResponse(ServerResponseEvent event) {
         String rawMessage = event.getRawLine().trim();
-
+// Process the raw server response
+        String response = event.getRawLine().trim();
+        if (response.startsWith(":") && response.contains(" 005 ")) {
+            return;
+        }
+        if (response.contains("MODE")) {
+            chatActivity.processServerMessage("SERVER", response);
+        }
         if (event.getCode() == 381) {
             // Successful OPER login
             chatActivity.processServerMessage("Server", "You are now an IRC Operator");
@@ -97,6 +104,41 @@ public class Listeners extends ListenerAdapter {
             chatActivity.addChatMessage("NickServ: " + message);
         }
     }
+    @Override
+    public void onMode(ModeEvent event) {
+        // Get the mode string and split it into individual mode changes
+        String mode = event.getMode();
+        String user = event.getUser().getNick();
+        String channel = event.getChannel().getName();
+
+        // Initialize a variable to hold the action description
+        String action = "";
+
+        // Check each mode and assign the appropriate action description
+        if (mode.contains("+o")) {
+            action = "opped";
+        } else if (mode.contains("-o")) {
+            action = "deopped";
+        } else if (mode.contains("+v")) {
+            action = "voiced";
+        } else if (mode.contains("-v")) {
+            action = "devoiced";
+        } else if (mode.contains("+q")) {
+            action = "given owner status";
+        } else if (mode.contains("-q")) {
+            action = "removed from owner status";
+        } else if (mode.contains("+h")) {
+            action = "given half-operator status";
+        } else if (mode.contains("-h")) {
+            action = "removed from half-operator status";
+        }
+
+        String targetUser = event.getUser().getNick(); // The user who was affected by the mode change
+        String performingUser = event.getUserHostmask().getNick(); // The user who performed the action
+        String message = targetUser + " was " + action + " in " + channel + " by " + performingUser;
+        chatActivity.processServerMessage("SERVER", message);
+    }
+
 
     @Override
     public void onJoin(JoinEvent event) {
@@ -128,11 +170,13 @@ public class Listeners extends ListenerAdapter {
 
     @Override
     public void onKick(KickEvent event) {
-        runOnUiThread(() -> {
-            if (event.getChannel().getName().equalsIgnoreCase(chatActivity.getActiveChannel())) {
-                chatActivity.addChatMessage(event.getRecipient().getNick() + " was kicked by " + event.getUser().getNick() + " for " + event.getReason());
-            }
-        });
+        // Handle kick events
+        String kicker = event.getUser().getNick();
+        String kickedUser = event.getRecipient().getNick();
+        String channel = event.getChannel().getName();
+        String reason = event.getReason();
+        String message = kickedUser + " was kicked from " + channel + " by " + kicker + " (" + reason + ")";
+        chatActivity.processServerMessage("SERVER", message);
     }
 
     @Override

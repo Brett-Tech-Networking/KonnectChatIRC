@@ -129,6 +129,10 @@ public class ChatActivity extends AppCompatActivity {
         btnSajoin = operatorPanel.findViewById(R.id.btnSajoin);
         Button btnSapart = operatorPanel.findViewById(R.id.btnSapart);
 
+        // In onCreate() method, after initializing other buttons
+        Button btnOP = hoverPanel.findViewById(R.id.btnOP);
+        btnOP.setOnClickListener(v -> new UserOP(this, bot, this, hoverPanel).startOPProcess());
+
         // Initialize buttons from hover panel
         btnJoin = hoverPanel.findViewById(R.id.btnJoin);
         btnJoin.setOnClickListener(v -> new JoinChannel(this, bot, this, hoverPanel).startJoinChannelProcess());
@@ -491,6 +495,9 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void processServerMessage(String sender, String message) {
+        if (message.startsWith("005")) {
+            return; // Do nothing if it's a 005 message
+        }
         runOnUiThread(() -> addChatMessage(sender + ": " + message));
     }
     private void acquireWakeLock() {
