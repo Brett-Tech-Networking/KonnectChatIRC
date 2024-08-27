@@ -102,11 +102,17 @@ public class Listeners extends ListenerAdapter {
         runOnUiThread(() -> {
             String userNick = event.getUser().getNick();
             String channel = event.getChannel().getName();
-            if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
+
+            if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
+                chatActivity.setActiveChannel(channel);
+                chatActivity.addChatMessage(userNick + " has joined the channel: " + channel);
+            } else {
                 chatActivity.addChatMessage(userNick + " has joined the channel " + channel + ".");
             }
         });
     }
+
+
 
     @Override
     public void onPart(PartEvent event) {

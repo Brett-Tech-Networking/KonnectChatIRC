@@ -4,7 +4,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -20,6 +22,7 @@ public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
+    private Spinner channelSpinner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,14 +33,23 @@ public class MainActivity extends AppCompatActivity {
 
         setSupportActionBar(binding.appBarMain.toolbar);
 
-        // Locate the joinButton in the layout
+        // Locate the joinButton and channelSpinner in the layout
         Button joinButton = findViewById(R.id.joinButton);
+        channelSpinner = findViewById(R.id.channelSpinner);
+
+        // Populate the Spinner with channel options
+        String[] channels = {"#konnect-chat", "#ThePlaceToChat", "#robz", "#trivia", "#pulsechat", "#help"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, channels);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        channelSpinner.setAdapter(adapter);
 
         // Set OnClickListener for joinButton
         joinButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                String selectedChannel = channelSpinner.getSelectedItem().toString();
                 Intent intent = new Intent(MainActivity.this, ChatActivity.class);
+                intent.putExtra("SELECTED_CHANNEL", selectedChannel);
                 startActivity(intent);
             }
         });

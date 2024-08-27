@@ -3,15 +3,15 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
-<ImageView
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:src="@drawable/konnectchattrans"
-    android:layout_alignParentTop="true"
-    android:layout_marginTop="-50dp"
-    android:scaleX=".7"
-    android:scaleY=".7"
-    />
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/konnectchattrans"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="-50dp"
+        android:scaleX=".7"
+        android:scaleY=".7"/>
+
     <TextView
         android:id="@+id/titleTextView"
         android:layout_width="wrap_content"
@@ -22,12 +22,21 @@
         android:layout_centerHorizontal="true"
         android:layout_marginTop="350dp"/>
 
+    <!-- Dropdown for channel selection -->
+    <Spinner
+        android:id="@+id/channelSpinner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/titleTextView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"/>
+
     <Button
         android:id="@+id/joinButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Join"
-        android:layout_below="@id/titleTextView"
+        android:layout_below="@id/channelSpinner"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="20dp"/>
 
@@ -38,6 +47,5 @@
         android:text="Developed by Brett @ ThePlaceToChat"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-         android:layout_marginBottom="0dp" />
+        android:layout_marginBottom="0dp"/>
 </RelativeLayout>
-

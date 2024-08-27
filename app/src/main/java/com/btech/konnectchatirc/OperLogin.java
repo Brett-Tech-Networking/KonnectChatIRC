@@ -67,9 +67,14 @@ public class OperLogin {
                         // Add a short delay before switching the active channel
                         Thread.sleep(500);
 
-                        // Set #ThePlaceToChat as the active channel
+                        // Check if connected to a channel and set the active channel accordingly
                         ((ChatActivity) context).runOnUiThread(() -> {
-                            ((ChatActivity) context).setActiveChannel("#ThePlaceToChat");
+                            String activeChannel = ((ChatActivity) context).getActiveChannel();
+                            if (activeChannel == null || activeChannel.isEmpty()) {
+                                ((ChatActivity) context).setActiveChannel("#ThePlaceToChat");
+                            } else {
+                                showMessage("Active channel is: " + activeChannel);
+                            }
                         });
 
                     } else {

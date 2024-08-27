@@ -9,6 +9,8 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -55,6 +57,9 @@ public class ChatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
+        // Retrieve the selected channel from the intent
+        String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
+
         // Initialize UI components
         channelNameTextView = findViewById(R.id.ChannelName);
         chatEditText = findViewById(R.id.chatEditText);
@@ -66,8 +71,11 @@ public class ChatActivity extends AppCompatActivity {
         userNick = "Guest" + (1000 + (int) (Math.random() * 9000));
         initializeBot();
 
-        // Set the default channel
-        setActiveChannel("#ThePlaceToChat");
+        if (selectedChannel != null) {
+            setActiveChannel(selectedChannel);
+        } else {
+            setActiveChannel("#ThePlaceToChat");
+        }
 
         // Inflate hover panel and operator panel
         LayoutInflater inflater = LayoutInflater.from(this);
@@ -76,7 +84,7 @@ public class ChatActivity extends AppCompatActivity {
 
         // Get the layout parameters for hoverPanel and operatorPanel
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
-                (int) (300 * getResources().getDisplayMetrics().density), // Width in pixels
+                (int) (320 * getResources().getDisplayMetrics().density), // Width in pixels
                 (int) (450 * getResources().getDisplayMetrics().density)  // Height in pixels
         );
 
@@ -154,7 +162,8 @@ public class ChatActivity extends AppCompatActivity {
                         try {
                             if (isNetworkAvailable()) {
                                 bot.sendIRC().message(activeChannel, message);
-                                resetActiveChannelToDefault();
+                                // Comment out or remove this line to keep the active channel as the selected one
+                                // resetActiveChannelToDefault();
                             } else {
                                 runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No internet connection.", Toast.LENGTH_SHORT).show());
                             }
@@ -165,6 +174,7 @@ public class ChatActivity extends AppCompatActivity {
                 }
             }
         });
+
 
         // Disconnect button functionality
         disconnectButton.setOnClickListener(v -> {
@@ -188,26 +198,55 @@ public class ChatActivity extends AppCompatActivity {
 
     private void initializeBot() {
         if (bot == null) {
+            String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
+            // If no channel was selected, fallback to the default channel
+            if (selectedChannel == null || selectedChannel.isEmpty()) {
+                selectedChannel = "#ThePlaceToChat";
+            }
+
             Configuration configuration = new Configuration.Builder()
                     .setName(userNick) // Set the bot's name
                     .setRealName("TPTC IRC Client")
                     .addServer("irc.theplacetochat.net", 6667) // Set the server and port
-                    .addAutoJoinChannel("#ThePlaceToChat")
+                    .addAutoJoinChannel(selectedChannel)
                     .addListener(new Listeners(this)) // Pass this ChatActivity instance to Listeners
                     .addListener(new NickChangeListener(this)) // Add the custom listener
                     .buildConfiguration();
 
             bot = new PircBotX(configuration);
+            setActiveChannel(selectedChannel); // Ensure the active channel is set properly
         }
     }
 
     private void connectToIrcServer() {
         new Thread(() -> {
             try {
+                // Start the bot and connect to the server
                 bot.startBot();
 
-                // After the bot has started, set #ThePlaceToChat as the active channel
-                runOnUiThread(() -> setActiveChannel("#ThePlaceToChat"));
+                // Retrieve the selected channel from the intent
+                String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
+
+                if (selectedChannel != null && !selectedChannel.isEmpty()) {
+                    try {
+                        // Attempt to join the selected channel
+                        bot.sendIRC().joinChannel(selectedChannel);
+                        runOnUiThread(() -> {
+                            addChatMessage("Joining channel: " + selectedChannel);
+                            setActiveChannel(selectedChannel);
+                        });
+                    } catch (IllegalArgumentException e) {
+                        // Handle the exception when not connected to the server
+                        runOnUiThread(() -> {
+                            Toast.makeText(ChatActivity.this, "Not connected to the server. Please try again.", Toast.LENGTH_LONG).show();
+                        });
+                    }
+                } else {
+                    runOnUiThread(() -> {
+                        Toast.makeText(ChatActivity.this, "No channel selected.", Toast.LENGTH_LONG).show();
+                    });
+                }
+
             } catch (IOException | IrcException e) {
                 e.printStackTrace();
                 runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Error connecting to IRC server. Please try again later.", Toast.LENGTH_LONG).show());
@@ -250,7 +289,7 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void resetActiveChannelToDefault() {
-        setActiveChannel("#ThePlaceToChat");
+      //  setActiveChannel("#ThePlaceToChat");
     }
 
     private void handleCommand(String command) {
@@ -320,10 +359,17 @@ public class ChatActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 if (isNetworkAvailable()) {
-                    bot.sendIRC().joinChannel(channel);
-                    runOnUiThread(() -> addChatMessage("Joined channel: " + channel));
-                    activeChannel = channel;
-                    updateChannelName(channel);
+                    if (bot.isConnected()) {
+                        bot.sendIRC().joinChannel(channel);
+                        runOnUiThread(() -> {
+                            addChatMessage("Joining channel: " + channel);
+                            setActiveChannel(channel);
+                            chatEditText.setText("");
+
+                        });
+                    } else {
+                        runOnUiThread(() -> addChatMessage("Bot is not connected to the server."));
+                    }
                 } else {
                     runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No internet connection.", Toast.LENGTH_SHORT).show());
                 }
@@ -332,6 +378,10 @@ public class ChatActivity extends AppCompatActivity {
             }
         }).start();
     }
+
+
+
+
 
     public void updateChannelName(String channelName) {
         runOnUiThread(() -> channelNameTextView.setText(channelName));
