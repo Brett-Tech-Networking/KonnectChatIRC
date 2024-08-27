@@ -64,8 +64,8 @@ public class ChatActivity extends AppCompatActivity {
         channelNameTextView = findViewById(R.id.ChannelName);
         chatEditText = findViewById(R.id.chatEditText);
         adminButton = findViewById(R.id.adminButton);
-        Button sendButton = findViewById(R.id.sendButton);
-        Button disconnectButton = findViewById(R.id.disconnectButton);
+        ImageButton sendButton = findViewById(R.id.sendButton);
+        ImageButton disconnectButton = findViewById(R.id.disconnectButton);
 
         // Generate a random nickname before initializing the bot
         userNick = "Guest" + (1000 + (int) (Math.random() * 9000));
@@ -239,7 +239,7 @@ public class ChatActivity extends AppCompatActivity {
                     } catch (IllegalArgumentException e) {
                         // Handle the exception when not connected to the server
                         runOnUiThread(() -> {
-                            Toast.makeText(ChatActivity.this, "Not connected to the server. Please try again.", Toast.LENGTH_LONG).show();
+                            Toast.makeText(ChatActivity.this, "You have been disconnected from the server, Please try again", Toast.LENGTH_LONG).show();
                         });
                     }
                 } else {
