@@ -9,9 +9,12 @@ import android.os.Build;
 import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
 
+import org.pircbotx.PircBotX;
+
 public class IrcForegroundService extends Service {
     private static final int NOTIFICATION_ID = 1;
     private static final String CHANNEL_ID = "IRC_CHANNEL";
+    private PircBotX bot;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -37,19 +40,30 @@ public class IrcForegroundService extends Service {
 
         startForeground(NOTIFICATION_ID, notification);
 
-        // You can initialize your bot connection here or pass the bot from your activity
+        // Retrieve the bot from the intent (if passed)
+        bot = (PircBotX) intent.getSerializableExtra("BOT_INSTANCE");
 
         return START_STICKY;
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
-        return null;
+    public void onDestroy() {
+        super.onDestroy();
+        // Disconnect the bot if it's connected
+        if (bot != null && bot.isConnected()) {
+            new Thread(() -> {
+                try {
+                    bot.sendIRC().quitServer("App closed");
+                    bot.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        }
     }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-        // Cleanup resources or disconnect from the server
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 }

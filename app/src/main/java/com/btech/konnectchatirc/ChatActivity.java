@@ -524,7 +524,21 @@ public class ChatActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        releaseWakeLock();
-        releaseWifiLock();
+        // Stop the foreground service to ensure bot disconnection
+        Intent stopServiceIntent = new Intent(this, IrcForegroundService.class);
+        stopService(stopServiceIntent);
+
+        // Ensure bot disconnects properly
+        if (bot != null && bot.isConnected()) {
+            new Thread(() -> {
+                try {
+                    bot.sendIRC().quitServer("App closed");
+                    bot.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        }
     }
+
 }
