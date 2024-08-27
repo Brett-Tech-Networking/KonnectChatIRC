@@ -206,6 +206,7 @@ public class ChatActivity extends AppCompatActivity {
 
             Configuration configuration = new Configuration.Builder()
                     .setName(userNick) // Set the bot's name
+                    .setAutoNickChange(true) //Automatically change nick when the current one is in use
                     .setRealName("TPTC IRC Client")
                     .addServer("irc.theplacetochat.net", 6667) // Set the server and port
                     .addAutoJoinChannel(selectedChannel)
