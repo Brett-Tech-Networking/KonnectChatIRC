@@ -48,7 +48,8 @@ public class Listeners extends ListenerAdapter {
                 code == 253 || code == 252 || code == 255 || code == 265 ||
                 code == 422 || code == 266 || code == 353 || code == 366 ||
                 code == 352 || code == 315 || code == 329 || code == 251 ||
-                code == 254 || code == 324 || code == 333 || code == 332) {
+                code == 254 || code == 324 || code == 333 || code == 332 ||
+                code == 322) {
             return; // Skip processing these messages
         }
 

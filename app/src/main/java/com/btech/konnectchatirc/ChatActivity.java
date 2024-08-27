@@ -49,6 +49,7 @@ public class ChatActivity extends AppCompatActivity {
     private Button btnKill;
     private Button btnOperLogin;
     private Button btnSajoin;
+    private Button btnJoin;
     private String activeChannel;
     private final Set<String> processedMessages = new HashSet<>();
 
@@ -116,6 +117,10 @@ public class ChatActivity extends AppCompatActivity {
         btnSajoin = operatorPanel.findViewById(R.id.btnSajoin);
         Button btnSapart = operatorPanel.findViewById(R.id.btnSapart);
 
+        // Initialize buttons from hover panel
+        btnJoin = hoverPanel.findViewById(R.id.btnJoin);
+        btnJoin.setOnClickListener(v -> new JoinChannel(this, bot, this, hoverPanel).startJoinChannelProcess());
+
         // Set click listeners for hover panel buttons
         btnNick.setOnClickListener(v -> showNickChangeDialog());
         btnKick.setOnClickListener(v -> new Kick(this, bot, this).startKickProcess());
@@ -181,7 +186,7 @@ public class ChatActivity extends AppCompatActivity {
             if (bot != null) {
                 new Thread(() -> {
                     try {
-                        bot.sendIRC().quitServer("Brett Tech Client");
+                        bot.sendIRC().quitServer("good bye");
                         bot.close();
                         runOnUiThread(this::finish);
                     } catch (Exception e) {
@@ -351,7 +356,7 @@ public class ChatActivity extends AppCompatActivity {
         userNick = newNick; // Update local nickname
     }
 
-    private void joinChannel(String channel) {
+    public void joinChannel(String channel) {
         if (channel.isEmpty()) {
             addChatMessage("Usage: /join <channel>");
             chatEditText.setText("");
