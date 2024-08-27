@@ -34,7 +34,7 @@ public class Kill {
             if (!enteredNick.isEmpty()) {
                 promptForReason(enteredNick);
             } else {
-                chatActivity.processServerMessage("Server", "Nickname cannot be empty");
+                chatActivity.processServerMessage("Server", "Nickname cannot be empty", chatActivity.getActiveChannel());
             }
         });
 
@@ -56,7 +56,7 @@ public class Kill {
             if (!reason.isEmpty()) {
                 executeKill(nick, reason);
             } else {
-                chatActivity.processServerMessage("Server", "Reason cannot be empty");
+                chatActivity.processServerMessage("Server", "Reason cannot be empty", chatActivity.getActiveChannel());
             }
         });
 
@@ -76,23 +76,23 @@ public class Kill {
                         if (user != null) {
                             Log.d(TAG, "Executing kill command for user " + user.getNick() + " with reason: " + reason);
                             bot.sendRaw().rawLine("KILL " + user.getNick() + " :" + reason);
-                            chatActivity.processServerMessage("Server", "Kill command sent for " + nick + " with reason: " + reason);
+                            chatActivity.processServerMessage("Server", "Kill command sent for " + nick + " with reason: " + reason, chatActivity.getActiveChannel());
                         } else {
                             Log.e(TAG, "User not found.");
-                            chatActivity.processServerMessage("Server", "Failed to execute kill command: User not found.");
+                            chatActivity.processServerMessage("Server", "Failed to execute kill command: User not found.", chatActivity.getActiveChannel());
                         }
                     } else {
                         Log.e(TAG, "Bot is not connected to the server.");
-                        chatActivity.processServerMessage("Server", "Bot is not connected to the server.");
+                        chatActivity.processServerMessage("Server", "Bot is not connected to the server.", chatActivity.getActiveChannel());
                     }
                 } catch (Exception e) {
                     Log.e(TAG, "Failed to execute kill command.", e);
-                    chatActivity.processServerMessage("Server", "Failed to execute kill command.");
+                    chatActivity.processServerMessage("Server", "Failed to execute kill command.", chatActivity.getActiveChannel());
                 }
             }).start();
         } else {
             Log.e(TAG, "No network connection.");
-            chatActivity.processServerMessage("Server", "No network connection.");
+            chatActivity.processServerMessage("Server", "No network connection.", chatActivity.getActiveChannel());
         }
     }
 }

@@ -25,7 +25,6 @@ public class Listeners extends ListenerAdapter {
     public void onServerResponse(ServerResponseEvent event) {
         String rawMessage = event.getRawLine().trim();
 
-        // Handle specific server responses if needed
         if (rawMessage.startsWith(":") && rawMessage.contains(" 005 ")) {
             return;
         }
@@ -39,7 +38,6 @@ public class Listeners extends ListenerAdapter {
             processServerMessage("Server", "Failed to become an IRC Operator: " + rawMessage, chatActivity.getActiveChannel());
         }
 
-        // Skip CAP ACK messages
         if (rawMessage.matches(".*CAP.*ACK :Multi-prefix.*") || rawMessage.matches(".*CAP.*ACK :away-notify.*")) {
             return;
         }
@@ -47,7 +45,6 @@ public class Listeners extends ListenerAdapter {
             return;
         }
 
-        // Exclude unwanted codes
         int code = event.getCode();
         if (code == 001 || code == 002 || code == 003 || code == 004 || code == 005 ||
                 code == 253 || code == 252 || code == 255 || code == 265 ||
@@ -148,6 +145,18 @@ public class Listeners extends ListenerAdapter {
     }
 
     @Override
+    public void onAction(ActionEvent event) {
+        String userNick = event.getUser().getNick();
+        String actionMessage = event.getAction();
+        String channel = event.getChannel().getName();
+
+        // Only process the action if it's in the active channel
+        if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
+            chatActivity.processServerMessage("ACTION", userNick + " " + actionMessage, channel);
+        }
+    }
+
+    @Override
     public void onUnknown(UnknownEvent event) {
         String rawLine = event.getLine().trim();
 
@@ -158,9 +167,6 @@ public class Listeners extends ListenerAdapter {
         if (rawLine.contains("CAP") && rawLine.contains("ACK")) {
             return;
         }
-
-        // Commented out to avoid overwhelming the chat with unnecessary server details
-        // processServerMessage("SERVER", rawLine, chatActivity.getActiveChannel());
     }
 
     @Override

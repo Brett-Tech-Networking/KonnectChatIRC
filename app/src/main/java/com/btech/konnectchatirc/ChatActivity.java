@@ -296,10 +296,21 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void addChatMessage(String message) {
-        chatMessages.add(message);
-        chatAdapter.notifyDataSetChanged();
-        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+        if (!chatMessages.contains(message)) { // Prevent duplicates
+            chatMessages.add(message);
+            chatAdapter.notifyDataSetChanged();
+            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+        }
     }
+
+    public void addChatMessage(String message, boolean italic) {
+        if (italic) {
+            message = "<i>" + message + "</i>";  // Apply italic styling
+        }
+        addChatMessage(message); // Delegate to single addChatMessage to avoid duplication
+    }
+
+
 
     public String getUserNick() {
         return userNick;
@@ -315,7 +326,7 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void resetActiveChannelToDefault() {
-      //  setActiveChannel("#ThePlaceToChat");
+        //  setActiveChannel("#ThePlaceToChat");
     }
 
     private void handleCommand(String command) {
@@ -325,6 +336,13 @@ public class ChatActivity extends AppCompatActivity {
         String args = parts.length > 1 ? parts[1] : "";
 
         switch (commandName) {
+            case "me":
+                if (!args.isEmpty()) {
+                    sendAction(args);
+                } else {
+                    addChatMessage("Usage: /me <action>");
+                }
+                break;
             case "nick":
                 changeNick(args);
                 break;
@@ -336,6 +354,27 @@ public class ChatActivity extends AppCompatActivity {
                 break;
         }
     }
+
+    private void sendAction(String action) {
+        new Thread(() -> {
+            try {
+                if (isNetworkAvailable()) {
+                    if (bot.isConnected()) {
+                        bot.sendIRC().action(activeChannel, action);
+                        runOnUiThread(() -> addChatMessage("* " + userNick + " " + action, true)); // True indicates italic styling
+                        chatEditText.setText("");
+                    } else {
+                        runOnUiThread(() -> addChatMessage("Bot is not connected to the server."));
+                    }
+                } else {
+                    runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No internet connection.", Toast.LENGTH_SHORT).show());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
 
     private String requestedNick; // Variable to keep track of the requested nickname
 
@@ -498,15 +537,24 @@ public class ChatActivity extends AppCompatActivity {
         processedMessages.add(message);
     }
 
-    public void processServerMessage(String sender, String message) {
-        // Check if the message is related to the active channel
-        String activeChannel = getActiveChannel(); // Assuming getActiveChannel() method returns the active channel name
+    public void processServerMessage(String sender, String message, String channel) {
+        String activeChannel = getActiveChannel();
+
+        // Ignore 005 messages
         if (message.startsWith("005")) {
-            return; // Do nothing if it's a 005 message
+            return;
         }
-        // Ensure the message contains the active channel name
-        if (message.contains(activeChannel)) {
-            runOnUiThread(() -> addChatMessage(sender + ": " + message));
+
+        // Check if the message is an action (/me)
+        if ("ACTION".equals(sender)) {
+            if (channel.equalsIgnoreCase(activeChannel)) {
+                runOnUiThread(() -> addChatMessage("<i>" + message + "</i>", true)); // Italic formatting for /me actions
+            }
+        } else {
+            // Ensure the message is for the active channel and not already processed
+            if (channel.equalsIgnoreCase(activeChannel)) {
+                runOnUiThread(() -> addChatMessage(sender + ": " + message));
+            }
         }
     }
 

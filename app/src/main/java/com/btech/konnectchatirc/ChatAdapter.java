@@ -2,6 +2,7 @@ package com.btech.konnectchatirc;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,7 +33,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         String message = messages.get(position);
-        holder.messageTextView.setText(message);
+        holder.messageTextView.setText(Html.fromHtml(message));  // Handle HTML styling
         // Check if the message is a server message
         if (isServerMessage(message)) {
             holder.messageTextView.setTextColor(Color.parseColor("#00FF00")); // Lime color
@@ -40,6 +41,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
             holder.messageTextView.setTextColor(Color.parseColor("#FFFFFF")); // Default color (white)
         }
     }
+
 
     @Override
     public int getItemCount() {
