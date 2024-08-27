@@ -3,12 +3,17 @@ package com.btech.konnectchatirc;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.util.Log;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import org.pircbotx.Channel;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Kick {
 
@@ -24,24 +29,46 @@ public class Kick {
     }
 
     public void startKickProcess() {
-        AlertDialog.Builder nickDialog = new AlertDialog.Builder(context);
-        nickDialog.setTitle("Enter Nickname");
+        String activeChannel = chatActivity.getActiveChannel();
+        if (activeChannel == null || activeChannel.isEmpty()) {
+            Toast.makeText(context, "No active channel.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        final EditText inputNick = new EditText(context);
-        nickDialog.setView(inputNick);
+        Channel channel = bot.getUserChannelDao().getChannel(activeChannel);
+        if (channel == null) {
+            Toast.makeText(context, "Active channel not found.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        nickDialog.setPositiveButton("OK", (dialog, which) -> {
-            String enteredNick = inputNick.getText().toString().trim();
-            if (!enteredNick.isEmpty()) {
-                promptForReason(enteredNick);
-            } else {
-                Toast.makeText(context, "Nickname cannot be empty", Toast.LENGTH_SHORT).show();
-            }
+        List<String> userList = new ArrayList<>();
+        for (User user : channel.getUsers()) {
+            userList.add(user.getNick());
+        }
+
+        if (userList.isEmpty()) {
+            Toast.makeText(context, "No users found in the active channel.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        AlertDialog.Builder userDialog = new AlertDialog.Builder(context);
+        userDialog.setTitle("Select a User to Kick");
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, userList);
+
+        ListView listView = new ListView(context);
+        listView.setAdapter(adapter);
+        userDialog.setView(listView);
+
+        AlertDialog dialog = userDialog.create();
+
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            String selectedNick = userList.get(position);
+            dialog.dismiss();
+            promptForReason(selectedNick);
         });
 
-        nickDialog.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
-        nickDialog.show();
+        dialog.show();
     }
 
     private void promptForReason(String nick) {
