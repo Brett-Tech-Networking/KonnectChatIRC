@@ -11,7 +11,10 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.net.wifi.WifiManager;
+import android.os.PowerManager;
 import android.text.InputType;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -52,11 +55,18 @@ public class ChatActivity extends AppCompatActivity {
     private Button btnJoin;
     private String activeChannel;
     private final Set<String> processedMessages = new HashSet<>();
+    private PowerManager.WakeLock wakeLock;
+    private WifiManager.WifiLock wifiLock;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
+        acquireWakeLock();
+        acquireWifiLock();
+
+        Intent serviceIntent = new Intent(this, IrcForegroundService.class);
+        startForegroundService(serviceIntent);
 
         // Retrieve the selected channel from the intent
         String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
@@ -78,6 +88,7 @@ public class ChatActivity extends AppCompatActivity {
             setActiveChannel("#ThePlaceToChat");
         }
 
+
         // Inflate hover panel and operator panel
         LayoutInflater inflater = LayoutInflater.from(this);
         hoverPanel = inflater.inflate(R.layout.hover_panel, null);
@@ -88,6 +99,7 @@ public class ChatActivity extends AppCompatActivity {
                 (int) (320 * getResources().getDisplayMetrics().density), // Width in pixels
                 (int) (550 * getResources().getDisplayMetrics().density)  // Height in pixels
         );
+
 
         // Set rules to position hoverPanel and operatorPanel
         params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
@@ -480,5 +492,39 @@ public class ChatActivity extends AppCompatActivity {
 
     public void processServerMessage(String sender, String message) {
         runOnUiThread(() -> addChatMessage(sender + ": " + message));
+    }
+    private void acquireWakeLock() {
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChatActivity::WakeLock");
+        wakeLock.acquire();
+        Log.d("WakeLock", "WakeLock acquired");
+    }
+
+    private void releaseWakeLock() {
+        if (wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+            Log.d("WakeLock", "WakeLock released");
+        }
+    }
+
+    private void acquireWifiLock() {
+        WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "ChatActivity::WifiLock");
+        wifiLock.acquire();
+        Log.d("WifiLock", "WifiLock acquired");
+    }
+
+    private void releaseWifiLock() {
+        if (wifiLock != null && wifiLock.isHeld()) {
+            wifiLock.release();
+            Log.d("WifiLock", "WifiLock released");
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        releaseWakeLock();
+        releaseWifiLock();
     }
 }
