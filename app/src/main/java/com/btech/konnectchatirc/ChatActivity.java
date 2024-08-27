@@ -129,9 +129,13 @@ public class ChatActivity extends AppCompatActivity {
         btnSajoin = operatorPanel.findViewById(R.id.btnSajoin);
         Button btnSapart = operatorPanel.findViewById(R.id.btnSapart);
 
-        // In onCreate() method, after initializing other buttons
+        // Initialize buttons from hover panel
         Button btnOP = hoverPanel.findViewById(R.id.btnOP);
-        btnOP.setOnClickListener(v -> new UserOP(this, bot, this, hoverPanel).startOPProcess());
+        Button btnDEOP = hoverPanel.findViewById(R.id.btnDEOP);
+
+        btnOP.setOnClickListener(v -> new UserOP(this, bot, this, hoverPanel).startOPProcess(true));
+        btnDEOP.setOnClickListener(v -> new UserOP(this, bot, this, hoverPanel).startOPProcess(false));
+
 
         // Initialize buttons from hover panel
         btnJoin = hoverPanel.findViewById(R.id.btnJoin);
