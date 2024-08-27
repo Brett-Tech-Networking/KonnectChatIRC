@@ -85,7 +85,7 @@ public class ChatActivity extends AppCompatActivity {
         // Get the layout parameters for hoverPanel and operatorPanel
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
                 (int) (320 * getResources().getDisplayMetrics().density), // Width in pixels
-                (int) (450 * getResources().getDisplayMetrics().density)  // Height in pixels
+                (int) (550 * getResources().getDisplayMetrics().density)  // Height in pixels
         );
 
         // Set rules to position hoverPanel and operatorPanel

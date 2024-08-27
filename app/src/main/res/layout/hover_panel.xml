@@ -2,7 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:visibility="gone">
+    android:visibility="visible">
 
     <!-- Main Content ScrollView -->
     <ScrollView
@@ -47,6 +47,22 @@
                     android:layout_margin="4dp"/>
             </LinearLayout>
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btnNickRegister"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="REGISTER"
+                    android:layout_margin="4dp"/>
+
+
+            </LinearLayout>
+
             <!-- Chanserv Section -->
             <TextView
                 android:layout_width="wrap_content"
@@ -68,6 +84,62 @@
                     android:layout_width="140dp"
                     android:layout_height="wrap_content"
                     android:text="Join"
+                    android:layout_margin="4dp"/>
+                <Button
+                    android:id="@+id/btnChanRegister"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="REGISTER"
+                    android:layout_margin="4dp"/>
+
+                <!-- Placeholder View for Alignment (to fill the second column) -->
+                <View
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btnOP"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="OP user"
+                    android:layout_margin="4dp"/>
+                <Button
+                    android:id="@+id/btnDEOP"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="DEOP User"
+                    android:layout_margin="4dp"/>
+
+                <!-- Placeholder View for Alignment (to fill the second column) -->
+                <View
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btnSOP"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="Add sop"
+                    android:layout_margin="4dp"/>
+                <Button
+                    android:id="@+id/btnAOP"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="Add AOP"
                     android:layout_margin="4dp"/>
 
                 <!-- Placeholder View for Alignment (to fill the second column) -->
@@ -98,6 +170,13 @@
                     android:text="Kick"
                     android:layout_margin="4dp"/>
 
+                <Button
+                    android:id="@+id/btnBan"
+                    android:layout_width="140dp"
+                    android:layout_height="wrap_content"
+                    android:text="Ban"
+                    android:layout_margin="4dp"/>
+
             </LinearLayout>
 
             <LinearLayout
@@ -107,11 +186,12 @@
                 android:layout_marginTop="4dp">
 
                 <Button
-                    android:id="@+id/btnBan"
+                    android:id="@+id/btn1Ban"
                     android:layout_width="140dp"
                     android:layout_height="wrap_content"
                     android:text="Ban"
-                    android:layout_margin="4dp"/>
+                    android:layout_margin="4dp"
+                    android:visibility="invisible"/>
 
                 <!-- Placeholder View for Alignment (to fill the second column) -->
                 <View
