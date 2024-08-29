@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.WIFI_STATE" /> <!--This is to prevent disconnect from IRC SERVER when locking phone or switching apps temporioly -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
+
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/> <!--for image upload to server-->
     <uses-feature android:glEsVersion="0x00020000" android:required="true"/>
 

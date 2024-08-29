@@ -12,8 +12,12 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.ImageDecoder;
 import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
+import android.net.NetworkRequest;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -79,6 +83,34 @@ public class ChatActivity extends AppCompatActivity {
     private static final int PICK_IMAGE_REQUEST = 1;
     private OkHttpClient client;
     private static final String IMGUR_CLIENT_ID = "4968ca92805f1b2"; // Replace with your Imgur client ID
+    private ConnectivityManager connectivityManager;
+
+    // Define networkCallback once at the class level
+    private ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
+        @Override
+        public void onAvailable(Network network) {
+            super.onAvailable(network);
+            Log.d("NetworkCallback", "Network available, attempting to connect.");
+            if (bot == null || !bot.isConnected()) {
+                connectToIrcServer();
+            } else {
+                // Bind bot to the current active network
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    connectivityManager.bindProcessToNetwork(network);
+                } else {
+                    ConnectivityManager.setProcessDefaultNetwork(network);
+                }
+                Log.d("NetworkCallback", "Bound to network: " + network.toString());
+            }
+        }
+
+        @Override
+        public void onLost(Network network) {
+            super.onLost(network);
+            Log.d("NetworkCallback", "Network lost.");
+            // Handle lost network if necessary, retry connection, etc.
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,6 +121,9 @@ public class ChatActivity extends AppCompatActivity {
         acquireWakeLock();
         acquireWifiLock();
 
+        // Initialize ConnectivityManager here
+        connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
         client = new OkHttpClient(); // Initialize OkHttpClient
 
         ImageButton uploadButton = findViewById(R.id.uploadButton);
@@ -97,7 +132,6 @@ public class ChatActivity extends AppCompatActivity {
         Intent serviceIntent = new Intent(this, IrcForegroundService.class);
         serviceIntent.putExtra("#konnect-chat", activeChannel); // Ensure you add the required extras
         startForegroundService(serviceIntent);
-
 
         // Retrieve the selected channel from the intent
         String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
@@ -270,36 +304,39 @@ public class ChatActivity extends AppCompatActivity {
 
     private void connectToIrcServer() {
         new Thread(() -> {
-            try {
-                // Start the bot and connect to the server
-                bot.startBot();
+            int retries = 0;
+            while (retries < 5 && (bot == null || !bot.isConnected())) {
+                try {
+                    bot.startBot(); // Attempt to start the bot
+                    String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
 
-                // Retrieve the selected channel from the intent
-                String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
-
-                if (selectedChannel != null && !selectedChannel.isEmpty()) {
-                    try {
-                        // Attempt to join the selected channel
+                    if (selectedChannel != null && !selectedChannel.isEmpty()) {
                         bot.sendIRC().joinChannel(selectedChannel);
                         runOnUiThread(() -> {
                             addChatMessage("Joining channel: " + selectedChannel);
                             setActiveChannel(selectedChannel);
                         });
-                    } catch (IllegalArgumentException e) {
-                        // Handle the exception when not connected to the server
-                        runOnUiThread(() -> {
-                            Toast.makeText(ChatActivity.this, "You have been disconnected from the server, Please try again", Toast.LENGTH_LONG).show();
-                        });
+                    } else {
+                        runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No channel selected.", Toast.LENGTH_LONG).show());
                     }
-                } else {
-                    runOnUiThread(() -> {
-                        Toast.makeText(ChatActivity.this, "No channel selected.", Toast.LENGTH_LONG).show();
-                    });
-                }
+                    break; // Exit the loop if connection is successful
 
-            } catch (IOException | IrcException e) {
-                e.printStackTrace();
-                runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Error connecting to IRC server. Please try again later.", Toast.LENGTH_LONG).show());
+                } catch (IOException | IrcException e) {
+                    e.printStackTrace();
+                    retries++;
+                    Log.e("IRC Connection", "Connection attempt " + retries + " failed, retrying...");
+                    runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Error connecting to IRC server. Retrying...", Toast.LENGTH_LONG).show());
+
+                    try {
+                        Thread.sleep(5000); // Wait before retrying
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+
+            if (retries >= 5) {
+                runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Unable to connect to IRC server after multiple attempts.", Toast.LENGTH_LONG).show());
             }
         }).start();
     }
@@ -577,7 +614,8 @@ public class ChatActivity extends AppCompatActivity {
     private void acquireWakeLock() {
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChatActivity::WakeLock");
-        wakeLock.acquire();
+        wakeLock.setReferenceCounted(false); // Ensures wake lock is not released unexpectedly
+        wakeLock.acquire(10 * 60 * 1000L /*10 minutes*/);
         Log.d("WakeLock", "WakeLock acquired");
     }
 
@@ -591,6 +629,7 @@ public class ChatActivity extends AppCompatActivity {
     private void acquireWifiLock() {
         WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "ChatActivity::WifiLock");
+        wifiLock.setReferenceCounted(false); // Ensures WiFi lock is not released unexpectedly
         wifiLock.acquire();
         Log.d("WifiLock", "WifiLock acquired");
     }
@@ -731,6 +770,7 @@ public class ChatActivity extends AppCompatActivity {
             Toast.makeText(this, "Failed to load image for upload.", Toast.LENGTH_SHORT).show();
         }
     }
+
     private void retryUpload(Uri imageUri, int attempt) {
         if (attempt > 3) {
             runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Failed to upload image after multiple attempts.", Toast.LENGTH_SHORT).show());
@@ -739,7 +779,6 @@ public class ChatActivity extends AppCompatActivity {
         Log.d("ImgurUpload", "Retrying upload, attempt: " + attempt);
         uploadImageToImgur(imageUri); // Retry uploading
     }
-
 
     private String extractImageUrlFromResponse(String json) {
         // Parse the JSON response to extract the image URL
@@ -751,6 +790,32 @@ public class ChatActivity extends AppCompatActivity {
         } catch (JSONException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    private void registerNetworkCallback() {
+        connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkRequest networkRequest = new NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+                .build();
+
+        // Register the network callback
+        connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        registerNetworkCallback();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (connectivityManager != null && networkCallback != null) {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
         }
     }
 }
