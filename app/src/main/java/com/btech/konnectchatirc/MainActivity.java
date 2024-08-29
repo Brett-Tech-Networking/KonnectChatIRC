@@ -3,6 +3,7 @@ package com.btech.konnectchatirc;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.View;
@@ -10,8 +11,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
-
+import android.widget.AdapterView;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -59,6 +61,19 @@ public class MainActivity extends AppCompatActivity {
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, channels);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         channelSpinner.setAdapter(adapter);
+
+        // Apply color programmatically for selected item
+        channelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                ((TextView) view).setTextColor(Color.WHITE); // Set the text color to white
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Do nothing
+            }
+        });
 
         Button joinButton = findViewById(R.id.joinButton);
         joinButton.setOnClickListener(view -> {

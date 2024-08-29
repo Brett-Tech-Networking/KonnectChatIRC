@@ -9,4 +9,14 @@
     <style name="DialogAnimation">
         <item name="android:windowEnterAnimation">@anim/fade_in</item>
     </style>
+
+    <!-- styles.xml -->
+    <style name="SpinnerTextWhite" parent="Base.Widget.AppCompat.Spinner">
+        <item name="android:textColor">#FFFFFF</item> <!-- Text color set to white -->
+        <item name="android:popupBackground">#000000</item> <!-- Optional: set dropdown background color -->
+    </style>
+
+
+
 </resources>
+
