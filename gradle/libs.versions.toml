@@ -2,8 +2,10 @@
 agp = "8.5.2"
 coreSplashscreen = "1.0.1"
 githubPircbotx = "2.1"
+glide = "4.12.0"
 guavaJdk5 = "17.0"
 guavaVersion = "23.0"
+json = "20210307"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
@@ -14,11 +16,15 @@ lifecycleLivedataKtx = "2.8.4"
 lifecycleViewmodelKtx = "2.8.4"
 navigationFragment = "2.7.7"
 navigationUi = "2.7.7"
+okhttp = "4.9.3"
 
 [libraries]
+compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
 core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
+glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 guava-jdk5 = { module = "com.google.guava:guava-jdk5", version.ref = "guavaJdk5" }
 guava-v210 = { module = "com.google.guava:guava", version.ref = "guavaVersion" }
+json = { module = "org.json:json", version.ref = "json" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -30,6 +36,7 @@ lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-view
 mxscho-pircbotx = { module = "com.github.mxscho:pircbotx", version.ref = "githubPircbotx" }
 navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "navigationFragment" }
 navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigationUi" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

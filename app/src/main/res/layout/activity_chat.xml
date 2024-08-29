@@ -1,115 +1,111 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:theme="@style/Theme.KonnectChatIRC">
+    android:background="#000000"
+    android:padding="8dp">
 
-    <!-- Hover Panel Container -->
-    <RelativeLayout
-        android:id="@+id/hoverPanelContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true">
-        <!-- Hover Panel -->
-        <FrameLayout
-            android:id="@+id/hoverPanel"
-            android:layout_width="match_parent"
-            android:layout_height="450dp"
-            android:background="@drawable/rounded_background"
-            android:visibility="gone"/>
-
-        <!-- Operator Panel -->
-        <FrameLayout
-            android:id="@+id/operatorPanel"
-            android:layout_width="match_parent"
-            android:layout_height="450dp"
-            android:background="@drawable/rounded_background"
-            android:visibility="gone"/>
-    </RelativeLayout>
-
-    <!-- Toolbar for Disconnect button -->
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/black"
-        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
-        android:popupTheme="@style/ThemeOverlay.AppCompat.Dark"
-        android:layout_alignParentTop="true"
-        android:padding="8dp">
-
-        <ImageButton
-            android:id="@+id/adminButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/admin_panel"
-            android:background="@color/black"
-            android:layout_gravity="center"
-            android:clickable="true"
-            android:scaleX="2"
-            android:scaleY="2"/>
-
-        <!-- Disconnect Button in the Toolbar -->
-        <ImageButton
-            android:id="@+id/disconnectButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Disconnect"
-            android:src="@drawable/ic_exit"
-            android:background="@color/black"
-            android:scaleX="2"
-            android:scaleY="2"
-            android:layout_marginRight="20dp"
-            android:layout_gravity="end"/>
-    </androidx.appcompat.widget.Toolbar>
-
-    <!-- RecyclerView to display chat messages -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/chatRecyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_below="@id/toolbar"
-        android:layout_above="@id/chatEditText"
-        android:padding="8dp"
-        android:scrollbars="vertical"/>
-
-    <!-- EditText for user to type messages -->
-    <EditText
-        android:id="@+id/chatEditText"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true"
-        android:layout_toStartOf="@id/sendButton"
-        android:hint="Type your message"
-        android:textColor="@color/red"
-        android:layout_marginBottom="8dp"/>
-
-    <!-- TextView to display the channel name -->
+    <!-- Channel Name TextView -->
     <TextView
         android:id="@+id/ChannelName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="9sp"
-        android:textStyle="bold"
-        android:text=""
-        android:textColor="@color/red"
-        android:layout_alignParentBottom="true"
-        android:layout_marginLeft="5dp"
-        android:layout_marginBottom="1dp"/>
+        android:text="Channel Name"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:padding="8dp" />
 
-    <!-- Send Button to send messages -->
+    <!-- Chat RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/chatRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_above="@id/chatInputLayout"
+        android:layout_below="@id/ChannelName"
+        android:background="#111111" />
+
+    <!-- Chat Input Layout -->
+    <RelativeLayout
+        android:id="@+id/chatInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:padding="0dp">
+
+        <!-- Upload Button -->
+        <ImageButton
+            android:id="@+id/uploadButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_upload"
+            android:contentDescription="Upload Image"
+            app:tint="#FFFFFF"
+            android:padding="8dp" />
+
+        <!-- Chat EditText -->
+        <EditText
+            android:id="@+id/chatEditText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/uploadButton"
+            android:layout_toStartOf="@id/sendButton"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/rounded_background"
+            android:hint="Type a message"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#AAAAAA"
+            android:padding="12dp"
+            android:inputType="text" />
+
+        <!-- Send Button -->
+        <ImageButton
+            android:id="@+id/sendButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_send"
+            android:contentDescription="Send Message"
+            android:padding="8dp"
+            app:tint="#FFFFFF" />
+    </RelativeLayout>
+
+    <!-- Admin Button -->
     <ImageButton
-        android:id="@+id/sendButton"
+        android:id="@+id/adminButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@color/trans"
-        android:src="@drawable/ic_send"
-        android:scaleX="1.5"
-        android:scaleY="1.5"
-        android:layout_marginRight="10dp"
-        android:layout_marginBottom="10dp"
-        android:layout_alignParentBottom="true"
+        android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
-        android:text="Send"/>
+        android:layout_marginEnd="10dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/admin_panel"
+        android:scaleX="2"
+        android:scaleY="2"
+        android:contentDescription="Admin Panel"
+        android:padding="5dp"
+        app:tint="#FFFFFF" />
+
+    <!-- Disconnect Button -->
+    <ImageButton
+        android:id="@+id/disconnectButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:contentDescription="Disconnect"
+        app:tint="#FFFFFF"
+        android:padding="8dp" />
+
 </RelativeLayout>

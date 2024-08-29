@@ -1,19 +1,27 @@
 package com.btech.konnectchatirc;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.exception.IrcException;
+
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.ImageDecoder;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.net.wifi.WifiManager;
 import android.os.PowerManager;
+import android.provider.MediaStore;
 import android.text.InputType;
+import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,22 +34,33 @@ import android.widget.Toast;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import android.graphics.PixelFormat;
+
 public class ChatActivity extends AppCompatActivity {
 
     private PircBotX bot;
     private EditText chatEditText;
     private ChatAdapter chatAdapter;
-    private List<String> chatMessages;
+    private List<Object> chatMessages = new ArrayList<>();
     private RecyclerView chatRecyclerView;
     private String userNick;
     private TextView channelNameTextView;
@@ -57,16 +76,28 @@ public class ChatActivity extends AppCompatActivity {
     private final Set<String> processedMessages = new HashSet<>();
     private PowerManager.WakeLock wakeLock;
     private WifiManager.WifiLock wifiLock;
+    private static final int PICK_IMAGE_REQUEST = 1;
+    private OkHttpClient client;
+    private static final String IMGUR_CLIENT_ID = "4968ca92805f1b2"; // Replace with your Imgur client ID
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setFormat(PixelFormat.RGBA_8888);
+
         setContentView(R.layout.activity_chat);
         acquireWakeLock();
         acquireWifiLock();
 
+        client = new OkHttpClient(); // Initialize OkHttpClient
+
+        ImageButton uploadButton = findViewById(R.id.uploadButton);
+        uploadButton.setOnClickListener(v -> openImageSelector());
+
         Intent serviceIntent = new Intent(this, IrcForegroundService.class);
+        serviceIntent.putExtra("#konnect-chat", activeChannel); // Ensure you add the required extras
         startForegroundService(serviceIntent);
+
 
         // Retrieve the selected channel from the intent
         String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
@@ -88,7 +119,6 @@ public class ChatActivity extends AppCompatActivity {
             setActiveChannel("#ThePlaceToChat");
         }
 
-
         // Inflate hover panel and operator panel
         LayoutInflater inflater = LayoutInflater.from(this);
         hoverPanel = inflater.inflate(R.layout.hover_panel, null);
@@ -99,7 +129,6 @@ public class ChatActivity extends AppCompatActivity {
                 (int) (320 * getResources().getDisplayMetrics().density), // Width in pixels
                 (int) (550 * getResources().getDisplayMetrics().density)  // Height in pixels
         );
-
 
         // Set rules to position hoverPanel and operatorPanel
         params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
@@ -136,7 +165,6 @@ public class ChatActivity extends AppCompatActivity {
         btnOP.setOnClickListener(v -> new UserOP(this, bot, this, hoverPanel).startOPProcess(true));
         btnDEOP.setOnClickListener(v -> new UserOP(this, bot, this, hoverPanel).startOPProcess(false));
 
-
         // Initialize buttons from hover panel
         btnJoin = hoverPanel.findViewById(R.id.btnJoin);
         btnJoin.setOnClickListener(v -> new JoinChannel(this, bot, this, hoverPanel).startJoinChannelProcess());
@@ -156,7 +184,6 @@ public class ChatActivity extends AppCompatActivity {
         btnSajoin.setOnClickListener(v -> new Sajoin(this, bot, this).startSajoinProcess());
         // set sapart button
         btnSapart.setOnClickListener(v -> new Sajoin(this, bot, this).startSapartProcess());
-
 
         // Operator button functionality KEEP FADEOUT/ FADE IN OR THIS WILL BREAK *****************************************
         operatorButton.setOnClickListener(v -> {
@@ -187,8 +214,6 @@ public class ChatActivity extends AppCompatActivity {
                         try {
                             if (isNetworkAvailable()) {
                                 bot.sendIRC().message(activeChannel, message);
-                                // Comment out or remove this line to keep the active channel as the selected one
-                                // resetActiveChannelToDefault();
                             } else {
                                 runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No internet connection.", Toast.LENGTH_SHORT).show());
                             }
@@ -199,7 +224,6 @@ public class ChatActivity extends AppCompatActivity {
                 }
             }
         });
-
 
         // Disconnect button functionality
         disconnectButton.setOnClickListener(v -> {
@@ -280,7 +304,6 @@ public class ChatActivity extends AppCompatActivity {
         }).start();
     }
 
-
     public String getRequestedNick() {
         return requestedNick;
     }
@@ -309,8 +332,6 @@ public class ChatActivity extends AppCompatActivity {
         }
         addChatMessage(message); // Delegate to single addChatMessage to avoid duplication
     }
-
-
 
     public String getUserNick() {
         return userNick;
@@ -374,7 +395,6 @@ public class ChatActivity extends AppCompatActivity {
             }
         }).start();
     }
-
 
     private String requestedNick; // Variable to keep track of the requested nickname
 
@@ -443,10 +463,6 @@ public class ChatActivity extends AppCompatActivity {
             }
         }).start();
     }
-
-
-
-
 
     public void updateChannelName(String channelName) {
         runOnUiThread(() -> channelNameTextView.setText(channelName));
@@ -606,4 +622,135 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
+    private void openImageSelector() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(intent, PICK_IMAGE_REQUEST);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            Uri imageUri = data.getData();
+            displaySelectedImage(imageUri); // Display the image locally
+            uploadImageToImgur(imageUri);   // Upload to Imgur
+        }
+    }
+
+    private void displaySelectedImage(Uri imageUri) {
+        try {
+            Bitmap bitmap;
+
+            // Use ImageDecoder for API level 28 and above
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                ImageDecoder.Source source = ImageDecoder.createSource(getContentResolver(), imageUri);
+                bitmap = ImageDecoder.decodeBitmap(source, (decoder, info, source1) -> {
+                    decoder.setMutableRequired(true); // Explicitly require mutable configuration
+                    decoder.setTargetSize(350, 350); // Set target size if needed
+                });
+            } else {
+                // For older versions, use BitmapFactory
+                bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+            }
+            // Add a message indicating the user sent an image
+            addChatMessage(userNick + " sent an image");
+            // Add the bitmap to the chat messages
+            chatMessages.add(bitmap);
+            chatAdapter.notifyDataSetChanged();
+            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private String encodeImageToBase64(Bitmap bitmap) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        byte[] byteArray = baos.toByteArray();
+        return Base64.encodeToString(byteArray, Base64.DEFAULT);
+    }
+
+    private void uploadImageToImgur(Uri imageUri) {
+        try {
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+            byte[] imageBytes = baos.toByteArray();
+
+            RequestBody requestBody = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("image", Base64.encodeToString(imageBytes, Base64.NO_WRAP))
+                    .build();
+
+            Request request = new Request.Builder()
+                    .url("https://api.imgur.com/3/image")
+                    .addHeader("Authorization", "Client-ID " + IMGUR_CLIENT_ID)
+                    .post(requestBody)
+                    .build();
+
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    // Log the error and notify the user
+                    Log.e("ImgurUpload", "Failed to upload image: " + e.getMessage(), e);
+                    runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Failed to upload image. Please check your network connection.", Toast.LENGTH_SHORT).show());
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    if (response.isSuccessful()) {
+                        // Extract the image link from the response
+                        String json = response.body().string();
+                        String imageUrl = extractImageUrlFromResponse(json);
+
+                        if (imageUrl != null) {
+                            // Display the link in the chat
+                            runOnUiThread(() -> addChatMessage("Image uploaded: " + imageUrl, false));
+
+                            // Send the image link to the server
+                            if (bot.isConnected()) {
+                                bot.sendIRC().message(activeChannel, "Image: " + imageUrl);
+                            }
+                        } else {
+                            Log.e("ImgurUpload", "Upload response does not contain an image URL.");
+                            runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Failed to upload image. No URL returned.", Toast.LENGTH_SHORT).show());
+                        }
+                    } else {
+                        // Log the full response for troubleshooting
+                        String errorBody = response.body() != null ? response.body().string() : "No response body";
+                        Log.e("ImgurUpload", "Imgur response error: " + response.code() + " - " + response.message() + ". Body: " + errorBody);
+                        runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Failed to upload image. Server error: " + response.message(), Toast.LENGTH_SHORT).show());
+                    }
+                }
+            });
+        } catch (IOException e) {
+            Log.e("ImgurUpload", "Error processing image for upload: " + e.getMessage(), e);
+            Toast.makeText(this, "Failed to load image for upload.", Toast.LENGTH_SHORT).show();
+        }
+    }
+    private void retryUpload(Uri imageUri, int attempt) {
+        if (attempt > 3) {
+            runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Failed to upload image after multiple attempts.", Toast.LENGTH_SHORT).show());
+            return;
+        }
+        Log.d("ImgurUpload", "Retrying upload, attempt: " + attempt);
+        uploadImageToImgur(imageUri); // Retry uploading
+    }
+
+
+    private String extractImageUrlFromResponse(String json) {
+        // Parse the JSON response to extract the image URL
+        // Assuming the URL is in the format: {"data":{"link":"http://imgur.com/xyz"},"success":true,"status":200}
+        try {
+            JSONObject jsonObject = new JSONObject(json);
+            JSONObject data = jsonObject.getJSONObject("data");
+            return data.getString("link");
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }
