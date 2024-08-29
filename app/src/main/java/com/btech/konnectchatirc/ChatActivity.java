@@ -117,6 +117,7 @@ public class ChatActivity extends AppCompatActivity {
             // Handle lost network if necessary, retry connection, etc.
         }
     };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -275,6 +276,13 @@ public class ChatActivity extends AppCompatActivity {
                 }
             }
         });
+        // Inside onCreate after inflating the operator panel
+        Button btnDefcon = operatorPanel.findViewById(R.id.btnDefcon);
+        if (btnDefcon != null) {
+            btnDefcon.setOnClickListener(v -> new Defcon(this, bot, this).startDefconProcess());
+        } else {
+            Log.e("ChatActivity", "btnDefcon is null, check operatorPanel inflation.");
+        }
 
         // Disconnect button functionality
         disconnectButton.setOnClickListener(v -> {
@@ -631,7 +639,10 @@ public class ChatActivity extends AppCompatActivity {
         if (message.startsWith("005")) {
             return;
         }
-
+        // Handle DEFCON response
+        if (message.contains("DEFCON")) {
+            runOnUiThread(() -> addChatMessage(sender + ": " + message));
+        }
         // Check if the message is an action (/me)
         if ("ACTION".equals(sender)) {
             if (channel.equalsIgnoreCase(activeChannel)) {
