@@ -10,13 +10,11 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DecodeFormat;
-import com.bumptech.glide.load.resource.bitmap.Downsampler;
 import com.bumptech.glide.request.RequestOptions;
 
 import java.util.List;
@@ -65,7 +63,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             textViewHolder.messageTextView.setText(Html.fromHtml(message));  // Handle HTML styling
 
             if (isServerMessage(message)) {
-                textViewHolder.messageTextView.setTextColor(Color.parseColor("#00FF00")); // Lime color for server messages
+                textViewHolder.messageTextView.setTextColor(Color.parseColor("#00FF00")); // Set server messages to lime color
             } else {
                 textViewHolder.messageTextView.setTextColor(Color.parseColor("#FFFFFF")); // Default color (white)
             }
@@ -91,7 +89,6 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
         }
     }
-
 
     @Override
     public int getItemCount() {

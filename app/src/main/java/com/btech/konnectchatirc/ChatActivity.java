@@ -308,18 +308,31 @@ public class ChatActivity extends AppCompatActivity {
             while (retries < 5 && (bot == null || !bot.isConnected())) {
                 try {
                     bot.startBot(); // Attempt to start the bot
-                    String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
+                    if (bot.isConnected()) {
+                        String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
 
-                    if (selectedChannel != null && !selectedChannel.isEmpty()) {
-                        bot.sendIRC().joinChannel(selectedChannel);
-                        runOnUiThread(() -> {
-                            addChatMessage("Joining channel: " + selectedChannel);
-                            setActiveChannel(selectedChannel);
-                        });
+                        if (selectedChannel != null && !selectedChannel.isEmpty()) {
+                            bot.sendIRC().joinChannel(selectedChannel);
+                            runOnUiThread(() -> {
+                                addChatMessage("Joining channel: " + selectedChannel);
+                                setActiveChannel(selectedChannel);
+                            });
+                        } else {
+                            runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No channel selected.", Toast.LENGTH_LONG).show());
+                        }
+                        break; // Exit the loop if connection is successful
                     } else {
-                        runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No channel selected.", Toast.LENGTH_LONG).show());
+                        Log.e("IRC Connection", "Bot not connected, retrying...");
+                        retries++;
+                        try {
+                            Thread.sleep(5000); // Wait before retrying
+                        } catch (InterruptedException e) {
+                            Log.e("IRC Connection", "Thread interrupted during sleep", e);
+                            // Optionally re-interrupt the thread if the interruption was not handled
+                            Thread.currentThread().interrupt(); // Restore the interrupt status
+                            break; // Exit the loop if interrupted
+                        }
                     }
-                    break; // Exit the loop if connection is successful
 
                 } catch (IOException | IrcException e) {
                     e.printStackTrace();
@@ -330,7 +343,9 @@ public class ChatActivity extends AppCompatActivity {
                     try {
                         Thread.sleep(5000); // Wait before retrying
                     } catch (InterruptedException ex) {
-                        ex.printStackTrace();
+                        Log.e("IRC Connection", "Thread interrupted during sleep", ex);
+                        Thread.currentThread().interrupt(); // Restore the interrupt status
+                        break; // Exit the loop if interrupted
                     }
                 }
             }
@@ -340,6 +355,7 @@ public class ChatActivity extends AppCompatActivity {
             }
         }).start();
     }
+
 
     public String getRequestedNick() {
         return requestedNick;
