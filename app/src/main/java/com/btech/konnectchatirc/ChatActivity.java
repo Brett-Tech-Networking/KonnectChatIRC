@@ -2,9 +2,15 @@ package com.btech.konnectchatirc;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.pircbotx.Channel;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
+import org.pircbotx.User;
 import org.pircbotx.exception.IrcException;
+import org.pircbotx.Channel;
+import org.pircbotx.User;
+import java.util.List;
+import java.util.ArrayList;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -111,19 +117,19 @@ public class ChatActivity extends AppCompatActivity {
             // Handle lost network if necessary, retry connection, etc.
         }
     };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().setFormat(PixelFormat.RGBA_8888);
-
         setContentView(R.layout.activity_chat);
         acquireWakeLock();
         acquireWifiLock();
 
+        // Find the root layout of activity_chat.xml
+        RelativeLayout rootLayout = findViewById(R.id.rootLayout); // Ensure this ID matches your root layout
+
         // Initialize ConnectivityManager here
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-
         client = new OkHttpClient(); // Initialize OkHttpClient
 
         ImageButton uploadButton = findViewById(R.id.uploadButton);
@@ -155,10 +161,10 @@ public class ChatActivity extends AppCompatActivity {
 
         // Inflate hover panel and operator panel
         LayoutInflater inflater = LayoutInflater.from(this);
-        hoverPanel = inflater.inflate(R.layout.hover_panel, null);
-        operatorPanel = inflater.inflate(R.layout.operator_panel, null);
+        hoverPanel = inflater.inflate(R.layout.hover_panel, rootLayout, false);
+        operatorPanel = inflater.inflate(R.layout.operator_panel, rootLayout, false);
 
-        // Get the layout parameters for hoverPanel and operatorPanel
+        // Set up layout parameters for hoverPanel and operatorPanel
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
                 (int) (320 * getResources().getDisplayMetrics().density), // Width in pixels
                 (int) (550 * getResources().getDisplayMetrics().density)  // Height in pixels
@@ -172,8 +178,7 @@ public class ChatActivity extends AppCompatActivity {
         int topMargin = (int) (60 * getResources().getDisplayMetrics().density); // Adjust the value as needed
         params.setMargins(0, topMargin, 0, 0);
 
-        // Add panels to the root of activity_chat.xml
-        RelativeLayout rootLayout = findViewById(R.id.rootLayout); // Ensure your activity_chat.xml has an ID for the root layout
+        // Add panels to the root layout
         rootLayout.addView(hoverPanel, params);
         rootLayout.addView(operatorPanel, params);
 
@@ -191,6 +196,19 @@ public class ChatActivity extends AppCompatActivity {
         btnOperLogin = operatorPanel.findViewById(R.id.btnOperLogin);
         btnSajoin = operatorPanel.findViewById(R.id.btnSajoin);
         Button btnSapart = operatorPanel.findViewById(R.id.btnSapart);
+
+        // Ensure the btnShun initialization after inflating operatorPanel
+        Button btnShun = operatorPanel.findViewById(R.id.btnShun);
+        if (btnShun != null) {
+            btnShun.setOnClickListener(v -> {
+                // Get the list of users from the active channel
+                List<String> userList = getUserListFromActiveChannel();
+                // Start the shun process
+                new shun(this, bot, this, userList).startShunProcess();
+            });
+        } else {
+            Log.e("ChatActivity", "btnShun is null, check operatorPanel inflation.");
+        }
 
         // Initialize buttons from hover panel
         Button btnOP = hoverPanel.findViewById(R.id.btnOP);
@@ -216,7 +234,6 @@ public class ChatActivity extends AppCompatActivity {
 
         // Set click listener for sajoin button in operator panel
         btnSajoin.setOnClickListener(v -> new Sajoin(this, bot, this).startSajoinProcess());
-        // set sapart button
         btnSapart.setOnClickListener(v -> new Sajoin(this, bot, this).startSapartProcess());
 
         // Operator button functionality KEEP FADEOUT/ FADE IN OR THIS WILL BREAK *****************************************
@@ -269,7 +286,7 @@ public class ChatActivity extends AppCompatActivity {
                         runOnUiThread(this::finish);
                     } catch (Exception e) {
                         e.printStackTrace();
-                        runOnUiThread(this::finish); //goes back to home page even if already disconnected
+                        runOnUiThread(this::finish); // Goes back to home page even if already disconnected
                     }
                 }).start();
             }
@@ -278,6 +295,7 @@ public class ChatActivity extends AppCompatActivity {
         // Start connection to IRC server
         connectToIrcServer();
     }
+
 
     private void initializeBot() {
         if (bot == null) {
@@ -833,5 +851,22 @@ public class ChatActivity extends AppCompatActivity {
         if (connectivityManager != null && networkCallback != null) {
             connectivityManager.unregisterNetworkCallback(networkCallback);
         }
+    }
+    private List<String> getUserListFromActiveChannel() {
+        List<String> userList = new ArrayList<>();
+
+        // Fetch the active channel
+        Channel channel = bot.getUserChannelDao().getChannel(activeChannel);
+
+        if (channel != null) {
+            // Iterate through the users in the channel and add their nicks to the list
+            for (User user : channel.getUsers()) {
+                userList.add(user.getNick());
+            }
+        } else {
+            Toast.makeText(this, "Active channel not found or bot not connected.", Toast.LENGTH_SHORT).show();
+        }
+
+        return userList;
     }
 }
