@@ -86,6 +86,7 @@ public class ChatActivity extends AppCompatActivity {
     private OkHttpClient client;
     private static final String IMGUR_CLIENT_ID = "4968ca92805f1b2"; // Replace with your Imgur client ID
     private ConnectivityManager connectivityManager;
+    private ImageButton btnUsers;
 
     // Add bannedUsers list
     private List<String> bannedUsers = new ArrayList<>();
@@ -183,6 +184,9 @@ public class ChatActivity extends AppCompatActivity {
         rootLayout.addView(operatorPanel, params);
 
         operatorPanel.setVisibility(View.GONE); // Initially hide operatorPanel
+
+        btnUsers = findViewById(R.id.btnUsers);
+        btnUsers.setOnClickListener(v -> new ListUsers(this, bot, this).showUserList());
 
         // Initialize buttons from hover panel
         Button btnNick = hoverPanel.findViewById(R.id.btnNick);

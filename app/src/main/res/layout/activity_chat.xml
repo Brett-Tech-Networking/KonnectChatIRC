@@ -14,8 +14,8 @@
         android:text="Channel Name"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
+        android:layout_marginLeft="80dp"
         android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
         android:padding="8dp" />
 
     <!-- Chat RecyclerView -->
@@ -95,6 +95,7 @@
         android:padding="5dp"
         app:tint="#FFFFFF" />
 
+
     <!-- Disconnect Button -->
     <ImageButton
         android:id="@+id/disconnectButton"
@@ -107,5 +108,17 @@
         android:contentDescription="Disconnect"
         app:tint="#FFFFFF"
         android:padding="8dp" />
+    <ImageButton
+        android:id="@+id/btnUsers"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:paddingRight="25dp"
+        android:scaleX="1.5"
+        android:scaleY="1.5"
+        android:layout_toLeftOf="@+id/adminButton"
+        android:layout_margin="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_users" />
 
 </RelativeLayout>
