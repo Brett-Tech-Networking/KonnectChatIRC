@@ -5,6 +5,18 @@
     android:layout_height="match_parent"
     android:background="#000000"
     android:padding="8dp">
+    <!-- Disconnect Button -->
+    <ImageButton
+        android:id="@+id/disconnectButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:contentDescription="Disconnect"
+        app:tint="#FFFFFF"
+        android:padding="8dp" />
 
     <!-- Channel Name TextView -->
     <TextView
@@ -14,8 +26,9 @@
         android:text="Channel Name"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
-        android:layout_marginLeft="80dp"
         android:layout_alignParentTop="true"
+         android:layout_alignParentStart="false"
+        android:layout_toRightOf="@id/disconnectButton"
         android:padding="8dp" />
 
     <!-- Chat RecyclerView -->
@@ -85,40 +98,30 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_marginEnd="10dp"
+        android:layout_toStartOf="@id/btnUsers"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/admin_panel"
         android:scaleX="2"
         android:scaleY="2"
+        android:layout_marginEnd="40dp"
         android:contentDescription="Admin Panel"
         android:padding="5dp"
         app:tint="#FFFFFF" />
 
-
-    <!-- Disconnect Button -->
-    <ImageButton
-        android:id="@+id/disconnectButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentStart="true"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@android:drawable/ic_menu_close_clear_cancel"
-        android:contentDescription="Disconnect"
-        app:tint="#FFFFFF"
-        android:padding="8dp" />
+    <!-- Users Button -->
     <ImageButton
         android:id="@+id/btnUsers"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:paddingRight="25dp"
-        android:scaleX="1.5"
-        android:scaleY="1.5"
-        android:layout_toLeftOf="@+id/adminButton"
+        android:layout_alignParentEnd="true"
+        android:paddingEnd="15dp"
+        android:scaleX="1.8"
+        android:scaleY="1.8"
         android:layout_margin="8dp"
+        android:layout_marginEnd="-10dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_users" />
+        android:src="@drawable/ic_users"
+        android:contentDescription="Users" />
 
 </RelativeLayout>
