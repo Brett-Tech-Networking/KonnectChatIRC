@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -66,10 +67,17 @@ public class MainActivity extends AppCompatActivity {
         channelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                ((TextView) view).setTextColor(Color.WHITE); // Set the text color to white
+                // Assuming this is around line 69 in MainActivity.java
+                TextView textView = findViewById(R.id.textView); // Use the correct ID
+                if (textView != null) {
+                    textView.setTextColor(getResources().getColor(R.color.white)); // Use the correct color
+                } else {
+                    Log.e("MainActivity", "TextView is null, cannot set text color.");
+                }
+
             }
 
-            @Override
+                @Override
             public void onNothingSelected(AdapterView<?> parent) {
                 // Do nothing
             }

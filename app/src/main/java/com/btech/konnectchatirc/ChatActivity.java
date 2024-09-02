@@ -7,8 +7,6 @@ import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 import org.pircbotx.exception.IrcException;
-import org.pircbotx.Channel;
-import org.pircbotx.User;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -51,9 +49,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import okhttp3.Call;
@@ -90,6 +86,9 @@ public class ChatActivity extends AppCompatActivity {
     private OkHttpClient client;
     private static final String IMGUR_CLIENT_ID = "4968ca92805f1b2"; // Replace with your Imgur client ID
     private ConnectivityManager connectivityManager;
+
+    // Add bannedUsers list
+    private List<String> bannedUsers = new ArrayList<>();
 
     // Define networkCallback once at the class level
     private ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
@@ -283,6 +282,28 @@ public class ChatActivity extends AppCompatActivity {
         } else {
             Log.e("ChatActivity", "btnDefcon is null, check operatorPanel inflation.");
         }
+
+        // Inside onCreate method after inflating the hover panel
+        Button btnBan = hoverPanel.findViewById(R.id.btnBan);
+        if (btnBan != null) {
+            btnBan.setOnClickListener(v -> {
+                // Start the Ban process
+                new Ban(this, bot, this).startBanProcess();
+            });
+        } else {
+            Log.e("ChatActivity", "btnBan is null, check hoverPanel inflation.");
+        }
+        // Inside onCreate method after inflating the hover panel
+        Button btnUnban = hoverPanel.findViewById(R.id.btnUnban);
+        if (btnUnban != null) {
+            btnUnban.setOnClickListener(v -> {
+                // Start the Unban process
+                new Unban(this, bot, this).startUnbanProcess();
+            });
+        } else {
+            Log.e("ChatActivity", "btnUnban is null, check hoverPanel inflation.");
+        }
+
 
         // Disconnect button functionality
         disconnectButton.setOnClickListener(v -> {
@@ -879,5 +900,21 @@ public class ChatActivity extends AppCompatActivity {
         }
 
         return userList;
+    }
+
+    public void addBannedUser(String banEntry) {
+        if (!bannedUsers.contains(banEntry)) {
+            bannedUsers.add(banEntry);
+            Log.d("ChatActivity", "Banned user added: " + banEntry);  // Log for debugging
+            addChatMessage("Banned user added: " + banEntry);
+        } else {
+            Log.d("ChatActivity", "Banned user already in list: " + banEntry);
+        }
+    }
+
+    // Method to clear the banned users list
+    public void clearBannedUsers() {
+        bannedUsers.clear();
+        addChatMessage("Cleared banned users list.");
     }
 }

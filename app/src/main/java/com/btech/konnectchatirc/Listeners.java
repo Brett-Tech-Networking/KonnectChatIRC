@@ -25,6 +25,15 @@ public class Listeners extends ListenerAdapter {
     public void onServerResponse(ServerResponseEvent event) {
         String rawMessage = event.getRawLine().trim();
 
+        // Capture ban list response
+        if (rawMessage.contains(" +b ")) {
+            String[] parts = rawMessage.split(" ");
+            if (parts.length >= 4) {
+                String banEntry = parts[3];
+                ((ChatActivity) chatActivity).addBannedUser(banEntry);  // Add the hostmask ban entry to the list
+            }
+        }
+
         if (rawMessage.startsWith(":") && rawMessage.contains(" 005 ")) {
             return;
         }

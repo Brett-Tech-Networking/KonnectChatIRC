@@ -2,7 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:visibility="gone">
+    android:visibility="visible">
 
     <!-- Main Content ScrollView -->
     <ScrollView
@@ -186,12 +186,12 @@
                 android:layout_marginTop="4dp">
 
                 <Button
-                    android:id="@+id/btn1Ban"
+                    android:id="@+id/btnUnban"
                     android:layout_width="140dp"
                     android:layout_height="wrap_content"
-                    android:text="Ban"
+                    android:text="Unban"
                     android:layout_margin="4dp"
-                    android:visibility="invisible"/>
+                    android:visibility="visible"/>
 
                 <!-- Placeholder View for Alignment (to fill the second column) -->
                 <View
