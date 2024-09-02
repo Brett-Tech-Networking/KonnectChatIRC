@@ -10,6 +10,17 @@
         <item name="android:windowEnterAnimation">@anim/fade_in</item>
     </style>
 
+    <style name="CustomDialogTheme_NoAnimation" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:windowAnimationStyle">@null</item> <!-- Disables the default animation -->
+        <item name="android:windowEnterTransition">@null</item> <!-- Disables enter transition -->
+        <item name="android:windowExitTransition">@null</item> <!-- Disables exit transition -->
+        <item name="android:windowSharedElementEnterTransition">@null</item>
+        <item name="android:windowSharedElementExitTransition">@null</item>
+    </style>
+    
     <!-- Spinner text color style -->
     <style name="SpinnerTextWhite" parent="Base.Widget.AppCompat.Spinner">
         <item name="android:textColor">#FFFFFF</item> <!-- Text color set to white -->
@@ -21,6 +32,7 @@
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowIsFloating">false</item>
         <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:windowAnimationStyle">@null</item> <!-- Disables the default animation -->
     </style>
 
     <style name="CustomButtonStyle" parent="Widget.MaterialComponents.Button">
@@ -28,5 +40,7 @@
         <item name="android:backgroundTint">@android:color/transparent</item> <!-- Remove any tint -->
         <item name="android:textColor">@color/white</item>
     </style>
+
+
 
 </resources>

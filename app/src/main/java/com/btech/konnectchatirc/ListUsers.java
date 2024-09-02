@@ -100,7 +100,7 @@ public class ListUsers {
         TextView nickTextView = optionsView.findViewById(R.id.options_nick);
         nickTextView.setText(selectedUser);
 
-        AlertDialog.Builder optionsDialog = new AlertDialog.Builder(context, R.style.CustomDialogTheme);
+        AlertDialog.Builder optionsDialog = new AlertDialog.Builder(context, R.style.CustomDialogTheme_NoAnimation);
         optionsDialog.setView(optionsView);
 
         AlertDialog dialog = optionsDialog.create();
