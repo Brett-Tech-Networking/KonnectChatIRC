@@ -3,9 +3,12 @@ package com.btech.konnectchatirc;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;  // Import EditText
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.pircbotx.Channel;
@@ -51,16 +54,30 @@ public class ListUsers {
             return;
         }
 
-        // Show the user list in a dialog
-        AlertDialog.Builder userDialog = new AlertDialog.Builder(context);
-        userDialog.setTitle("Select a User");
+        // Inflate the custom layout for the user list dialog
+        LayoutInflater inflater = LayoutInflater.from(context);
+        View userListViewDialog = inflater.inflate(R.layout.dialog_user_list, null);
 
-        ListView userListView = new ListView(context);
+        // Find the ListView and set the adapter
+        ListView userListView = userListViewDialog.findViewById(R.id.userListView);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, userList);
         userListView.setAdapter(adapter);
-        userDialog.setView(userListView);
+
+        // Create and show the user list dialog with a proper background
+        AlertDialog.Builder userDialog = new AlertDialog.Builder(context, R.style.CustomDialogTheme);
+        userDialog.setView(userListViewDialog);
 
         AlertDialog dialog = userDialog.create();
+
+        // Set custom size and style for the dialog
+        dialog.setOnShowListener(dialogInterface -> {
+            dialog.getWindow().setLayout(
+                    (int) (300 * context.getResources().getDisplayMetrics().density), // Custom width
+                    (int) (400 * context.getResources().getDisplayMetrics().density)  // Custom height
+            );
+        });
+
+        // Set up the ListView item click listener
         userListView.setOnItemClickListener((parent, view, position, id) -> {
             String selectedUser = userList.get(position);
             dialog.dismiss();
@@ -69,34 +86,52 @@ public class ListUsers {
             showUserOptions(selectedUser);
         });
 
-        userDialog.setNegativeButton("Cancel", (d, which) -> d.cancel());
+        // Set the dialog to dismiss when clicking outside
+        dialog.setCanceledOnTouchOutside(true);
+
         dialog.show();
     }
 
     private void showUserOptions(String selectedUser) {
-        String activeChannel = ((ChatActivity) activity).getActiveChannel();
+        LayoutInflater inflater = LayoutInflater.from(context);
+        View optionsView = inflater.inflate(R.layout.dialog_user_options, null);
 
-        // Options: Kick, Ban, Slap
-        AlertDialog.Builder optionsDialog = new AlertDialog.Builder(context);
-        optionsDialog.setTitle("Options for " + selectedUser);
+        // Set the nickname in the dialog
+        TextView nickTextView = optionsView.findViewById(R.id.options_nick);
+        nickTextView.setText(selectedUser);
 
-        String[] options = {"Kick", "Ban", "Slap"};
-        optionsDialog.setItems(options, (dialog, which) -> {
-            switch (which) {
-                case 0: // Kick
-                    showKickDialog(selectedUser, activeChannel);
-                    break;
-                case 1: // Ban
-                    executeBanCommand(selectedUser, activeChannel);
-                    break;
-                case 2: // Slap
-                    executeSlapCommand(selectedUser, activeChannel);
-                    break;
-            }
+        AlertDialog.Builder optionsDialog = new AlertDialog.Builder(context, R.style.CustomDialogTheme);
+        optionsDialog.setView(optionsView);
+
+        AlertDialog dialog = optionsDialog.create();
+
+        dialog.setOnShowListener(dialogInterface -> {
+            dialog.getWindow().setLayout(
+                    (int) (240 * context.getResources().getDisplayMetrics().density),
+                    (int) (280 * context.getResources().getDisplayMetrics().density)
+            );
         });
 
-        optionsDialog.setNegativeButton("Cancel", (d, which) -> d.cancel());
-        optionsDialog.show();
+        dialog.show();
+
+        // Set up button click listeners
+        optionsView.findViewById(R.id.btnKick).setOnClickListener(v -> {
+            showKickDialog(selectedUser, ((ChatActivity) activity).getActiveChannel());
+            dialog.dismiss();
+        });
+
+        optionsView.findViewById(R.id.btnBan).setOnClickListener(v -> {
+            executeBanCommand(selectedUser, ((ChatActivity) activity).getActiveChannel());
+            dialog.dismiss();
+        });
+
+        optionsView.findViewById(R.id.btnSlap).setOnClickListener(v -> {
+            executeSlapCommand(selectedUser, ((ChatActivity) activity).getActiveChannel());
+            dialog.dismiss();
+        });
+
+        // Set the dialog to dismiss when clicking outside
+        dialog.setCanceledOnTouchOutside(true);
     }
 
     private void showKickDialog(String selectedUser, String activeChannel) {
@@ -104,7 +139,7 @@ public class ListUsers {
         kickDialog.setTitle("Kick " + selectedUser);
 
         // Input for kick reason
-        final EditText input = new EditText(context);  // Ensure EditText is imported
+        final EditText input = new EditText(context);
         input.setHint("Enter reason (optional)");
         kickDialog.setView(input);
 
@@ -121,7 +156,6 @@ public class ListUsers {
         new Thread(() -> {
             if (bot != null && bot.isConnected()) {
                 try {
-                    // Use rawLine to send the kick command manually
                     if (!reason.isEmpty()) {
                         bot.sendRaw().rawLine("KICK " + activeChannel + " " + selectedUser + " :" + reason);
                     } else {
@@ -162,17 +196,22 @@ public class ListUsers {
         new Thread(() -> {
             if (bot != null && bot.isConnected()) {
                 try {
-                    bot.sendIRC().action(activeChannel, "slapped " + selectedUser + " with a sharp rock");
-                    activity.runOnUiThread(() ->
-                            Toast.makeText(context, "Slapped " + selectedUser, Toast.LENGTH_SHORT).show());
+                    // Correctly sending a /me action
+                    bot.sendIRC().action(activeChannel, "slaps " + selectedUser + " with a sharp rock");
+
+                    // Display the slap action immediately in the sender's chat
+                    activity.runOnUiThread(() -> ((ChatActivity) activity).addChatMessage("* " + bot.getNick() + " slaps " + selectedUser + " with a sharp rock", true));
+
                 } catch (Exception e) {
-                    activity.runOnUiThread(() ->
-                            Toast.makeText(context, "Failed to slap user.", Toast.LENGTH_SHORT).show());
+                    activity.runOnUiThread(() -> ((ChatActivity) activity).addChatMessage("Failed to slap user."));
                 }
             } else {
-                activity.runOnUiThread(() ->
-                        Toast.makeText(context, "Bot is not connected to the server.", Toast.LENGTH_SHORT).show());
+                activity.runOnUiThread(() -> ((ChatActivity) activity).addChatMessage("Bot is not connected to the server."));
             }
         }).start();
+    }
+
+    private void showToast(String message) {
+        activity.runOnUiThread(() -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show());
     }
 }

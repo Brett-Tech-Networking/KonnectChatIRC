@@ -1,0 +1,58 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center_horizontal"
+    android:background="@drawable/dialog_background">
+
+    <TextView
+        android:id="@+id/options_nick"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hello World"
+        android:textSize="20dp"
+        android:textColor="@color/lightblue"
+        android:layout_marginTop="0dp"/>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"/>
+
+    <Button
+        android:id="@+id/btnKick"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Kick"
+        android:background="@drawable/rounded_option_menu"
+        android:textSize="14sp"
+        android:textColor="@color/white"
+        android:padding="4dp"
+        android:layout_marginBottom="6dp"
+        style="@style/CustomButtonStyle"
+        android:layout_gravity="center" />
+
+    <Button
+        android:id="@+id/btnBan"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ban"
+        android:textSize="14sp"
+        android:textColor="@color/white"
+        android:background="@drawable/rounded_option_menu"
+        android:padding="4dp"
+        android:layout_marginBottom="6dp"
+        android:layout_gravity="center" />
+
+    <Button
+        android:id="@+id/btnSlap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Slap"
+        android:textSize="14sp"
+        android:textColor="@color/white"
+        android:background="@drawable/rounded_option_menu"
+        android:padding="4dp"
+        android:layout_gravity="center" />
+</LinearLayout>

@@ -12,6 +12,8 @@
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
+        <!-- Button background color -->
+        <item name="colorButtonNormal">@color/black</item>
     </style>
 
     <style name="Theme.KonnectChatIRC.NoActionBar">
@@ -22,4 +24,6 @@
     <style name="Theme.KonnectChatIRC.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="Theme.KonnectChatIRC.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+
 </resources>

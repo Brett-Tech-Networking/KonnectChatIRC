@@ -159,9 +159,19 @@ public class Listeners extends ListenerAdapter {
         String actionMessage = event.getAction();
         String channel = event.getChannel().getName();
 
-        // Only process the action if it's in the active channel
+        // Process the action message if it's in the active channel
         if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
-            chatActivity.processServerMessage("ACTION", userNick + " " + actionMessage, channel);
+            runOnUiThread(() -> {
+                String formattedMessage = "* " + userNick + " " + actionMessage; // Format as /me style message
+                chatActivity.addChatMessage(formattedMessage, true); // True indicates italic styling
+            });
+        }
+        // Also display the action in the sender's own chat
+        if (userNick.equals(chatActivity.getUserNick())) {
+            runOnUiThread(() -> {
+                String formattedMessage = "* " + userNick + " " + actionMessage;
+                chatActivity.addChatMessage(formattedMessage, true);
+            });
         }
     }
 

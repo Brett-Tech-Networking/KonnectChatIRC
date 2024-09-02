@@ -496,8 +496,11 @@ public class ChatActivity extends AppCompatActivity {
                 if (isNetworkAvailable()) {
                     if (bot.isConnected()) {
                         bot.sendIRC().action(activeChannel, action);
-                        runOnUiThread(() -> addChatMessage("* " + userNick + " " + action, true)); // True indicates italic styling
-                        chatEditText.setText("");
+
+                        // Immediately display the action in the chat
+                        runOnUiThread(() -> addChatMessage("* " + userNick + " " + action, true));
+
+                        chatEditText.setText(""); // Clear the input after sending
                     } else {
                         runOnUiThread(() -> addChatMessage("Bot is not connected to the server."));
                     }
@@ -509,6 +512,7 @@ public class ChatActivity extends AppCompatActivity {
             }
         }).start();
     }
+
 
     private String requestedNick; // Variable to keep track of the requested nickname
 
