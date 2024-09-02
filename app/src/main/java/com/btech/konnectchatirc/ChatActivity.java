@@ -282,6 +282,16 @@ public class ChatActivity extends AppCompatActivity {
         } else {
             Log.e("ChatActivity", "btnDefcon is null, check operatorPanel inflation.");
         }
+        // OS SVS NICK
+        Button btnSvsnick = operatorPanel.findViewById(R.id.btnSvsnick);
+        if (btnSvsnick != null) {
+            btnSvsnick.setOnClickListener(v -> {
+                // Start the SvsNick process
+                new SvsNick(this, bot, this).startSvsNickProcess();
+            });
+        } else {
+            Log.e("ChatActivity", "btnSvsnick is null, check operatorPanel inflation.");
+        }
 
         // Inside onCreate method after inflating the hover panel
         Button btnBan = hoverPanel.findViewById(R.id.btnBan);
