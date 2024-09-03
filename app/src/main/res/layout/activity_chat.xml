@@ -33,11 +33,26 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Channel Name"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
+            android:textColor="#FDD835"
+            android:textSize="10sp"
+            android:textStyle="bold"
             android:layout_marginLeft="80dp"
             android:layout_alignParentTop="true"
             android:padding="12dp" />
+
+        <!-- Current Nick TextView -->
+        <TextView
+            android:id="@+id/CurrentNick"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Current Nick"
+            android:textColor="#FDD835"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:layout_marginTop="-15dp"
+            android:layout_marginLeft="85dp"
+            android:layout_below="@id/ChannelName"
+            android:padding="8dp" />
 
         <!-- Chat RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView
@@ -45,7 +60,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_above="@id/chatInputLayout"
-            android:layout_below="@id/ChannelName"
+            android:layout_below="@id/CurrentNick"
             android:background="#111111" />
 
         <!-- Chat Input Layout -->
@@ -112,6 +127,7 @@
             android:src="@drawable/admin_panel"
             android:scaleX="2"
             android:scaleY="2"
+            android:layout_marginEnd="30dp"
             android:contentDescription="Admin Panel"
             android:padding="5dp"
             app:tint="#FFFFFF" />
@@ -126,6 +142,7 @@
             android:scaleX="1.8"
             android:scaleY="1.8"
             android:layout_margin="8dp"
+            android:paddingEnd="10dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_users"
             android:contentDescription="Users" />
@@ -141,7 +158,7 @@
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:contentDescription="Disconnect"
             app:tint="#FFFFFF"
-            android:padding="8dp" />
+            android:padding="6dp" />
     </RelativeLayout>
 
     <!-- Left drawer (Channel Switcher) -->

@@ -388,6 +388,7 @@ public class ChatActivity extends AppCompatActivity {
 
             bot = new PircBotX(configuration);
             setActiveChannel(selectedChannel); // Ensure the active channel is set properly
+            updateCurrentNick(userNick);
         }
     }
 
@@ -405,6 +406,7 @@ public class ChatActivity extends AppCompatActivity {
                             runOnUiThread(() -> {
                                 addChatMessage("Joining channel: " + selectedChannel);
                                 setActiveChannel(selectedChannel);
+                                updateCurrentNick(userNick);
                             });
                         } else {
                             runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No channel selected.", Toast.LENGTH_LONG).show());
@@ -606,6 +608,7 @@ public class ChatActivity extends AppCompatActivity {
                         runOnUiThread(() -> {
                             // Update local nickname and UI
                             updateLocalNick(newNick);
+                            updateCurrentNick(newNick);
                             chatEditText.setText(""); // Clear input
                         });
                     } else {
@@ -717,6 +720,12 @@ public class ChatActivity extends AppCompatActivity {
     public void updateChannelName(String channelName) {
         runOnUiThread(() -> channelNameTextView.setText(channelName));
     }
+
+    public void updateCurrentNick(String newNick) {
+        TextView currentNickTextView = findViewById(R.id.CurrentNick);
+        currentNickTextView.setText("Nick: " + newNick);
+    }
+
 
     private void toggleHoverPanel() {
         if (operatorPanel.getVisibility() == View.VISIBLE) {
