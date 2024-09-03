@@ -20,7 +20,7 @@
         <item name="android:windowSharedElementEnterTransition">@null</item>
         <item name="android:windowSharedElementExitTransition">@null</item>
     </style>
-    
+
     <!-- Spinner text color style -->
     <style name="SpinnerTextWhite" parent="Base.Widget.AppCompat.Spinner">
         <item name="android:textColor">#FFFFFF</item> <!-- Text color set to white -->

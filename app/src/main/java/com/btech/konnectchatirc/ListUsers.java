@@ -200,7 +200,10 @@ public class ListUsers {
                     bot.sendIRC().action(activeChannel, "slaps " + selectedUser + " with a sharp rock");
 
                     // Display the slap action immediately in the sender's chat
-                    activity.runOnUiThread(() -> ((ChatActivity) activity).addChatMessage("* " + bot.getNick() + " slaps " + selectedUser + " with a sharp rock", true));
+                    activity.runOnUiThread(() -> {
+                        String message = "* " + bot.getNick() + " slaps " + selectedUser + " with a sharp rock";
+                        ((ChatActivity) activity).addChatMessage(message); // Add the message without the boolean
+                    });
 
                 } catch (Exception e) {
                     activity.runOnUiThread(() -> ((ChatActivity) activity).addChatMessage("Failed to slap user."));

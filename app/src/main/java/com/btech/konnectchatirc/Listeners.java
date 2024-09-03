@@ -30,7 +30,7 @@ public class Listeners extends ListenerAdapter {
             String[] parts = rawMessage.split(" ");
             if (parts.length >= 4) {
                 String banEntry = parts[3];
-                ((ChatActivity) chatActivity).addBannedUser(banEntry);  // Add the hostmask ban entry to the list
+                chatActivity.addBannedUser(banEntry);  // Add the hostmask ban entry to the list
             }
         }
 
@@ -76,7 +76,7 @@ public class Listeners extends ListenerAdapter {
     @Override
     public void onMessage(MessageEvent event) {
         String channel = event.getChannel().getName();
-        processServerMessage(event.getUser().getNick(), event.getMessage(), channel);
+        chatActivity.processServerMessage(event.getUser().getNick(), event.getMessage(), channel);
     }
 
     @Override
@@ -109,9 +109,7 @@ public class Listeners extends ListenerAdapter {
         String performingUser = event.getUserHostmask().getNick();
         String message = targetUser + " was " + action + " in " + channel + " by " + performingUser;
 
-        if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
-            processServerMessage("SERVER", message, channel);
-        }
+        processServerMessage("SERVER", message, channel);
     }
 
     @Override
@@ -122,9 +120,10 @@ public class Listeners extends ListenerAdapter {
         runOnUiThread(() -> {
             if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
                 chatActivity.setActiveChannel(channel);
-                chatActivity.addChatMessage(userNick + " has joined the channel: " + channel);
+                chatActivity.addChatMessage("You have joined the channel: " + channel);
+                chatActivity.checkAndAddActiveChannel();
             } else if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
-                chatActivity.addChatMessage(userNick + " has joined the channel " + channel + ".");
+                chatActivity.addChatMessage(userNick + " has joined the channel.");
             }
         });
     }
@@ -134,8 +133,11 @@ public class Listeners extends ListenerAdapter {
         runOnUiThread(() -> {
             String userNick = event.getUser().getNick();
             String channel = event.getChannel().getName();
-            if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
-                chatActivity.addChatMessage(userNick + " has left the channel " + channel + ".");
+            if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
+                chatActivity.addChatMessage("You have left the channel: " + channel);
+                chatActivity.partChannel(channel);
+            } else if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
+                chatActivity.addChatMessage(userNick + " has left the channel.");
             }
         });
     }
@@ -148,9 +150,7 @@ public class Listeners extends ListenerAdapter {
         String reason = event.getReason();
         String message = kickedUser + " was kicked from " + channel + " by " + kicker + " (" + reason + ")";
 
-        if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
-            processServerMessage("SERVER", message, channel);
-        }
+        processServerMessage("SERVER", message, channel);
     }
 
     @Override
@@ -159,20 +159,8 @@ public class Listeners extends ListenerAdapter {
         String actionMessage = event.getAction();
         String channel = event.getChannel().getName();
 
-        // Process the action message if it's in the active channel
-        if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
-            runOnUiThread(() -> {
-                String formattedMessage = "* " + userNick + " " + actionMessage; // Format as /me style message
-                chatActivity.addChatMessage(formattedMessage, true); // True indicates italic styling
-            });
-        }
-        // Also display the action in the sender's own chat
-        if (userNick.equals(chatActivity.getUserNick())) {
-            runOnUiThread(() -> {
-                String formattedMessage = "* " + userNick + " " + actionMessage;
-                chatActivity.addChatMessage(formattedMessage, true);
-            });
-        }
+        String formattedMessage = "* " + userNick + " " + actionMessage;
+        chatActivity.processServerMessage(userNick, formattedMessage, channel);
     }
 
     @Override
@@ -228,7 +216,7 @@ public class Listeners extends ListenerAdapter {
             chatActivity.addChatMessage("Identification failed: Incorrect password.");
         } else if (message.contains("isn't registered")) {
             chatActivity.addChatMessage("Identification failed: Nickname isn't registered.");
-        } else if (message.contains("You are now logged in as")) {
+    } else if (message.contains("You are now logged in as")) {
             chatActivity.addChatMessage(message);
         } else if (message.contains("sets mode: +r")) {
             chatActivity.addChatMessage("NickServ: Mode +r set, you are now recognized.");

@@ -1,20 +1,11 @@
 package com.btech.konnectchatirc;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.pircbotx.Channel;
-import org.pircbotx.Configuration;
-import org.pircbotx.PircBotX;
-import org.pircbotx.User;
-import org.pircbotx.exception.IrcException;
-import java.util.List;
-import java.util.ArrayList;
-
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.ImageDecoder;
+import android.graphics.PixelFormat;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -33,23 +24,38 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.pircbotx.Channel;
+import org.pircbotx.Configuration;
+import org.pircbotx.PircBotX;
+import org.pircbotx.User;
+import org.pircbotx.exception.IrcException;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import okhttp3.Call;
@@ -59,7 +65,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import android.graphics.PixelFormat;
 
 public class ChatActivity extends AppCompatActivity {
 
@@ -74,6 +79,7 @@ public class ChatActivity extends AppCompatActivity {
     private View operatorPanel;
     private Button operatorButton;
     private ImageButton adminButton;
+    private ImageButton btnUsers;
     private Button btnKill;
     private Button btnOperLogin;
     private Button btnSajoin;
@@ -86,7 +92,10 @@ public class ChatActivity extends AppCompatActivity {
     private OkHttpClient client;
     private static final String IMGUR_CLIENT_ID = "4968ca92805f1b2"; // Replace with your Imgur client ID
     private ConnectivityManager connectivityManager;
-    private ImageButton btnUsers;
+    private DrawerLayout drawerLayout;
+    private ChannelAdapter channelAdapter;
+    private List<ChannelItem> channelList = new ArrayList<>(); // List to hold channel items
+    private Map<String, List<String>> channelMessagesMap = new HashMap<>(); // Stores messages for each channel
 
     // Add bannedUsers list
     private List<String> bannedUsers = new ArrayList<>();
@@ -126,19 +135,27 @@ public class ChatActivity extends AppCompatActivity {
         acquireWakeLock();
         acquireWifiLock();
 
+        drawerLayout = findViewById(R.id.drawerLayout);
         // Find the root layout of activity_chat.xml
-        RelativeLayout rootLayout = findViewById(R.id.rootLayout); // Ensure this ID matches your root layout
+        RelativeLayout rootLayout = findViewById(R.id.rootLayout);
 
         // Initialize ConnectivityManager here
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         client = new OkHttpClient(); // Initialize OkHttpClient
 
-        ImageButton uploadButton = findViewById(R.id.uploadButton);
-        uploadButton.setOnClickListener(v -> openImageSelector());
+        // Initialize the RecyclerView for chat messages
+        chatRecyclerView = findViewById(R.id.chatRecyclerView);
+        chatMessages = new ArrayList<>();
+        chatAdapter = new ChatAdapter(this, chatMessages);
+        chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        chatRecyclerView.setAdapter(chatAdapter);  // Ensure the adapter is set here
 
         Intent serviceIntent = new Intent(this, IrcForegroundService.class);
-        serviceIntent.putExtra("#konnect-chat", activeChannel); // Ensure you add the required extras
+        serviceIntent.putExtra("#konnect-chat", activeChannel);
         startForegroundService(serviceIntent);
+
+        ImageButton uploadButton = findViewById(R.id.uploadButton);
+        uploadButton.setOnClickListener(v -> openImageSelector());
 
         // Retrieve the selected channel from the intent
         String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
@@ -225,6 +242,7 @@ public class ChatActivity extends AppCompatActivity {
         btnJoin = hoverPanel.findViewById(R.id.btnJoin);
         btnJoin.setOnClickListener(v -> new JoinChannel(this, bot, this, hoverPanel).startJoinChannelProcess());
 
+        // Set click
         // Set click listeners for hover panel buttons
         btnNick.setOnClickListener(v -> showNickChangeDialog());
         btnKick.setOnClickListener(v -> new Kick(this, bot, this).startKickProcess());
@@ -248,12 +266,20 @@ public class ChatActivity extends AppCompatActivity {
         // Set up hover panel visibility toggle
         adminButton.setOnClickListener(v -> toggleHoverPanel());
 
-        // Set up chat RecyclerView
-        chatRecyclerView = findViewById(R.id.chatRecyclerView);
-        chatMessages = new ArrayList<>();
-        chatAdapter = new ChatAdapter(this, chatMessages);
-        chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        chatRecyclerView.setAdapter(chatAdapter);
+        // Channel switcher button
+        ImageButton btnChannelSwitcher = findViewById(R.id.btnChannelSwitcher);
+        btnChannelSwitcher.setOnClickListener(v -> {
+            checkAndAddActiveChannel();
+            if (drawerLayout != null) {
+                drawerLayout.openDrawer(GravityCompat.START); // Open the left drawer
+            }
+        });
+
+        // Initialize the RecyclerView for channels in the drawer layout
+        RecyclerView channelRecyclerView = findViewById(R.id.channelRecyclerView);
+        channelAdapter = new ChannelAdapter(channelList, this::switchChannel);
+        channelRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        channelRecyclerView.setAdapter(channelAdapter);
 
         // Send button functionality
         sendButton.setOnClickListener(v -> {
@@ -269,6 +295,7 @@ public class ChatActivity extends AppCompatActivity {
                         try {
                             if (isNetworkAvailable()) {
                                 bot.sendIRC().message(activeChannel, message);
+                                storeMessageForChannel(activeChannel, userNick + ": " + message); // Store the message
                             } else {
                                 runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No internet connection.", Toast.LENGTH_SHORT).show());
                             }
@@ -279,6 +306,7 @@ public class ChatActivity extends AppCompatActivity {
                 }
             }
         });
+
         // Inside onCreate after inflating the operator panel
         Button btnDefcon = operatorPanel.findViewById(R.id.btnDefcon);
         if (btnDefcon != null) {
@@ -286,6 +314,7 @@ public class ChatActivity extends AppCompatActivity {
         } else {
             Log.e("ChatActivity", "btnDefcon is null, check operatorPanel inflation.");
         }
+
         // OS SVS NICK
         Button btnSvsnick = operatorPanel.findViewById(R.id.btnSvsnick);
         if (btnSvsnick != null) {
@@ -307,6 +336,7 @@ public class ChatActivity extends AppCompatActivity {
         } else {
             Log.e("ChatActivity", "btnBan is null, check hoverPanel inflation.");
         }
+
         // Inside onCreate method after inflating the hover panel
         Button btnUnban = hoverPanel.findViewById(R.id.btnUnban);
         if (btnUnban != null) {
@@ -317,7 +347,6 @@ public class ChatActivity extends AppCompatActivity {
         } else {
             Log.e("ChatActivity", "btnUnban is null, check hoverPanel inflation.");
         }
-
 
         // Disconnect button functionality
         disconnectButton.setOnClickListener(v -> {
@@ -339,7 +368,6 @@ public class ChatActivity extends AppCompatActivity {
         connectToIrcServer();
     }
 
-
     private void initializeBot() {
         if (bot == null) {
             String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
@@ -350,7 +378,7 @@ public class ChatActivity extends AppCompatActivity {
 
             Configuration configuration = new Configuration.Builder()
                     .setName(userNick) // Set the bot's name
-                    .setAutoNickChange(true) //Automatically change nick when the current one is in use
+                    .setAutoNickChange(true) // Automatically change nick when the current one is in use
                     .setRealName("TPTC IRC Client")
                     .addServer("irc.theplacetochat.net", 6667) // Set the server and port
                     .addAutoJoinChannel(selectedChannel)
@@ -381,6 +409,10 @@ public class ChatActivity extends AppCompatActivity {
                         } else {
                             runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No channel selected.", Toast.LENGTH_LONG).show());
                         }
+
+                        // Call the method to update the channel list after a delay
+                        updateChannelListAfterDelay();
+
                         break; // Exit the loop if connection is successful
                     } else {
                         Log.e("IRC Connection", "Bot not connected, retrying...");
@@ -394,7 +426,6 @@ public class ChatActivity extends AppCompatActivity {
                             break; // Exit the loop if interrupted
                         }
                     }
-
                 } catch (IOException | IrcException e) {
                     e.printStackTrace();
                     retries++;
@@ -417,6 +448,21 @@ public class ChatActivity extends AppCompatActivity {
         }).start();
     }
 
+    private void updateChannelListAfterDelay() {
+        // This method will update the channel list after a delay to ensure all joined channels are captured
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (bot != null && bot.isConnected()) {
+                for (Channel channel : bot.getUserChannelDao().getAllChannels()) {
+                    if (!isChannelInList(channel.getName())) {
+                        channelList.add(new ChannelItem(channel.getName()));
+                        channelMessagesMap.put(channel.getName(), new ArrayList<>()); // Initialize message list for the channel
+                    }
+                }
+                channelAdapter.notifyDataSetChanged();
+            }
+        }, 5000); // Wait for 5 seconds before updating the list
+    }
+
 
     public String getRequestedNick() {
         return requestedNick;
@@ -433,18 +479,31 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void addChatMessage(String message) {
-        if (!chatMessages.contains(message)) { // Prevent duplicates
-            chatMessages.add(message);
-            chatAdapter.notifyDataSetChanged();
-            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+        chatMessages.add(message);
+        chatAdapter.notifyDataSetChanged();
+        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+    }
+
+
+    public void addChatMessage(String message, String channel) {
+        if (!channelMessagesMap.containsKey(channel)) {
+            channelMessagesMap.put(channel, new ArrayList<>()); // Initialize message list for the channel
+        }
+        channelMessagesMap.get(channel).add(message);
+        if (channel.equals(activeChannel)) {
+            runOnUiThread(() -> {
+                chatMessages.add(message);
+                chatAdapter.notifyDataSetChanged();
+                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+            });
         }
     }
 
-    public void addChatMessage(String message, boolean italic) {
-        if (italic) {
-            message = "<i>" + message + "</i>";  // Apply italic styling
+    private void storeMessageForChannel(String channel, String message) {
+        if (!channelMessagesMap.containsKey(channel)) {
+            channelMessagesMap.put(channel, new ArrayList<>());
         }
-        addChatMessage(message); // Delegate to single addChatMessage to avoid duplication
+        channelMessagesMap.get(channel).add(message);
     }
 
     public String getUserNick() {
@@ -458,10 +517,24 @@ public class ChatActivity extends AppCompatActivity {
     public void setActiveChannel(String channel) {
         this.activeChannel = channel;
         updateChannelName(channel);
-    }
+        chatMessages.clear();
+        if (channelMessagesMap.containsKey(channel)) {
+            chatMessages.addAll(channelMessagesMap.get(channel));
+        } else {
+            channelMessagesMap.put(channel, new ArrayList<>());
+        }
+        chatAdapter.notifyDataSetChanged();
+        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
 
-    public void resetActiveChannelToDefault() {
-        //  setActiveChannel("#ThePlaceToChat");
+        /*this.activeChannel = channel;
+        updateChannelName(channel);
+        TextView channelNameTextView = findViewById(R.id.ChannelName);
+        channelNameTextView.setText(channel);
+        if (channelMessagesMap.containsKey(channel)) {
+            chatMessages.clear();
+            chatMessages.addAll(channelMessagesMap.get(channel)); // Load stored messages for the channel
+            chatAdapter.notifyDataSetChanged();
+        }*/
     }
 
     private void handleCommand(String command) {
@@ -498,7 +571,7 @@ public class ChatActivity extends AppCompatActivity {
                         bot.sendIRC().action(activeChannel, action);
 
                         // Immediately display the action in the chat
-                        runOnUiThread(() -> addChatMessage("* " + userNick + " " + action, true));
+                        runOnUiThread(() -> addChatMessage("* " + userNick + " " + action));
 
                         chatEditText.setText(""); // Clear the input after sending
                     } else {
@@ -512,7 +585,6 @@ public class ChatActivity extends AppCompatActivity {
             }
         }).start();
     }
-
 
     private String requestedNick; // Variable to keep track of the requested nickname
 
@@ -553,8 +625,8 @@ public class ChatActivity extends AppCompatActivity {
         userNick = newNick; // Update local nickname
     }
 
-    public void joinChannel(String channel) {
-        if (channel.isEmpty()) {
+    public void joinChannel(String channelName) {
+        if (channelName.isEmpty()) {
             addChatMessage("Usage: /join <channel>");
             chatEditText.setText("");
             return;
@@ -563,12 +635,15 @@ public class ChatActivity extends AppCompatActivity {
             try {
                 if (isNetworkAvailable()) {
                     if (bot.isConnected()) {
-                        bot.sendIRC().joinChannel(channel);
+                        bot.sendIRC().joinChannel(channelName);
                         runOnUiThread(() -> {
-                            addChatMessage("Joining channel: " + channel);
-                            setActiveChannel(channel);
+                            if (!isChannelInList(channelName)) {
+                                channelList.add(new ChannelItem(channelName));
+                                channelMessagesMap.put(channelName, new ArrayList<>());
+                                channelAdapter.notifyDataSetChanged();
+                            }
+                            setActiveChannel(channelName);
                             chatEditText.setText("");
-
                         });
                     } else {
                         runOnUiThread(() -> addChatMessage("Bot is not connected to the server."));
@@ -581,6 +656,63 @@ public class ChatActivity extends AppCompatActivity {
             }
         }).start();
     }
+
+    private boolean isChannelInList(String channelName) {
+        for (ChannelItem channel : channelList) {
+            if (channel.getChannelName().equals(channelName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void switchChannel(ChannelItem channel) {
+        setActiveChannel(channel.getChannelName());
+        channel.resetUnreadCount();
+        channelAdapter.notifyDataSetChanged();
+        drawerLayout.closeDrawer(GravityCompat.START);
+    }
+
+    private void sendMessageToChannel(String channel, String message) {
+        new Thread(() -> {
+            try {
+                if (bot.isConnected()) {
+                    bot.sendIRC().message(channel, message);
+                    storeMessageForChannel(channel, message);
+                    runOnUiThread(() -> addChatMessage(message));
+                } else {
+                    runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Not connected to IRC server.", Toast.LENGTH_SHORT).show());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void removeChannel(String channelName) {
+        for (int i = 0; i < channelList.size(); i++) {
+            if (channelList.get(i).getChannelName().equals(channelName)) {
+                channelList.remove(i);
+                channelAdapter.notifyItemRemoved(i);
+                channelMessagesMap.remove(channelName);
+                break;
+            }
+        }
+    }
+
+    public void partChannel(String channelName) {
+        new Thread(() -> {
+            try {
+                if (bot.isConnected()) {
+                    bot.sendRaw().rawLine("PART " + channelName);
+                    runOnUiThread(() -> removeChannel(channelName));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
 
     public void updateChannelName(String channelName) {
         runOnUiThread(() -> channelNameTextView.setText(channelName));
@@ -672,24 +804,40 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void processServerMessage(String sender, String message, String channel) {
-        String activeChannel = getActiveChannel();
+        String formattedMessage = sender + ": " + message;
+        storeMessageForChannel(channel, formattedMessage);
+
+        if (channel.equals(activeChannel)) {
+            runOnUiThread(() -> addChatMessage(formattedMessage));
+        } else {
+            // Increment unread count for channels not currently active
+            for (ChannelItem channelItem : channelList) {
+                if (channelItem.getChannelName().equals(channel)) {
+                    channelItem.incrementUnreadCount();
+                    runOnUiThread(() -> channelAdapter.notifyDataSetChanged());
+                    break;
+                }
+            }
+        }
 
         // Ignore 005 messages
         if (message.startsWith("005")) {
             return;
         }
+
         // Handle DEFCON response
         if (message.contains("DEFCON")) {
             runOnUiThread(() -> addChatMessage(sender + ": " + message));
         }
+
         // Check if the message is an action (/me)
         if ("ACTION".equals(sender)) {
-            if (channel.equalsIgnoreCase(activeChannel)) {
-                runOnUiThread(() -> addChatMessage("<i>" + message + "</i>", true)); // Italic formatting for /me actions
+            if (channel.equalsIgnoreCase(getActiveChannel())) {
+                runOnUiThread(() -> addChatMessage("* " + sender + " " + message));
             }
         } else {
             // Ensure the message is for the active channel and not already processed
-            if (channel.equalsIgnoreCase(activeChannel)) {
+            if (channel.equalsIgnoreCase(getActiveChannel())) {
                 runOnUiThread(() -> addChatMessage(sender + ": " + message));
             }
         }
@@ -756,167 +904,79 @@ public class ChatActivity extends AppCompatActivity {
 
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
             Uri imageUri = data.getData();
-            displaySelectedImage(imageUri); // Display the image locally
-            uploadImageToImgur(imageUri);   // Upload to Imgur
-        }
-    }
 
-    private void displaySelectedImage(Uri imageUri) {
-        try {
-            Bitmap bitmap;
-
-            // Use ImageDecoder for API level 28 and above
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                ImageDecoder.Source source = ImageDecoder.createSource(getContentResolver(), imageUri);
-                bitmap = ImageDecoder.decodeBitmap(source, (decoder, info, source1) -> {
-                    decoder.setMutableRequired(true); // Explicitly require mutable configuration
-                    decoder.setTargetSize(350, 350); // Set target size if needed
-                });
-            } else {
-                // For older versions, use BitmapFactory
-                bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+            Bitmap bitmap = null;
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(getContentResolver(), imageUri));
+                } else {
+                    bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            // Add a message indicating the user sent an image
-            addChatMessage(userNick + " sent an image");
-            // Add the bitmap to the chat messages
-            chatMessages.add(bitmap);
-            chatAdapter.notifyDataSetChanged();
-            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show();
+            if (bitmap != null) {
+                String encodedImage = encodeImageToBase64(bitmap);
+                uploadImageToImgur(encodedImage);
+            }
         }
     }
 
     private String encodeImageToBase64(Bitmap bitmap) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
-        byte[] byteArray = baos.toByteArray();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+        byte[] byteArray = byteArrayOutputStream.toByteArray();
         return Base64.encodeToString(byteArray, Base64.DEFAULT);
     }
 
-    private void uploadImageToImgur(Uri imageUri) {
-        try {
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
-            byte[] imageBytes = baos.toByteArray();
-
-            RequestBody requestBody = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("image", Base64.encodeToString(imageBytes, Base64.NO_WRAP))
-                    .build();
-
-            Request request = new Request.Builder()
-                    .url("https://api.imgur.com/3/image")
-                    .addHeader("Authorization", "Client-ID " + IMGUR_CLIENT_ID)
-                    .post(requestBody)
-                    .build();
-
-            client.newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    // Log the error and notify the user
-                    Log.e("ImgurUpload", "Failed to upload image: " + e.getMessage(), e);
-                    runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Failed to upload image. Please check your network connection.", Toast.LENGTH_SHORT).show());
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    if (response.isSuccessful()) {
-                        // Extract the image link from the response
-                        String json = response.body().string();
-                        String imageUrl = extractImageUrlFromResponse(json);
-
-                        if (imageUrl != null) {
-                            // Display the link in the chat
-                            runOnUiThread(() -> addChatMessage("Image uploaded: " + imageUrl, false));
-
-                            // Send the image link to the server
-                            if (bot.isConnected()) {
-                                bot.sendIRC().message(activeChannel, "Image: " + imageUrl);
-                            }
-                        } else {
-                            Log.e("ImgurUpload", "Upload response does not contain an image URL.");
-                            runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Failed to upload image. No URL returned.", Toast.LENGTH_SHORT).show());
-                        }
-                    } else {
-                        // Log the full response for troubleshooting
-                        String errorBody = response.body() != null ? response.body().string() : "No response body";
-                        Log.e("ImgurUpload", "Imgur response error: " + response.code() + " - " + response.message() + ". Body: " + errorBody);
-                        runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Failed to upload image. Server error: " + response.message(), Toast.LENGTH_SHORT).show());
-                    }
-                }
-            });
-        } catch (IOException e) {
-            Log.e("ImgurUpload", "Error processing image for upload: " + e.getMessage(), e);
-            Toast.makeText(this, "Failed to load image for upload.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void retryUpload(Uri imageUri, int attempt) {
-        if (attempt > 3) {
-            runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Failed to upload image after multiple attempts.", Toast.LENGTH_SHORT).show());
-            return;
-        }
-        Log.d("ImgurUpload", "Retrying upload, attempt: " + attempt);
-        uploadImageToImgur(imageUri); // Retry uploading
-    }
-
-    private String extractImageUrlFromResponse(String json) {
-        // Parse the JSON response to extract the image URL
-        // Assuming the URL is in the format: {"data":{"link":"http://imgur.com/xyz"},"success":true,"status":200}
-        try {
-            JSONObject jsonObject = new JSONObject(json);
-            JSONObject data = jsonObject.getJSONObject("data");
-            return data.getString("link");
-        } catch (JSONException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private void registerNetworkCallback() {
-        connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        NetworkRequest networkRequest = new NetworkRequest.Builder()
-                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+    private void uploadImageToImgur(String encodedImage) {
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("image", encodedImage)
                 .build();
 
-        // Register the network callback
-        connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
+        Request request = new Request.Builder()
+                .url("https://api.imgur.com/3/image")
+                .header("Authorization", "Client-ID " + IMGUR_CLIENT_ID)
+                .post(requestBody)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Image upload failed.", Toast.LENGTH_SHORT).show());
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    String responseData = response.body().string();
+                    try {
+                        JSONObject json = new JSONObject(responseData);
+                        String imageUrl = json.getJSONObject("data").getString("link");
+                        runOnUiThread(() -> {
+                            // Send the image URL as a message
+                            chatEditText.setText(imageUrl);
+                        });
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Image upload failed.", Toast.LENGTH_SHORT).show());
+                }
+            }
+        });
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        registerNetworkCallback();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (connectivityManager != null && networkCallback != null) {
-            connectivityManager.unregisterNetworkCallback(networkCallback);
-        }
-    }
-    private List<String> getUserListFromActiveChannel() {
+    public List<String> getUserListFromActiveChannel() {
+        Channel activeChannelObj = bot.getUserChannelDao().getChannel(activeChannel);
         List<String> userList = new ArrayList<>();
-
-        // Fetch the active channel
-        Channel channel = bot.getUserChannelDao().getChannel(activeChannel);
-
-        if (channel != null) {
-            // Iterate through the users in the channel and add their nicks to the list
-            for (User user : channel.getUsers()) {
+        if (activeChannelObj != null) {
+            for (User user : activeChannelObj.getUsers()) {
                 userList.add(user.getNick());
             }
-        } else {
-            Toast.makeText(this, "Active channel not found or bot not connected.", Toast.LENGTH_SHORT).show();
         }
-
         return userList;
     }
 
@@ -930,9 +990,11 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-    // Method to clear the banned users list
-    public void clearBannedUsers() {
-        bannedUsers.clear();
-        addChatMessage("Cleared banned users list.");
+    public void checkAndAddActiveChannel() {
+        if (activeChannel != null && !isChannelInList(activeChannel)) {
+            channelList.add(new ChannelItem(activeChannel));
+            channelMessagesMap.put(activeChannel, new ArrayList<>());
+            channelAdapter.notifyDataSetChanged();
+        }
     }
 }
