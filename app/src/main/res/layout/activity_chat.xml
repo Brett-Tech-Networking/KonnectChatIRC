@@ -12,7 +12,6 @@
         android:background="#000000"
         android:padding="8dp">
 
-        <!-- Channel Switcher Button -->
         <ImageButton
             android:id="@+id/btnChannelSwitcher"
             android:layout_width="wrap_content"
@@ -27,15 +26,31 @@
             android:contentDescription="Channel Switcher"
             app:tint="#FFFFFF" />
 
-        <!-- Channel Name TextView -->
+        <TextView
+            android:id="@+id/unreadBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignEnd="@id/btnChannelSwitcher"
+            android:layout_alignBottom="@id/btnChannelSwitcher"
+            android:layout_marginEnd="-12dp"
+            android:layout_marginBottom="-12dp"
+            android:background="@drawable/circle_badge"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:gravity="center"
+            android:padding="4dp" />
+
         <TextView
             android:id="@+id/ChannelName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Channel Name"
             android:textColor="#FDD835"
-            android:textSize="10sp"
+            android:textSize="13sp"
             android:textStyle="bold"
+            android:layout_marginTop="-15dp"
             android:layout_marginLeft="80dp"
             android:layout_alignParentTop="true"
             android:padding="12dp" />
@@ -47,9 +62,9 @@
             android:layout_height="wrap_content"
             android:text="Current Nick"
             android:textColor="#FDD835"
-            android:textSize="10sp"
+            android:textSize="13sp"
             android:textStyle="bold"
-            android:layout_marginTop="-15dp"
+            android:layout_marginTop="-20dp"
             android:layout_marginLeft="85dp"
             android:layout_below="@id/ChannelName"
             android:padding="8dp" />

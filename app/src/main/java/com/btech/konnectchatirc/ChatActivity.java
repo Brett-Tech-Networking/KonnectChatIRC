@@ -96,6 +96,10 @@ public class ChatActivity extends AppCompatActivity {
     private ChannelAdapter channelAdapter;
     private List<ChannelItem> channelList = new ArrayList<>(); // List to hold channel items
     private Map<String, List<String>> channelMessagesMap = new HashMap<>(); // Stores messages for each channel
+    private TextView unreadBadge;
+    private int totalUnreadMessages = 0;
+
+
 
     // Add bannedUsers list
     private List<String> bannedUsers = new ArrayList<>();
@@ -135,6 +139,8 @@ public class ChatActivity extends AppCompatActivity {
         acquireWakeLock();
         acquireWifiLock();
 
+        unreadBadge = findViewById(R.id.unreadBadge);
+
         drawerLayout = findViewById(R.id.drawerLayout);
         // Find the root layout of activity_chat.xml
         RelativeLayout rootLayout = findViewById(R.id.rootLayout);
@@ -166,6 +172,7 @@ public class ChatActivity extends AppCompatActivity {
         adminButton = findViewById(R.id.adminButton);
         ImageButton sendButton = findViewById(R.id.sendButton);
         ImageButton disconnectButton = findViewById(R.id.disconnectButton);
+
 
         // Generate a random nickname before initializing the bot
         userNick = "Guest" + (1000 + (int) (Math.random() * 9000));
@@ -672,6 +679,7 @@ public class ChatActivity extends AppCompatActivity {
     private void switchChannel(ChannelItem channel) {
         setActiveChannel(channel.getChannelName());
         channel.resetUnreadCount();
+        resetUnreadCount();
         channelAdapter.notifyDataSetChanged();
         drawerLayout.closeDrawer(GravityCompat.START);
     }
@@ -811,46 +819,53 @@ public class ChatActivity extends AppCompatActivity {
     public void markMessageAsProcessed(String message) {
         processedMessages.add(message);
     }
-
+    private void incrementUnreadCount() {
+        totalUnreadMessages++;
+        runOnUiThread(() -> {
+            unreadBadge.setText(String.valueOf(totalUnreadMessages));
+            unreadBadge.setVisibility(View.VISIBLE);
+        });
+    }
+    private void resetUnreadCount() {
+        totalUnreadMessages = 0;
+        runOnUiThread(() -> unreadBadge.setVisibility(View.GONE));
+    }
     public void processServerMessage(String sender, String message, String channel) {
         String formattedMessage = sender + ": " + message;
         storeMessageForChannel(channel, formattedMessage);
-
-        if (channel.equals(activeChannel)) {
-            runOnUiThread(() -> addChatMessage(formattedMessage));
-        } else {
-            // Increment unread count for channels not currently active
-            for (ChannelItem channelItem : channelList) {
-                if (channelItem.getChannelName().equals(channel)) {
-                    channelItem.incrementUnreadCount();
-                    runOnUiThread(() -> channelAdapter.notifyDataSetChanged());
-                    break;
-                }
-            }
-        }
 
         // Ignore 005 messages
         if (message.startsWith("005")) {
             return;
         }
 
-        // Handle DEFCON response
-        if (message.contains("DEFCON")) {
-            runOnUiThread(() -> addChatMessage(sender + ": " + message));
-        }
+        boolean isActiveChannel = channel.equalsIgnoreCase(getActiveChannel());
 
-        // Check if the message is an action (/me)
-        if ("ACTION".equals(sender)) {
-            if (channel.equalsIgnoreCase(getActiveChannel())) {
+        if (isActiveChannel) {
+            if (message.contains("DEFCON")) {
+                runOnUiThread(() -> addChatMessage(formattedMessage));
+                return;
+            }
+
+            // Check if the message is an action (/me)
+            if ("ACTION".equals(sender)) {
                 runOnUiThread(() -> addChatMessage("* " + sender + " " + message));
+            } else {
+                runOnUiThread(() -> addChatMessage(formattedMessage));
             }
         } else {
-            // Ensure the message is for the active channel and not already processed
-            if (channel.equalsIgnoreCase(getActiveChannel())) {
-                runOnUiThread(() -> addChatMessage(sender + ": " + message));
+            // Increment unread count for channels not currently active
+            for (ChannelItem channelItem : channelList) {
+                if (channelItem.getChannelName().equals(channel)) {
+                    channelItem.incrementUnreadCount();
+                    runOnUiThread(() -> channelAdapter.notifyDataSetChanged());
+                    incrementUnreadCount(); // Increment the unread badge count
+                    break;
+                }
             }
         }
     }
+
 
     private void acquireWakeLock() {
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
