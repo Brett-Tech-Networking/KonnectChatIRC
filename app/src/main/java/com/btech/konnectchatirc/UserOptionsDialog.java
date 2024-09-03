@@ -47,8 +47,6 @@ public class UserOptionsDialog {
             // Update the optionsHostIP TextView with the extracted information
             optionsHostIP.setText("Host: " + hostname + " | IP: " + ipAddress);
 
-            // Debugging: Show a toast to verify the values
-            Toast.makeText(context, "Host: " + hostname + " | IP: " + ipAddress, Toast.LENGTH_LONG).show();
         } else {
             // If no valid hostmask, set default text
             optionsHostIP.setText("Host: N/A | IP: N/A");
