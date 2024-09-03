@@ -19,6 +19,7 @@ import android.os.Looper;
 import android.net.wifi.WifiManager;
 import android.os.PowerManager;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.text.InputType;
 import android.util.Base64;
 import android.util.Log;
@@ -157,7 +158,7 @@ public class ChatActivity extends AppCompatActivity {
         chatRecyclerView.setAdapter(chatAdapter);  // Ensure the adapter is set here
 
         Intent serviceIntent = new Intent(this, IrcForegroundService.class);
-        serviceIntent.putExtra("#konnect-chat", activeChannel);
+        serviceIntent.putExtra("#ThePlaceToChat", activeChannel);
         startForegroundService(serviceIntent);
 
         ImageButton uploadButton = findViewById(R.id.uploadButton);
@@ -872,11 +873,15 @@ public class ChatActivity extends AppCompatActivity {
 
 
     private void acquireWakeLock() {
-        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChatActivity::WakeLock");
-        wakeLock.setReferenceCounted(false); // Ensures wake lock is not released unexpectedly
-        wakeLock.acquire(10 * 60 * 1000L /*10 minutes*/);
-        Log.d("WakeLock", "WakeLock acquired");
+        if (wakeLock == null) {
+            PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChatActivity::WakeLock");
+            wakeLock.setReferenceCounted(false);
+        }
+        if (!wakeLock.isHeld()) {
+            wakeLock.acquire();
+            Log.d("WakeLock", "WakeLock acquired");
+        }
     }
 
     private void releaseWakeLock() {
@@ -886,12 +891,17 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
+
     private void acquireWifiLock() {
-        WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "ChatActivity::WifiLock");
-        wifiLock.setReferenceCounted(false); // Ensures WiFi lock is not released unexpectedly
-        wifiLock.acquire();
-        Log.d("WifiLock", "WifiLock acquired");
+        if (wifiLock == null) {
+            WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+            wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "ChatActivity::WifiLock");
+            wifiLock.setReferenceCounted(false);
+        }
+        if (!wifiLock.isHeld()) {
+            wifiLock.acquire();
+            Log.d("WifiLock", "WifiLock acquired");
+        }
     }
 
     private void releaseWifiLock() {
@@ -900,6 +910,7 @@ public class ChatActivity extends AppCompatActivity {
             Log.d("WifiLock", "WifiLock released");
         }
     }
+
 
     @Override
     protected void onDestroy() {
