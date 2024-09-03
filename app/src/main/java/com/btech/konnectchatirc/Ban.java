@@ -59,7 +59,7 @@ public class Ban {
         dialog.show();
     }
 
-    private void executeBanCommand(String user) {
+    void executeBanCommand(String user) {
         String activeChannel = ((ChatActivity) activity).getActiveChannel(); // Get the active channel from ChatActivity
 
         if (bot != null && bot.isConnected()) {

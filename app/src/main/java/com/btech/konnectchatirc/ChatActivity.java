@@ -171,7 +171,7 @@ public class ChatActivity extends AppCompatActivity {
         chatEditText = findViewById(R.id.chatEditText);
         adminButton = findViewById(R.id.adminButton);
         ImageButton sendButton = findViewById(R.id.sendButton);
-        ImageButton disconnectButton = findViewById(R.id.disconnectButton);
+        Button disconnectButton = findViewById(R.id.disconnectButton);
 
 
         // Generate a random nickname before initializing the bot
@@ -398,6 +398,10 @@ public class ChatActivity extends AppCompatActivity {
             updateCurrentNick(userNick);
         }
     }
+    public PircBotX getBot() {
+        return bot;
+    }
+
 
     private void connectToIrcServer() {
         new Thread(() -> {
