@@ -12,7 +12,9 @@ import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.ServerResponseEvent;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class JoinChannel extends ListenerAdapter {
 
@@ -21,21 +23,25 @@ public class JoinChannel extends ListenerAdapter {
     private final ChatActivity chatActivity;
     private final View hoverPanel;
     private List<String> channelList = new ArrayList<>();
-    private AlertDialog dialog; // Declare the dialog at the class level
+    private Set<String> channelSet = new HashSet<>();  // To prevent duplicate channels
+    private AlertDialog dialog;
 
     public JoinChannel(Context context, PircBotX bot, ChatActivity chatActivity, View hoverPanel) {
         this.context = context;
         this.bot = bot;
         this.chatActivity = chatActivity;
-        this.hoverPanel = hoverPanel; // Initialize hoverPanel
-        bot.getConfiguration().getListenerManager().addListener(this); // Add listener for server responses
+        this.hoverPanel = hoverPanel;
+        bot.getConfiguration().getListenerManager().addListener(this);
     }
 
     public void startJoinChannelProcess() {
         if (bot.isConnected()) {
+            channelList.clear(); // Clear the previous channel list
+            channelSet.clear();  // Clear the set of channels to avoid duplicates
+
             new Thread(() -> {
                 try {
-                    bot.sendRaw().rawLine("LIST"); // Send the LIST command to get channels
+                    bot.sendRaw().rawLine("LIST");  // Send the LIST command to get channels
 
                 } catch (Exception e) {
                     chatActivity.runOnUiThread(() -> Toast.makeText(context, "Failed to request channel list.", Toast.LENGTH_SHORT).show());
@@ -49,14 +55,17 @@ public class JoinChannel extends ListenerAdapter {
     @Override
     public void onServerResponse(ServerResponseEvent event) {
         String response = event.getRawLine();
-        if (response.startsWith(":") && response.contains(" 322 ")) { // 322 is the RPL_LIST response
+        if (response.startsWith(":") && response.contains(" 322 ")) {  // 322 is the RPL_LIST response
             // Parse the channel name from the response
             String[] parts = response.split(" ");
             if (parts.length > 3) {
                 String channelName = parts[3];
-                channelList.add(channelName);
+                if (!channelSet.contains(channelName)) {  // Check for duplicates
+                    channelList.add(channelName);
+                    channelSet.add(channelName);  // Add to the set to avoid future duplicates
+                }
             }
-        } else if (response.contains(" 323 ")) { // 323 is the end of the list
+        } else if (response.contains(" 323 ")) {  // 323 is the end of the list
             chatActivity.runOnUiThread(this::showChannelListDialog);
         }
     }
@@ -64,7 +73,7 @@ public class JoinChannel extends ListenerAdapter {
     private void showChannelListDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
 
-        hoverPanel.setVisibility(View.GONE); // Hide hoverPanel when showing channel list
+        hoverPanel.setVisibility(View.GONE);  // Hide hoverPanel when showing channel list
 
         builder.setTitle("Select a Channel to Join");
 
@@ -75,18 +84,18 @@ public class JoinChannel extends ListenerAdapter {
         channelListView.setOnItemClickListener((parent, view, position, id) -> {
             String selectedChannel = channelList.get(position);
             if (dialog != null) {
-                dialog.dismiss(); // Dismiss the dialog when a channel is selected
+                dialog.dismiss();  // Dismiss the dialog when a channel is selected
             }
             joinSelectedChannel(selectedChannel);
         });
 
         builder.setView(channelListView);
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-        dialog = builder.create(); // Create the dialog and assign it to the class-level variable
-        dialog.show(); // Show the dialog
+        dialog = builder.create();  // Create the dialog and assign it to the class-level variable
+        dialog.show();  // Show the dialog
     }
 
     private void joinSelectedChannel(String channel) {
-        chatActivity.joinChannel(channel);
+        chatActivity.joinChannel(channel);  // Use the existing joinChannel method in ChatActivity
     }
 }

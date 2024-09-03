@@ -571,11 +571,21 @@ public class ChatActivity extends AppCompatActivity {
             case "join":
                 joinChannel(args);
                 break;
+            case "clear":
+                clearChat(); // Call the clearChat method
+                break;
             default:
                 addChatMessage("Unknown command: " + commandName);
                 break;
         }
     }
+    public void clearChat() {
+        chatMessages.clear(); // Clear the list holding chat messages
+        chatEditText.setText("");
+        chatAdapter.notifyDataSetChanged(); // Notify the adapter to refresh the RecyclerView
+        addChatMessage("Chat cleared."); // Add a message to the chat
+    }
+
 
     private void sendAction(String action) {
         new Thread(() -> {
