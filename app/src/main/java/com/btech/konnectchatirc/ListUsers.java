@@ -192,7 +192,7 @@ public class ListUsers {
         }).start();
     }
 
-    private void executeSlapCommand(String selectedUser, String activeChannel) {
+    public void executeSlapCommand(String selectedUser, String activeChannel) {
         new Thread(() -> {
             if (bot != null && bot.isConnected()) {
                 try {

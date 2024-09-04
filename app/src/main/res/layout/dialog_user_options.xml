@@ -15,6 +15,17 @@
         android:textColor="@color/lightblue"
         android:layout_marginTop="0dp"/>
 
+    <!-- New TextView for Host and IP Address -->
+    <TextView
+        android:id="@+id/options_host_ip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Host: N/A | IP: N/A"
+        android:textSize="14dp"
+        android:textColor="@color/white"
+        android:layout_marginTop="8dp"
+        android:layout_gravity="center" />
+
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

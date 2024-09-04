@@ -4,7 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Main content -->
     <RelativeLayout
         android:id="@+id/rootLayout"
         android:layout_width="match_parent"
@@ -51,11 +50,10 @@
             android:textSize="13sp"
             android:textStyle="bold"
             android:layout_marginTop="-15dp"
-            android:layout_marginLeft="80dp"
+            android:layout_marginLeft="50dp"
             android:layout_alignParentTop="true"
             android:padding="12dp" />
 
-        <!-- Current Nick TextView -->
         <TextView
             android:id="@+id/CurrentNick"
             android:layout_width="wrap_content"
@@ -65,11 +63,10 @@
             android:textSize="13sp"
             android:textStyle="bold"
             android:layout_marginTop="-20dp"
-            android:layout_marginLeft="85dp"
+            android:layout_marginLeft="54dp"
             android:layout_below="@id/ChannelName"
             android:padding="8dp" />
 
-        <!-- Chat RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/chatRecyclerView"
             android:layout_width="match_parent"
@@ -78,7 +75,6 @@
             android:layout_below="@id/CurrentNick"
             android:background="#111111" />
 
-        <!-- Chat Input Layout -->
         <RelativeLayout
             android:id="@+id/chatInputLayout"
             android:layout_width="match_parent"
@@ -86,7 +82,6 @@
             android:layout_alignParentBottom="true"
             android:padding="0dp">
 
-            <!-- Upload Button -->
             <ImageButton
                 android:id="@+id/uploadButton"
                 android:layout_width="wrap_content"
@@ -99,7 +94,6 @@
                 app:tint="#FFFFFF"
                 android:padding="8dp" />
 
-            <!-- Chat EditText -->
             <EditText
                 android:id="@+id/chatEditText"
                 android:layout_width="0dp"
@@ -116,7 +110,6 @@
                 android:padding="12dp"
                 android:inputType="text" />
 
-            <!-- Send Button -->
             <ImageButton
                 android:id="@+id/sendButton"
                 android:layout_width="wrap_content"
@@ -130,7 +123,6 @@
                 app:tint="#FFFFFF" />
         </RelativeLayout>
 
-        <!-- Admin Button -->
         <ImageButton
             android:id="@+id/adminButton"
             android:layout_width="wrap_content"
@@ -147,7 +139,6 @@
             android:padding="5dp"
             app:tint="#FFFFFF" />
 
-        <!-- Users Button -->
         <ImageButton
             android:id="@+id/btnUsers"
             android:layout_width="wrap_content"
@@ -161,22 +152,8 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_users"
             android:contentDescription="Users" />
-
-        <!-- Disconnect Button -->
-        <ImageButton
-            android:id="@+id/disconnectButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_toRightOf="@id/btnChannelSwitcher"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:contentDescription="Disconnect"
-            app:tint="#FFFFFF"
-            android:padding="6dp" />
     </RelativeLayout>
 
-    <!-- Left drawer (Channel Switcher) -->
     <RelativeLayout
         android:id="@+id/left_drawer"
         android:layout_width="280dp"
@@ -185,7 +162,21 @@
         android:background="#222222"
         android:padding="16dp">
 
-        <!-- Channel Switcher Title -->
+        <Button
+            android:id="@+id/disconnectButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:text="Disconnect"
+            android:textColor="#FFFFFF"
+            android:padding="4dp"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:layout_marginEnd="0dp"/>
+
         <TextView
             android:id="@+id/channelSwitcherTitle"
             android:layout_width="wrap_content"
@@ -195,9 +186,9 @@
             android:textSize="18sp"
             android:textStyle="bold"
             android:paddingBottom="8dp"
-            android:layout_alignParentTop="true" />
+            android:layout_alignParentTop="true"
+            android:layout_alignParentStart="true"/>
 
-        <!-- RecyclerView for Channel Switcher -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/channelRecyclerView"
             android:layout_width="match_parent"
@@ -206,5 +197,4 @@
             android:paddingBottom="8dp"
             android:background="#333333" />
     </RelativeLayout>
-
 </androidx.drawerlayout.widget.DrawerLayout>
