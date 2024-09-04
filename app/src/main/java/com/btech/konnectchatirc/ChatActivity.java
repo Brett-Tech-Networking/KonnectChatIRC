@@ -166,6 +166,7 @@ public class ChatActivity extends AppCompatActivity {
 
         // Retrieve the selected channel from the intent
         String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
+        String desiredNick = getIntent().getStringExtra("DESIRED_NICK");
 
         // Initialize UI components
         channelNameTextView = findViewById(R.id.ChannelName);
@@ -175,8 +176,13 @@ public class ChatActivity extends AppCompatActivity {
         Button disconnectButton = findViewById(R.id.disconnectButton);
 
 
-        // Generate a random nickname before initializing the bot
-        userNick = "Guest" + (1000 + (int) (Math.random() * 9000));
+        // Use the desired nick if provided; otherwise, generate a random nickname
+        if (desiredNick != null && !desiredNick.isEmpty()) {
+            userNick = desiredNick;
+        } else {
+            userNick = "Guest" + (1000 + (int) (Math.random() * 9000));
+        }
+
         initializeBot();
 
         if (selectedChannel != null) {
@@ -184,6 +190,7 @@ public class ChatActivity extends AppCompatActivity {
         } else {
             setActiveChannel("#ThePlaceToChat");
         }
+
 
         // Inflate hover panel and operator panel
         LayoutInflater inflater = LayoutInflater.from(this);

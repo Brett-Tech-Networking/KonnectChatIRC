@@ -3,19 +3,19 @@ package com.btech.konnectchatirc;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.AdapterView;
-import androidx.appcompat.app.AlertDialog;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -39,11 +39,12 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<String> channels;
     private SharedPreferences sharedPreferences;
     private static final String CHANNELS_KEY = "saved_channels";
+    private EditText nickEditText;
+    private CheckBox nickCheckBox;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
 
         // Set up the toolbar
@@ -51,6 +52,19 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         sharedPreferences = getSharedPreferences("com.btech.konnectchatirc", Context.MODE_PRIVATE);
+
+        // Initialize the checkbox and edit text
+        nickCheckBox = findViewById(R.id.nickCheckBox);
+        nickEditText = findViewById(R.id.nickEditText);
+
+        // Handle checkbox state changes
+        nickCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                nickEditText.setVisibility(View.VISIBLE);
+            } else {
+                nickEditText.setVisibility(View.GONE);
+            }
+        });
 
         // Retrieve the preset channels and add user-defined channels
         channels = new ArrayList<>();
@@ -67,17 +81,15 @@ public class MainActivity extends AppCompatActivity {
         channelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                // Assuming this is around line 69 in MainActivity.java
-                TextView textView = findViewById(R.id.textView); // Use the correct ID
+                TextView textView = (TextView) parent.getChildAt(0);
                 if (textView != null) {
                     textView.setTextColor(getResources().getColor(R.color.white)); // Use the correct color
                 } else {
                     Log.e("MainActivity", "TextView is null, cannot set text color.");
                 }
-
             }
 
-                @Override
+            @Override
             public void onNothingSelected(AdapterView<?> parent) {
                 // Do nothing
             }
@@ -87,6 +99,12 @@ public class MainActivity extends AppCompatActivity {
         joinButton.setOnClickListener(view -> {
             String selectedChannel = channelSpinner.getSelectedItem().toString();
             Intent intent = new Intent(MainActivity.this, ChatActivity.class);
+
+            // Pass the desired nick to ChatActivity if provided
+            if (nickCheckBox.isChecked() && !nickEditText.getText().toString().trim().isEmpty()) {
+                intent.putExtra("DESIRED_NICK", nickEditText.getText().toString().trim());
+            }
+
             intent.putExtra("SELECTED_CHANNEL", selectedChannel);
             startActivity(intent);
         });
@@ -119,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showAddChannelDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         builder.setTitle("Add Channel");
 
         final EditText input = new EditText(this);

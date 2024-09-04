@@ -10,7 +10,7 @@
         android:layout_height="wrap_content"
         android:src="@drawable/konnectchattrans"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="-50dp"
+        android:layout_marginTop="-100dp"
         android:scaleX=".7"
         android:scaleY=".7"/>
 
@@ -23,15 +23,42 @@
         android:textSize="24sp"
         android:textStyle="bold"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="350dp"/>
+        android:layout_marginTop="300dp"/>
+
+    <!-- Checkbox for desired nick -->
+    <CheckBox
+        android:id="@+id/nickCheckBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="I have a desired nick"
+        android:textColor="@color/white"
+        android:layout_below="@id/titleTextView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"/>
+
+    <!-- Textbox for desired nick -->
+    <EditText
+        android:id="@+id/nickEditText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:hint="Enter desired nick"
+        android:textColor="@color/white"
+        android:background="@drawable/edit_text_border"
+        android:visibility="gone"
+        android:textColorHint="#808080"
+        android:layout_below="@id/nickCheckBox"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="1dp"/>
 
     <!-- Dropdown for channel selection -->
     <Spinner
         android:id="@+id/channelSpinner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/titleTextView"
+        android:layout_below="@id/nickEditText"
+        android:background="@drawable/edit_text_border"
         android:layout_centerHorizontal="true"
+        android:padding="4dp"
         android:layout_marginTop="20dp"/>
 
     <Button
