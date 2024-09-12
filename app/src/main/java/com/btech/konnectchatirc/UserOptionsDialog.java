@@ -6,9 +6,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.pircbotx.User;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class UserOptionsDialog {
 
@@ -38,19 +40,15 @@ public class UserOptionsDialog {
         // Extract hostmask and IP address
         String hostmask = selectedUser.getHostmask();
         String hostname = null;
-        String ipAddress = null;
+        String ipAddress = "N/A";
 
         if (hostmask != null && hostmask.contains("@")) {
             hostname = hostmask.split("@")[1];
             ipAddress = extractIPAddress(hostname);
-
-            // Update the optionsHostIP TextView with the extracted information
-            optionsHostIP.setText("Host: " + hostname + " | IP: " + ipAddress);
-
-        } else {
-            // If no valid hostmask, set default text
-            optionsHostIP.setText("Host: N/A | IP: N/A");
         }
+
+        // Update the optionsHostIP TextView with the extracted information
+        optionsHostIP.setText("Host: " + (hostname != null ? hostname : "N/A") + " | IP: " + ipAddress);
 
         // Set up button listeners
         Button btnKick = dialogView.findViewById(R.id.btnKick);
@@ -76,7 +74,12 @@ public class UserOptionsDialog {
     }
 
     private String extractIPAddress(String hostname) {
-        // Placeholder: Implement logic to extract IP if the hostname contains it
-        return hostname;  // Modify this as per your needs
+        try {
+            InetAddress inetAddress = InetAddress.getByName(hostname);
+            return inetAddress.getHostAddress();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+            return "N/A";
+        }
     }
 }

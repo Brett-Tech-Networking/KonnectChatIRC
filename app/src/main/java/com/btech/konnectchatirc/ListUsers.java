@@ -96,9 +96,17 @@ public class ListUsers {
         LayoutInflater inflater = LayoutInflater.from(context);
         View optionsView = inflater.inflate(R.layout.dialog_user_options, null);
 
+        // Fetch the user object from the bot to get detailed information
+        User user = bot.getUserChannelDao().getUser(selectedUser);
+
         // Set the nickname in the dialog
         TextView nickTextView = optionsView.findViewById(R.id.options_nick);
-        nickTextView.setText(selectedUser);
+        nickTextView.setText(user.getNick());
+
+        // Set the host and IP information
+        TextView hostIpTextView = optionsView.findViewById(R.id.options_host_ip);
+        String host = user.getHostmask() != null ? user.getHostmask() : "N/A";
+        hostIpTextView.setText("Host: " + host);
 
         AlertDialog.Builder optionsDialog = new AlertDialog.Builder(context, R.style.CustomDialogTheme_NoAnimation);
         optionsDialog.setView(optionsView);
@@ -130,9 +138,9 @@ public class ListUsers {
             dialog.dismiss();
         });
 
-        // Set the dialog to dismiss when clicking outside
         dialog.setCanceledOnTouchOutside(true);
     }
+
 
     private void showKickDialog(String selectedUser, String activeChannel) {
         AlertDialog.Builder kickDialog = new AlertDialog.Builder(context);

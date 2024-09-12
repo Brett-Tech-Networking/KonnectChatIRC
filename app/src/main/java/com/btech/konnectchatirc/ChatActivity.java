@@ -48,6 +48,7 @@ import org.pircbotx.Channel;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
+import org.pircbotx.exception.DaoException;
 import org.pircbotx.exception.IrcException;
 
 import java.io.ByteArrayOutputStream;
@@ -80,7 +81,6 @@ public class ChatActivity extends AppCompatActivity {
     private View operatorPanel;
     private Button operatorButton;
     private ImageButton adminButton;
-    private ImageButton btnUsers;
     private Button btnKill;
     private Button btnOperLogin;
     private Button btnSajoin;
@@ -99,8 +99,6 @@ public class ChatActivity extends AppCompatActivity {
     private Map<String, List<String>> channelMessagesMap = new HashMap<>(); // Stores messages for each channel
     private TextView unreadBadge;
     private int totalUnreadMessages = 0;
-
-
 
     // Add bannedUsers list
     private List<String> bannedUsers = new ArrayList<>();
@@ -141,9 +139,7 @@ public class ChatActivity extends AppCompatActivity {
         acquireWifiLock();
 
         unreadBadge = findViewById(R.id.unreadBadge);
-
         drawerLayout = findViewById(R.id.drawerLayout);
-        // Find the root layout of activity_chat.xml
         RelativeLayout rootLayout = findViewById(R.id.rootLayout);
 
         // Initialize ConnectivityManager here
@@ -164,19 +160,15 @@ public class ChatActivity extends AppCompatActivity {
         ImageButton uploadButton = findViewById(R.id.uploadButton);
         uploadButton.setOnClickListener(v -> openImageSelector());
 
-        // Retrieve the selected channel from the intent
         String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
         String desiredNick = getIntent().getStringExtra("DESIRED_NICK");
 
-        // Initialize UI components
         channelNameTextView = findViewById(R.id.ChannelName);
         chatEditText = findViewById(R.id.chatEditText);
         adminButton = findViewById(R.id.adminButton);
         ImageButton sendButton = findViewById(R.id.sendButton);
         Button disconnectButton = findViewById(R.id.disconnectButton);
 
-
-        // Use the desired nick if provided; otherwise, generate a random nickname
         if (desiredNick != null && !desiredNick.isEmpty()) {
             userNick = desiredNick;
         } else {
@@ -191,34 +183,25 @@ public class ChatActivity extends AppCompatActivity {
             setActiveChannel("#ThePlaceToChat");
         }
 
-
-        // Inflate hover panel and operator panel
         LayoutInflater inflater = LayoutInflater.from(this);
         hoverPanel = inflater.inflate(R.layout.hover_panel, rootLayout, false);
         operatorPanel = inflater.inflate(R.layout.operator_panel, rootLayout, false);
 
-        // Set up layout parameters for hoverPanel and operatorPanel
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
                 (int) (320 * getResources().getDisplayMetrics().density), // Width in pixels
                 (int) (600 * getResources().getDisplayMetrics().density)  // Height in pixels
         );
 
-        // Set rules to position hoverPanel and operatorPanel
         params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
         params.addRule(RelativeLayout.CENTER_HORIZONTAL);
 
-        // Add top margin to move panels slightly down from the top
         int topMargin = (int) (60 * getResources().getDisplayMetrics().density); // Adjust the value as needed
         params.setMargins(0, topMargin, 0, 0);
 
-        // Add panels to the root layout
         rootLayout.addView(hoverPanel, params);
         rootLayout.addView(operatorPanel, params);
 
         operatorPanel.setVisibility(View.GONE); // Initially hide operatorPanel
-
-        btnUsers = findViewById(R.id.btnUsers);
-        btnUsers.setOnClickListener(v -> new ListUsers(this, bot, this).showUserList());
 
         // Initialize buttons from hover panel
         Button btnNick = hoverPanel.findViewById(R.id.btnNick);
@@ -237,66 +220,52 @@ public class ChatActivity extends AppCompatActivity {
         Button btnShun = operatorPanel.findViewById(R.id.btnShun);
         if (btnShun != null) {
             btnShun.setOnClickListener(v -> {
-                // Get the list of users from the active channel
                 List<String> userList = getUserListFromActiveChannel();
-                // Start the shun process
                 new shun(this, bot, this, userList).startShunProcess();
             });
         } else {
             Log.e("ChatActivity", "btnShun is null, check operatorPanel inflation.");
         }
 
-        // Initialize buttons from hover panel
         Button btnOP = hoverPanel.findViewById(R.id.btnOP);
         Button btnDEOP = hoverPanel.findViewById(R.id.btnDEOP);
 
         btnOP.setOnClickListener(v -> new UserOP(this, bot, this, hoverPanel).startOPProcess(true));
         btnDEOP.setOnClickListener(v -> new UserOP(this, bot, this, hoverPanel).startOPProcess(false));
 
-        // Initialize buttons from hover panel
         btnJoin = hoverPanel.findViewById(R.id.btnJoin);
         btnJoin.setOnClickListener(v -> new JoinChannel(this, bot, this, hoverPanel).startJoinChannelProcess());
 
-        // Set click
-        // Set click listeners for hover panel buttons
         btnNick.setOnClickListener(v -> showNickChangeDialog());
         btnKick.setOnClickListener(v -> new Kick(this, bot, this).startKickProcess());
         btnIdent.setOnClickListener(v -> new Identify(this, bot, this, v).startIdentifyProcess());
 
-        // Set click listener for kill button in operator panel
         btnKill.setOnClickListener(v -> new Kill(this, bot, this).startKillProcess());
 
-        // Set click listener for oper login button in operator panel
         btnOperLogin.setOnClickListener(v -> new OperLogin(this, bot, this).startOperLoginProcess());
 
-        // Set click listener for sajoin button in operator panel
         btnSajoin.setOnClickListener(v -> new Sajoin(this, bot, this).startSajoinProcess());
         btnSapart.setOnClickListener(v -> new Sajoin(this, bot, this).startSapartProcess());
 
-        // Operator button functionality KEEP FADEOUT/ FADE IN OR THIS WILL BREAK *****************************************
         operatorButton.setOnClickListener(v -> {
             fadeOutPanel(hoverPanel, () -> fadeInPanel(operatorPanel));
         });
 
-        // Set up hover panel visibility toggle
         adminButton.setOnClickListener(v -> toggleHoverPanel());
 
-        // Channel switcher button
         ImageButton btnChannelSwitcher = findViewById(R.id.btnChannelSwitcher);
         btnChannelSwitcher.setOnClickListener(v -> {
             checkAndAddActiveChannel();
             if (drawerLayout != null) {
-                drawerLayout.openDrawer(GravityCompat.START); // Open the left drawer
+                drawerLayout.openDrawer(GravityCompat.START);
             }
         });
 
-        // Initialize the RecyclerView for channels in the drawer layout
         RecyclerView channelRecyclerView = findViewById(R.id.channelRecyclerView);
         channelAdapter = new ChannelAdapter(channelList, this::switchChannel);
         channelRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         channelRecyclerView.setAdapter(channelAdapter);
 
-        // Send button functionality
         sendButton.setOnClickListener(v -> {
             String message = chatEditText.getText().toString();
             if (!message.isEmpty()) {
@@ -310,7 +279,7 @@ public class ChatActivity extends AppCompatActivity {
                         try {
                             if (isNetworkAvailable()) {
                                 bot.sendIRC().message(activeChannel, message);
-                                storeMessageForChannel(activeChannel, userNick + ": " + message); // Store the message
+                                storeMessageForChannel(activeChannel, userNick + ": " + message);
                             } else {
                                 runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No internet connection.", Toast.LENGTH_SHORT).show());
                             }
@@ -322,7 +291,6 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
-        // Inside onCreate after inflating the operator panel
         Button btnDefcon = operatorPanel.findViewById(R.id.btnDefcon);
         if (btnDefcon != null) {
             btnDefcon.setOnClickListener(v -> new Defcon(this, bot, this).startDefconProcess());
@@ -330,40 +298,27 @@ public class ChatActivity extends AppCompatActivity {
             Log.e("ChatActivity", "btnDefcon is null, check operatorPanel inflation.");
         }
 
-        // OS SVS NICK
         Button btnSvsnick = operatorPanel.findViewById(R.id.btnSvsnick);
         if (btnSvsnick != null) {
-            btnSvsnick.setOnClickListener(v -> {
-                // Start the SvsNick process
-                new SvsNick(this, bot, this).startSvsNickProcess();
-            });
+            btnSvsnick.setOnClickListener(v -> new SvsNick(this, bot, this).startSvsNickProcess());
         } else {
             Log.e("ChatActivity", "btnSvsnick is null, check operatorPanel inflation.");
         }
 
-        // Inside onCreate method after inflating the hover panel
         Button btnBan = hoverPanel.findViewById(R.id.btnBan);
         if (btnBan != null) {
-            btnBan.setOnClickListener(v -> {
-                // Start the Ban process
-                new Ban(this, bot, this).startBanProcess();
-            });
+            btnBan.setOnClickListener(v -> new Ban(this, bot, this).startBanProcess());
         } else {
             Log.e("ChatActivity", "btnBan is null, check hoverPanel inflation.");
         }
 
-        // Inside onCreate method after inflating the hover panel
         Button btnUnban = hoverPanel.findViewById(R.id.btnUnban);
         if (btnUnban != null) {
-            btnUnban.setOnClickListener(v -> {
-                // Start the Unban process
-                new Unban(this, bot, this).startUnbanProcess();
-            });
+            btnUnban.setOnClickListener(v -> new Unban(this, bot, this).startUnbanProcess());
         } else {
             Log.e("ChatActivity", "btnUnban is null, check hoverPanel inflation.");
         }
 
-        // Disconnect button functionality
         disconnectButton.setOnClickListener(v -> {
             if (bot != null) {
                 new Thread(() -> {
@@ -373,50 +328,63 @@ public class ChatActivity extends AppCompatActivity {
                         runOnUiThread(this::finish);
                     } catch (Exception e) {
                         e.printStackTrace();
-                        runOnUiThread(this::finish); // Goes back to home page even if already disconnected
+                        runOnUiThread(this::finish);
                     }
                 }).start();
             }
         });
 
-        // Start connection to IRC server
+        ImageButton btnUsers = findViewById(R.id.btnUsers);
+        btnUsers.setOnClickListener(v -> {
+            if (bot != null && bot.isConnected()) {
+                List<String> userList = getUserListFromActiveChannel();
+                if (!userList.isEmpty()) {
+                    ListUsers listUsers = new ListUsers(this, bot, this);
+                    listUsers.showUserList();
+                } else {
+                    Toast.makeText(ChatActivity.this, "No users available in the current channel or channel not joined.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(ChatActivity.this, "Not connected to a channel yet.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         connectToIrcServer();
     }
 
     private void initializeBot() {
         if (bot == null) {
             String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
-            // If no channel was selected, fallback to the default channel
             if (selectedChannel == null || selectedChannel.isEmpty()) {
                 selectedChannel = "#ThePlaceToChat";
             }
 
             Configuration configuration = new Configuration.Builder()
-                    .setName(userNick) // Set the bot's name
-                    .setAutoNickChange(true) // Automatically change nick when the current one is in use
+                    .setName(userNick)
+                    .setAutoNickChange(true)
                     .setRealName("TPTC IRC Client")
-                    .addServer("irc.theplacetochat.net", 6667) // Set the server and port
+                    .addServer("irc.theplacetochat.net", 6667)
                     .addAutoJoinChannel(selectedChannel)
-                    .addListener(new Listeners(this)) // Pass this ChatActivity instance to Listeners
-                    .addListener(new NickChangeListener(this)) // Add the custom listener
+                    .addListener(new Listeners(this))
+                    .addListener(new NickChangeListener(this))
                     .buildConfiguration();
 
             bot = new PircBotX(configuration);
-            setActiveChannel(selectedChannel); // Ensure the active channel is set properly
+            setActiveChannel(selectedChannel);
             updateCurrentNick(userNick);
         }
     }
+
     public PircBotX getBot() {
         return bot;
     }
-
 
     private void connectToIrcServer() {
         new Thread(() -> {
             int retries = 0;
             while (retries < 5 && (bot == null || !bot.isConnected())) {
                 try {
-                    bot.startBot(); // Attempt to start the bot
+                    bot.startBot();
                     if (bot.isConnected()) {
                         String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
 
@@ -431,20 +399,17 @@ public class ChatActivity extends AppCompatActivity {
                             runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No channel selected.", Toast.LENGTH_LONG).show());
                         }
 
-                        // Call the method to update the channel list after a delay
                         updateChannelListAfterDelay();
-
-                        break; // Exit the loop if connection is successful
+                        break;
                     } else {
                         Log.e("IRC Connection", "Bot not connected, retrying...");
                         retries++;
                         try {
-                            Thread.sleep(5000); // Wait before retrying
+                            Thread.sleep(5000);
                         } catch (InterruptedException e) {
                             Log.e("IRC Connection", "Thread interrupted during sleep", e);
-                            // Optionally re-interrupt the thread if the interruption was not handled
-                            Thread.currentThread().interrupt(); // Restore the interrupt status
-                            break; // Exit the loop if interrupted
+                            Thread.currentThread().interrupt();
+                            break;
                         }
                     }
                 } catch (IOException | IrcException e) {
@@ -454,11 +419,11 @@ public class ChatActivity extends AppCompatActivity {
                     runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Error connecting to IRC server. Retrying...", Toast.LENGTH_LONG).show());
 
                     try {
-                        Thread.sleep(5000); // Wait before retrying
+                        Thread.sleep(5000);
                     } catch (InterruptedException ex) {
                         Log.e("IRC Connection", "Thread interrupted during sleep", ex);
-                        Thread.currentThread().interrupt(); // Restore the interrupt status
-                        break; // Exit the loop if interrupted
+                        Thread.currentThread().interrupt();
+                        break;
                     }
                 }
             }
@@ -470,27 +435,25 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void updateChannelListAfterDelay() {
-        // This method will update the channel list after a delay to ensure all joined channels are captured
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             if (bot != null && bot.isConnected()) {
                 for (Channel channel : bot.getUserChannelDao().getAllChannels()) {
                     if (!isChannelInList(channel.getName())) {
                         channelList.add(new ChannelItem(channel.getName()));
-                        channelMessagesMap.put(channel.getName(), new ArrayList<>()); // Initialize message list for the channel
+                        channelMessagesMap.put(channel.getName(), new ArrayList<>());
                     }
                 }
                 channelAdapter.notifyDataSetChanged();
             }
-        }, 5000); // Wait for 5 seconds before updating the list
+        }, 5000);
     }
-
 
     public String getRequestedNick() {
         return requestedNick;
     }
 
     public void setNickInputToRetry() {
-        chatEditText.setText("/nick "); // Set the text to "/nick "
+        chatEditText.setText("/nick ");
     }
 
     public boolean isNetworkAvailable() {
@@ -505,10 +468,9 @@ public class ChatActivity extends AppCompatActivity {
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
     }
 
-
     public void addChatMessage(String message, String channel) {
         if (!channelMessagesMap.containsKey(channel)) {
-            channelMessagesMap.put(channel, new ArrayList<>()); // Initialize message list for the channel
+            channelMessagesMap.put(channel, new ArrayList<>());
         }
         channelMessagesMap.get(channel).add(message);
         if (channel.equals(activeChannel)) {
@@ -546,16 +508,6 @@ public class ChatActivity extends AppCompatActivity {
         }
         chatAdapter.notifyDataSetChanged();
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-
-        /*this.activeChannel = channel;
-        updateChannelName(channel);
-        TextView channelNameTextView = findViewById(R.id.ChannelName);
-        channelNameTextView.setText(channel);
-        if (channelMessagesMap.containsKey(channel)) {
-            chatMessages.clear();
-            chatMessages.addAll(channelMessagesMap.get(channel)); // Load stored messages for the channel
-            chatAdapter.notifyDataSetChanged();
-        }*/
     }
 
     private void handleCommand(String command) {
@@ -579,20 +531,20 @@ public class ChatActivity extends AppCompatActivity {
                 joinChannel(args);
                 break;
             case "clear":
-                clearChat(); // Call the clearChat method
+                clearChat();
                 break;
             default:
                 addChatMessage("Unknown command: " + commandName);
                 break;
         }
     }
-    public void clearChat() {
-        chatMessages.clear(); // Clear the list holding chat messages
-        chatEditText.setText("");
-        chatAdapter.notifyDataSetChanged(); // Notify the adapter to refresh the RecyclerView
-        addChatMessage("Chat cleared."); // Add a message to the chat
-    }
 
+    public void clearChat() {
+        chatMessages.clear();
+        chatEditText.setText("");
+        chatAdapter.notifyDataSetChanged();
+        addChatMessage("Chat cleared.");
+    }
 
     private void sendAction(String action) {
         new Thread(() -> {
@@ -600,11 +552,8 @@ public class ChatActivity extends AppCompatActivity {
                 if (isNetworkAvailable()) {
                     if (bot.isConnected()) {
                         bot.sendIRC().action(activeChannel, action);
-
-                        // Immediately display the action in the chat
                         runOnUiThread(() -> addChatMessage("* " + userNick + " " + action));
-
-                        chatEditText.setText(""); // Clear the input after sending
+                        chatEditText.setText("");
                     } else {
                         runOnUiThread(() -> addChatMessage("Bot is not connected to the server."));
                     }
@@ -622,23 +571,21 @@ public class ChatActivity extends AppCompatActivity {
     private void changeNick(String newNick) {
         if (newNick.isEmpty()) {
             addChatMessage("Usage: /nick <new_nick>");
-            chatEditText.setText(""); // Clear input
+            chatEditText.setText("");
             return;
         }
 
-        requestedNick = newNick; // Set the requested nickname
+        requestedNick = newNick;
 
         new Thread(() -> {
             try {
                 if (isNetworkAvailable()) {
                     if (bot.isConnected()) {
-                        // Send the nickname change command to the IRC server
                         bot.sendRaw().rawLine("NICK " + newNick);
                         runOnUiThread(() -> {
-                            // Update local nickname and UI
                             updateLocalNick(newNick);
                             updateCurrentNick(newNick);
-                            chatEditText.setText(""); // Clear input
+                            chatEditText.setText("");
                         });
                     } else {
                         runOnUiThread(() -> addChatMessage("Bot is not connected to the server."));
@@ -654,7 +601,7 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void updateLocalNick(String newNick) {
-        userNick = newNick; // Update local nickname
+        userNick = newNick;
     }
 
     public void joinChannel(String channelName) {
@@ -746,7 +693,6 @@ public class ChatActivity extends AppCompatActivity {
         }).start();
     }
 
-
     public void updateChannelName(String channelName) {
         runOnUiThread(() -> channelNameTextView.setText(channelName));
     }
@@ -755,7 +701,6 @@ public class ChatActivity extends AppCompatActivity {
         TextView currentNickTextView = findViewById(R.id.CurrentNick);
         currentNickTextView.setText("Nick: " + newNick);
     }
-
 
     private void toggleHoverPanel() {
         if (operatorPanel.getVisibility() == View.VISIBLE) {
@@ -780,9 +725,7 @@ public class ChatActivity extends AppCompatActivity {
             Animation fadeOut = AnimationUtils.loadAnimation(this, R.anim.fade_out);
             fadeOut.setAnimationListener(new Animation.AnimationListener() {
                 @Override
-                public void onAnimationStart(Animation animation) {
-                    // Optional: any action before animation starts
-                }
+                public void onAnimationStart(Animation animation) {}
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
@@ -793,13 +736,10 @@ public class ChatActivity extends AppCompatActivity {
                 }
 
                 @Override
-                public void onAnimationRepeat(Animation animation) {
-                    // Not used
-                }
+                public void onAnimationRepeat(Animation animation) {}
             });
             panel.startAnimation(fadeOut);
         } else {
-            // If the panel is already gone, just run the end action
             if (onAnimationEnd != null) {
                 onAnimationEnd.run();
             }
@@ -807,16 +747,13 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void showNickChangeDialog() {
-        // Create an AlertDialog builder
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Change Nickname");
 
-        // Set up the input
         final EditText input = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_TEXT);
         builder.setView(input);
 
-        // Set up the buttons
         builder.setPositiveButton("OK", (dialog, which) -> {
             String newNick = input.getText().toString().trim();
             if (!newNick.isEmpty()) {
@@ -828,7 +765,6 @@ public class ChatActivity extends AppCompatActivity {
         });
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
 
-        // Show the dialog
         AlertDialog dialog = builder.create();
         dialog.getWindow().getAttributes().windowAnimations = R.style.DialogAnimation;
         dialog.show();
@@ -841,6 +777,7 @@ public class ChatActivity extends AppCompatActivity {
     public void markMessageAsProcessed(String message) {
         processedMessages.add(message);
     }
+
     private void incrementUnreadCount() {
         totalUnreadMessages++;
         runOnUiThread(() -> {
@@ -848,15 +785,16 @@ public class ChatActivity extends AppCompatActivity {
             unreadBadge.setVisibility(View.VISIBLE);
         });
     }
+
     private void resetUnreadCount() {
         totalUnreadMessages = 0;
         runOnUiThread(() -> unreadBadge.setVisibility(View.GONE));
     }
+
     public void processServerMessage(String sender, String message, String channel) {
         String formattedMessage = sender + ": " + message;
         storeMessageForChannel(channel, formattedMessage);
 
-        // Ignore 005 messages
         if (message.startsWith("005")) {
             return;
         }
@@ -869,25 +807,22 @@ public class ChatActivity extends AppCompatActivity {
                 return;
             }
 
-            // Check if the message is an action (/me)
             if ("ACTION".equals(sender)) {
                 runOnUiThread(() -> addChatMessage("* " + sender + " " + message));
             } else {
                 runOnUiThread(() -> addChatMessage(formattedMessage));
             }
         } else {
-            // Increment unread count for channels not currently active
             for (ChannelItem channelItem : channelList) {
                 if (channelItem.getChannelName().equals(channel)) {
                     channelItem.incrementUnreadCount();
                     runOnUiThread(() -> channelAdapter.notifyDataSetChanged());
-                    incrementUnreadCount(); // Increment the unread badge count
+                    incrementUnreadCount();
                     break;
                 }
             }
         }
     }
-
 
     private void acquireWakeLock() {
         if (wakeLock == null) {
@@ -908,7 +843,6 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-
     private void acquireWifiLock() {
         if (wifiLock == null) {
             WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
@@ -928,15 +862,12 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Stop the foreground service to ensure bot disconnection
         Intent stopServiceIntent = new Intent(this, IrcForegroundService.class);
         stopService(stopServiceIntent);
 
-        // Ensure bot disconnects properly
         if (bot != null && bot.isConnected()) {
             new Thread(() -> {
                 try {
@@ -1011,10 +942,7 @@ public class ChatActivity extends AppCompatActivity {
                     try {
                         JSONObject json = new JSONObject(responseData);
                         String imageUrl = json.getJSONObject("data").getString("link");
-                        runOnUiThread(() -> {
-                            // Send the image URL as a message
-                            chatEditText.setText(imageUrl);
-                        });
+                        runOnUiThread(() -> chatEditText.setText(imageUrl));
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -1026,20 +954,31 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public List<String> getUserListFromActiveChannel() {
-        Channel activeChannelObj = bot.getUserChannelDao().getChannel(activeChannel);
         List<String> userList = new ArrayList<>();
-        if (activeChannelObj != null) {
-            for (User user : activeChannelObj.getUsers()) {
-                userList.add(user.getNick());
-            }
+
+        if (bot == null || !bot.isConnected()) {
+            return userList; // Return an empty list if the bot is not connected
         }
+
+        try {
+            Channel activeChannelObj = bot.getUserChannelDao().getChannel(activeChannel);
+            if (activeChannelObj != null) {
+                for (User user : activeChannelObj.getUsers()) {
+                    userList.add(user.getNick());
+                }
+            }
+        } catch (DaoException e) {
+            // Handle the case where the channel is not found
+            runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Channel not found or not yet joined.", Toast.LENGTH_SHORT).show());
+        }
+
         return userList;
     }
 
     public void addBannedUser(String banEntry) {
         if (!bannedUsers.contains(banEntry)) {
             bannedUsers.add(banEntry);
-            Log.d("ChatActivity", "Banned user added: " + banEntry);  // Log for debugging
+            Log.d("ChatActivity", "Banned user added: " + banEntry);
             addChatMessage("Banned user added: " + banEntry);
         } else {
             Log.d("ChatActivity", "Banned user already in list: " + banEntry);

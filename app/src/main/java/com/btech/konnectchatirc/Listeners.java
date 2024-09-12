@@ -116,6 +116,7 @@ public class Listeners extends ListenerAdapter {
     public void onJoin(JoinEvent event) {
         String userNick = event.getUser().getNick();
         String channel = event.getChannel().getName();
+        String hostmask = event.getUserHostmask().getHostmask(); // Correct way to get hostmask
 
         runOnUiThread(() -> {
             if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
