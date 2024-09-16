@@ -381,10 +381,7 @@ public class ChatActivity extends AppCompatActivity {
                     .setRealName("TPTC IRC Client")
                     .addAutoJoinChannel(selectedChannel)
                     .addListener(new Listeners(this))
-                    .addListener(new NickChangeListener(this))
-                    .setAutoReconnect(true)
-                    .setAutoReconnectAttempts(10)
-                    .setAutoReconnectDelay(5000);
+                    .addListener(new NickChangeListener(this));
 
             if ("KonnectChat".equals(selectedServer)) {
                 configurationBuilder.addServer("irc.konnectchatirc.net", 6667);
@@ -916,21 +913,27 @@ public class ChatActivity extends AppCompatActivity {
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
             Uri imageUri = data.getData();
 
-            Bitmap bitmap = null;
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(getContentResolver(), imageUri));
-                } else {
-                    bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            // Close the image selector immediately by resetting the data
+            data.setData(null);
 
-            if (bitmap != null) {
-                String encodedImage = encodeImageToBase64(bitmap);
-                uploadImageToImgur(encodedImage);
-            }
+            // Process the image in a separate thread to avoid blocking the UI thread
+            new Thread(() -> {
+                Bitmap bitmap = null;
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(getContentResolver(), imageUri));
+                    } else {
+                        bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                if (bitmap != null) {
+                    String encodedImage = encodeImageToBase64(bitmap);
+                    uploadImageToImgur(encodedImage);
+                }
+            }).start();
         }
     }
 
@@ -942,6 +945,9 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void uploadImageToImgur(String encodedImage) {
+        // Show a toast to inform the user that the image is being processed
+        runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Processing image...", Toast.LENGTH_SHORT).show());
+
         RequestBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("image", encodedImage)
@@ -966,7 +972,23 @@ public class ChatActivity extends AppCompatActivity {
                     try {
                         JSONObject json = new JSONObject(responseData);
                         String imageUrl = json.getJSONObject("data").getString("link");
-                        runOnUiThread(() -> chatEditText.setText(imageUrl));
+
+                        // Send the link to the server immediately
+                        new Thread(() -> {
+                            try {
+                                if (bot != null && bot.isConnected()) {
+                                    bot.sendIRC().message(activeChannel, imageUrl);
+                                    runOnUiThread(() -> {
+                                        chatEditText.setText("");  // Clear the text box
+                                        addChatMessage(userNick + ": " + imageUrl);  // Display the sent message in the chat
+                                    });
+                                } else {
+                                    runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Not connected to IRC server.", Toast.LENGTH_SHORT).show());
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }).start();
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
