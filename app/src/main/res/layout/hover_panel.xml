@@ -134,12 +134,14 @@
                     android:layout_width="140dp"
                     android:layout_height="wrap_content"
                     android:text="Add sop"
+                    android:enabled="false"
                     android:layout_margin="4dp"/>
                 <Button
                     android:id="@+id/btnAOP"
                     android:layout_width="140dp"
                     android:layout_height="wrap_content"
                     android:text="Add AOP"
+                    android:enabled="false"
                     android:layout_margin="4dp"/>
 
                 <!-- Placeholder View for Alignment (to fill the second column) -->
