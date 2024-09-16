@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.util.Log;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import org.pircbotx.PircBotX;
@@ -25,32 +26,42 @@ public class OperLogin {
     public void startOperLoginProcess() {
         Log.d(TAG, "startOperLoginProcess triggered!");
 
-        String currentNick = bot.getNick();
-        if (currentNick == null || currentNick.isEmpty()) {
-            showMessage("Unable to retrieve current nick.");
-            return;
-        }
+        // Create a dialog with two input fields: Nick and Password
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(context);
+        dialogBuilder.setTitle("Enter OPER Credentials");
 
-        AlertDialog.Builder passwordDialog = new AlertDialog.Builder(context);
-        passwordDialog.setTitle("Enter OPER Password");
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 40, 50, 10);
+
+        final EditText inputNick = new EditText(context);
+        inputNick.setHint("Nick");
+        layout.addView(inputNick);
 
         final EditText inputPassword = new EditText(context);
-        passwordDialog.setView(inputPassword);
+        inputPassword.setHint("Password");
+        inputPassword.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        layout.addView(inputPassword);
 
-        passwordDialog.setPositiveButton("OK", (dialog, which) -> {
+        dialogBuilder.setView(layout);
+
+        dialogBuilder.setPositiveButton("OK", (dialog, which) -> {
+            String nick = inputNick.getText().toString().trim();
             String password = inputPassword.getText().toString().trim();
-            Log.d(TAG, "Entered Password: " + password);
+            Log.d(TAG, "Entered Nick: " + nick);
+            // Log.d(TAG, "Entered Password: " + password); // Avoid logging passwords in production
 
-            if (!password.isEmpty()) {
-                executeOperCommand(currentNick, password);
+            if (!nick.isEmpty() && !password.isEmpty()) {
+                executeOperCommand(nick, password);
             } else {
-                showMessage("Password cannot be empty");
+                showMessage("Nick and Password cannot be empty");
             }
         });
 
-        passwordDialog.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        dialogBuilder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
 
-        passwordDialog.show();
+        AlertDialog dialog = dialogBuilder.create();
+        dialog.show();
     }
 
     private void executeOperCommand(String nick, String password) {
@@ -64,18 +75,8 @@ public class OperLogin {
                         bot.sendRaw().rawLine(command);
                         showMessage("Sent OPER command for " + nick);
 
-                        // Add a short delay before switching the active channel
-                        Thread.sleep(500);
-
-                        // Check if connected to a channel and set the active channel accordingly
-                        ((ChatActivity) context).runOnUiThread(() -> {
-                            String activeChannel = ((ChatActivity) context).getActiveChannel();
-                            if (activeChannel == null || activeChannel.isEmpty()) {
-                                ((ChatActivity) context).setActiveChannel("#ThePlaceToChat");
-                            } else {
-                                showMessage("Active channel is: " + activeChannel);
-                            }
-                        });
+                        // Additional actions if needed
+                        // For example, switch to a specific channel or update UI
 
                     } else {
                         showMessage("Bot is not connected to the server.");
@@ -95,7 +96,7 @@ public class OperLogin {
     }
 
     private boolean isNetworkAvailable() {
-        // Replace this with the actual method to check network availability
+        // Implement actual network check logic here
         return true;
     }
 }

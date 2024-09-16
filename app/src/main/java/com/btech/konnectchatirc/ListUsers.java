@@ -3,6 +3,8 @@ package com.btech.konnectchatirc;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -16,7 +18,9 @@ import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 public class ListUsers {
 
@@ -24,6 +28,27 @@ public class ListUsers {
     private PircBotX bot;
     private Activity activity;
     private List<String> userList = new ArrayList<>();
+    private List<String> filteredUserList = new ArrayList<>();
+    private ArrayAdapter<String> adapter;
+
+    // List of slap messages
+    private List<String> slapMessages = Arrays.asList(
+            "slaps %s viciously with a sharp rock",
+            "delivers a powerful backhand to %s",
+            "smacks %s across the face with force",
+            "gives %s a brutal slap upside the head",
+            "whips %s with a leather belt",
+            "throws a punch at %s's jaw",
+            "kicks %s hard in the shin",
+            "shoves %s aggressively",
+            "lands a fierce slap on %s's cheek",
+            "tosses a bucket of ice water on %s",
+            "grabs %s and shakes them vigorously",
+            "hurls a chair in %s's direction",
+            "slams a door behind %s abruptly",
+            "sprays %s with a cold water hose",
+            "drops a heavy book near %s's feet"
+    );
 
     public ListUsers(Context context, PircBotX bot, Activity activity) {
         this.context = context;
@@ -54,14 +79,40 @@ public class ListUsers {
             return;
         }
 
+        // Copy all users to filteredUserList initially
+        filteredUserList.clear();
+        filteredUserList.addAll(userList);
+
         // Inflate the custom layout for the user list dialog
         LayoutInflater inflater = LayoutInflater.from(context);
         View userListViewDialog = inflater.inflate(R.layout.dialog_user_list, null);
 
         // Find the ListView and set the adapter
         ListView userListView = userListViewDialog.findViewById(R.id.userListView);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, userList);
+        adapter = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, filteredUserList);
         userListView.setAdapter(adapter);
+
+        // Handle the search EditText
+        EditText searchUserEditText = userListViewDialog.findViewById(R.id.searchUserEditText);
+        searchUserEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start,
+                                          int count, int after) {
+                // No action needed before text changes
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start,
+                                      int before, int count) {
+                // Filter the user list as the user types
+                filterUserList(s.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // No action needed after text changes
+            }
+        });
 
         // Create and show the user list dialog with a proper background
         AlertDialog.Builder userDialog = new AlertDialog.Builder(context, R.style.CustomDialogTheme);
@@ -73,13 +124,13 @@ public class ListUsers {
         dialog.setOnShowListener(dialogInterface -> {
             dialog.getWindow().setLayout(
                     (int) (300 * context.getResources().getDisplayMetrics().density), // Custom width
-                    (int) (400 * context.getResources().getDisplayMetrics().density)  // Custom height
+                    (int) (600 * context.getResources().getDisplayMetrics().density)  // Custom height
             );
         });
 
         // Set up the ListView item click listener
         userListView.setOnItemClickListener((parent, view, position, id) -> {
-            String selectedUser = userList.get(position);
+            String selectedUser = filteredUserList.get(position); // Use filtered list
             dialog.dismiss();
 
             // Show options for the selected user
@@ -90,6 +141,22 @@ public class ListUsers {
         dialog.setCanceledOnTouchOutside(true);
 
         dialog.show();
+    }
+
+    private void filterUserList(String query) {
+        filteredUserList.clear();
+        if (query.isEmpty()) {
+            filteredUserList.addAll(userList);
+        } else {
+            String lowerCaseQuery = query.toLowerCase();
+            for (String user : userList) {
+                if (user.toLowerCase().contains(lowerCaseQuery)) {
+                    filteredUserList.add(user);
+                }
+            }
+        }
+        // Notify the adapter of the changes
+        activity.runOnUiThread(() -> adapter.notifyDataSetChanged());
     }
 
     private void showUserOptions(String selectedUser) {
@@ -115,8 +182,8 @@ public class ListUsers {
 
         dialog.setOnShowListener(dialogInterface -> {
             dialog.getWindow().setLayout(
-                    (int) (240 * context.getResources().getDisplayMetrics().density),
-                    (int) (280 * context.getResources().getDisplayMetrics().density)
+                    (int) (240 * context.getResources().getDisplayMetrics().density),//width of the dialog
+                    (int) (400 * context.getResources().getDisplayMetrics().density) //length of the dialog
             );
         });
 
@@ -140,7 +207,6 @@ public class ListUsers {
 
         dialog.setCanceledOnTouchOutside(true);
     }
-
 
     private void showKickDialog(String selectedUser, String activeChannel) {
         AlertDialog.Builder kickDialog = new AlertDialog.Builder(context);
@@ -204,13 +270,18 @@ public class ListUsers {
         new Thread(() -> {
             if (bot != null && bot.isConnected()) {
                 try {
+                    // Choose a random slap message
+                    Random random = new Random();
+                    String slapMessageTemplate = slapMessages.get(random.nextInt(slapMessages.size()));
+                    String slapMessage = String.format(slapMessageTemplate, selectedUser);
+
                     // Correctly sending a /me action
-                    bot.sendIRC().action(activeChannel, "slaps " + selectedUser + " with a sharp rock");
+                    bot.sendIRC().action(activeChannel, slapMessage);
 
                     // Display the slap action immediately in the sender's chat
                     activity.runOnUiThread(() -> {
-                        String message = "* " + bot.getNick() + " slaps " + selectedUser + " with a sharp rock";
-                        ((ChatActivity) activity).addChatMessage(message); // Add the message without the boolean
+                        String message = "* " + bot.getNick() + " " + slapMessage;
+                        ((ChatActivity) activity).addChatMessage(message);
                     });
 
                 } catch (Exception e) {

@@ -158,7 +158,21 @@ public class ChatActivity extends AppCompatActivity {
         startForegroundService(serviceIntent);
 
         ImageButton uploadButton = findViewById(R.id.uploadButton);
-        uploadButton.setOnClickListener(v -> openImageSelector());
+        uploadButton.setOnClickListener(v -> {
+            if (bot != null && bot.isConnected()) {
+                if (activeChannel != null && bot.getUserChannelDao().containsChannel(activeChannel)) {
+                    // Proceed with image selection
+                    openImageSelector();
+                } else {
+                    // Not connected to the active channel
+                    Toast.makeText(ChatActivity.this, "Cannot upload images without being connected to a channel.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                // Not connected to the server
+                Toast.makeText(ChatActivity.this, "Cannot upload images without being connected to the server.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
 
         String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
         String desiredNick = getIntent().getStringExtra("DESIRED_NICK");
@@ -363,7 +377,7 @@ public class ChatActivity extends AppCompatActivity {
                     .setName(userNick)
                     .setAutoNickChange(true)
                     .setRealName("TPTC IRC Client")
-                    .addServer("irc.theplacetochat.net", 6667)
+                    .addServer("irc.konnectchatirc.net", 6667)
                     .addAutoJoinChannel(selectedChannel)
                     .addListener(new Listeners(this))
                     .addListener(new NickChangeListener(this))

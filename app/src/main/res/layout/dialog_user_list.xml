@@ -17,11 +17,26 @@
         android:layout_gravity="center_horizontal"
         android:paddingBottom="8dp" />
 
+    <!-- Added Search EditText -->
+    <EditText
+        android:id="@+id/searchUserEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Search user..."
+        android:padding="8dp"
+        android:background="@drawable/edit_text_background"
+        android:textColor="@android:color/black"
+        android:textColorHint="@android:color/darker_gray"
+        android:drawableLeft="@android:drawable/ic_menu_search"
+        android:drawablePadding="8dp"
+        android:inputType="text" />
+
     <ListView
         android:id="@+id/userListView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:divider="@android:color/darker_gray"
         android:dividerHeight="1dp"
+        android:paddingTop="8dp"
         android:paddingBottom="8dp"/>
 </LinearLayout>
