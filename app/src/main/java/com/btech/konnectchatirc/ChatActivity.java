@@ -369,23 +369,30 @@ public class ChatActivity extends AppCompatActivity {
     private void initializeBot() {
         if (bot == null) {
             String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
+            String selectedServer = getIntent().getStringExtra("SELECTED_SERVER");
+
             if (selectedChannel == null || selectedChannel.isEmpty()) {
                 selectedChannel = "#ThePlaceToChat";
             }
 
-            Configuration configuration = new Configuration.Builder()
+            Configuration.Builder configurationBuilder = new Configuration.Builder()
                     .setName(userNick)
                     .setAutoNickChange(true)
                     .setRealName("TPTC IRC Client")
-                    .addServer("irc.konnectchatirc.net", 6667)
                     .addAutoJoinChannel(selectedChannel)
                     .addListener(new Listeners(this))
                     .addListener(new NickChangeListener(this))
                     .setAutoReconnect(true)
                     .setAutoReconnectAttempts(10)
-                    .setAutoReconnectDelay(5000)
-                    .buildConfiguration();
+                    .setAutoReconnectDelay(5000);
 
+            if ("KonnectChat".equals(selectedServer)) {
+                configurationBuilder.addServer("irc.konnectchatirc.net", 6667);
+            } else if ("KonnectChat NSFW".equals(selectedServer)) {
+                configurationBuilder.addServer("Aaronz.konnectchatirc.net", 7100);
+            }
+
+            Configuration configuration = configurationBuilder.buildConfiguration();
             bot = new PircBotX(configuration);
             setActiveChannel(selectedChannel);
             updateCurrentNick(userNick);

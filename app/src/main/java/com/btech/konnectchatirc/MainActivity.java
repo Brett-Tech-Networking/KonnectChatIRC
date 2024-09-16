@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -16,6 +17,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -35,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
     private Spinner channelSpinner;
-    private ArrayAdapter<String> adapter;
+    private ArrayAdapter<String> channelAdapter;
     private ArrayList<String> channels;
     private SharedPreferences sharedPreferences;
     private static final String CHANNELS_KEY = "saved_channels";
@@ -66,26 +68,47 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Retrieve the preset channels and add user-defined channels
-        channels = new ArrayList<>();
-        loadPresetChannels();
-        loadUserChannels();
+        // Initialize server spinner
+        Spinner serverSpinner = findViewById(R.id.serverSpinner);
+        ArrayAdapter<String> serverAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, new String[]{"KonnectChat", "KonnectChat NSFW"}) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                TextView textView = (TextView) view.findViewById(android.R.id.text1);
+                if (textView != null) {
+                    textView.setTextColor(getResources().getColor(R.color.white)); // Set the text color to white
+                }
+                return view;
+            }
 
-        // Initialize spinner and adapter
-        channelSpinner = findViewById(R.id.channelSpinner);
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, channels);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        channelSpinner.setAdapter(adapter);
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View view = super.getDropDownView(position, convertView, parent);
+                TextView textView = (TextView) view.findViewById(android.R.id.text1);
+                if (textView != null) {
+                    textView.setTextColor(getResources().getColor(R.color.white)); // Set the text color to white in the dropdown list
+                }
+                return view;
+            }
+        };
+        serverAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        serverSpinner.setAdapter(serverAdapter);
 
-        // Apply color programmatically for selected item
-        channelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        // Warning message for NSFW server selection
+        serverSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                TextView textView = (TextView) parent.getChildAt(0);
-                if (textView != null) {
-                    textView.setTextColor(getResources().getColor(R.color.white)); // Use the correct color
-                } else {
-                    Log.e("MainActivity", "TextView is null, cannot set text color.");
+                if (position == 1) { // "KonnectChat NSFW" is selected
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("NSFW Server Warning")
+                            .setMessage("You have selected a server that contains NSFW (Not Safe For Work) content. Proceed with caution.")
+                            .setPositiveButton("Proceed", (dialog, which) -> {
+                                // User confirms to proceed
+                            })
+                            .setNegativeButton("Cancel", (dialog, which) -> {
+                                serverSpinner.setSelection(0); // Revert to the first option
+                            })
+                            .show();
                 }
             }
 
@@ -95,9 +118,41 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // Retrieve the preset channels and add user-defined channels
+        channels = new ArrayList<>();
+        loadPresetChannels();
+        loadUserChannels();
+
+        // Initialize channel spinner and adapter
+        channelSpinner = findViewById(R.id.channelSpinner);
+        channelAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, channels) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                TextView textView = (TextView) view.findViewById(android.R.id.text1);
+                if (textView != null) {
+                    textView.setTextColor(getResources().getColor(R.color.white)); // Set the text color to white
+                }
+                return view;
+            }
+
+            @Override
+            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                View view = super.getDropDownView(position, convertView, parent);
+                TextView textView = (TextView) view.findViewById(android.R.id.text1);
+                if (textView != null) {
+                    textView.setTextColor(getResources().getColor(R.color.white)); // Set the text color to white in the dropdown list
+                }
+                return view;
+            }
+        };
+        channelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        channelSpinner.setAdapter(channelAdapter);
+
         Button joinButton = findViewById(R.id.joinButton);
         joinButton.setOnClickListener(view -> {
             String selectedChannel = channelSpinner.getSelectedItem().toString();
+            String selectedServer = serverSpinner.getSelectedItem().toString();
             Intent intent = new Intent(MainActivity.this, ChatActivity.class);
 
             // Pass the desired nick to ChatActivity if provided
@@ -106,6 +161,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             intent.putExtra("SELECTED_CHANNEL", selectedChannel);
+            intent.putExtra("SELECTED_SERVER", selectedServer);
             startActivity(intent);
         });
 
@@ -137,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showAddChannelDialog() {
-        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Add Channel");
 
         final EditText input = new EditText(this);
@@ -148,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
             String newChannel = input.getText().toString().trim();
             if (!newChannel.isEmpty() && !channels.contains(newChannel)) {
                 channels.add(newChannel);
-                adapter.notifyDataSetChanged();
+                channelAdapter.notifyDataSetChanged();
                 saveChannel(newChannel);
                 Toast.makeText(MainActivity.this, "Channel added", Toast.LENGTH_SHORT).show();
             } else {

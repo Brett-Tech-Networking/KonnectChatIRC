@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -25,6 +26,7 @@ public class JoinChannel extends ListenerAdapter {
     private List<String> channelList = new ArrayList<>();
     private Set<String> channelSet = new HashSet<>();  // To prevent duplicate channels
     private AlertDialog dialog;
+    private ArrayAdapter<String> adapter; // Adapter for the ListView
 
     public JoinChannel(Context context, PircBotX bot, ChatActivity chatActivity, View hoverPanel) {
         this.context = context;
@@ -77,19 +79,52 @@ public class JoinChannel extends ListenerAdapter {
 
         builder.setTitle("Select a Channel to Join");
 
+        // Create a ListView and EditText for searching
         ListView channelListView = new ListView(context);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, channelList);
+        EditText searchBox = new EditText(context);
+        searchBox.setHint("Search Channels...");
+
+        adapter = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, channelList);
         channelListView.setAdapter(adapter);
 
+        searchBox.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String searchText = s.toString().toLowerCase();
+                List<String> filteredList = new ArrayList<>();
+                for (String channel : channelList) {
+                    String formattedChannel = channel.toLowerCase().replace("#", "");
+                    if (formattedChannel.contains(searchText)) {
+                        filteredList.add(channel);
+                    }
+                }
+                adapter.clear();
+                adapter.addAll(filteredList);
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {}
+        });
+
         channelListView.setOnItemClickListener((parent, view, position, id) -> {
-            String selectedChannel = channelList.get(position);
+            String selectedChannel = adapter.getItem(position);
             if (dialog != null) {
                 dialog.dismiss();  // Dismiss the dialog when a channel is selected
             }
             joinSelectedChannel(selectedChannel);
         });
 
-        builder.setView(channelListView);
+        // Combine the search box and ListView into one layout
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(context);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.addView(searchBox);
+        layout.addView(channelListView);
+
+        builder.setView(layout);
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
         dialog = builder.create();  // Create the dialog and assign it to the class-level variable
         dialog.show();  // Show the dialog
