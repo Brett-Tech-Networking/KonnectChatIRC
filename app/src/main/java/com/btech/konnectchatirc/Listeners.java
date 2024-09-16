@@ -217,7 +217,7 @@ public class Listeners extends ListenerAdapter {
             chatActivity.addChatMessage("Identification failed: Incorrect password.");
         } else if (message.contains("isn't registered")) {
             chatActivity.addChatMessage("Identification failed: Nickname isn't registered.");
-    } else if (message.contains("You are now logged in as")) {
+        } else if (message.contains("You are now logged in as")) {
             chatActivity.addChatMessage(message);
         } else if (message.contains("sets mode: +r")) {
             chatActivity.addChatMessage("NickServ: Mode +r set, you are now recognized.");

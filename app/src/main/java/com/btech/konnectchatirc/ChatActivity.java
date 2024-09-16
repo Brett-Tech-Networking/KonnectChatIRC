@@ -381,6 +381,9 @@ public class ChatActivity extends AppCompatActivity {
                     .addAutoJoinChannel(selectedChannel)
                     .addListener(new Listeners(this))
                     .addListener(new NickChangeListener(this))
+                    .setAutoReconnect(true)
+                    .setAutoReconnectAttempts(10)
+                    .setAutoReconnectDelay(5000)
                     .buildConfiguration();
 
             bot = new PircBotX(configuration);
