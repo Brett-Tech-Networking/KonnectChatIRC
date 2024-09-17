@@ -1037,5 +1037,12 @@ public class ChatActivity extends AppCompatActivity {
             channelMessagesMap.put(activeChannel, new ArrayList<>());
             channelAdapter.notifyDataSetChanged();
         }
+        // Inside onCreate or a similar initialization method
+        Button btnZline = findViewById(R.id.btnZline);
+        btnZline.setOnClickListener(v -> {
+            Zline zline = new Zline(this, bot, this);
+            zline.startZlineProcess();
+        });
+
     }
 }
