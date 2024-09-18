@@ -607,7 +607,6 @@ public class ChatActivity extends AppCompatActivity {
 
     public void addChatMessage(String message) {
         // Prevent duplicate messages
-        if (!hasMessageBeenProcessed(message)) {
             // Check if the message contains any mention format
             if (message.contains("@")) {
                 Spannable spannableMessage = createMentionSpannable(message);
@@ -619,7 +618,6 @@ public class ChatActivity extends AppCompatActivity {
             chatAdapter.notifyDataSetChanged();
             chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
             markMessageAsProcessed(message);  // Mark message as processed to avoid duplication
-        }
     }
 
 
