@@ -3,6 +3,8 @@ package com.btech.konnectchatirc;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -14,13 +16,13 @@ public class OperLogin {
 
     private static final String TAG = "OperLogin";
     private final Context context;
+    private final Activity activity;  // Use a more generic Activity type
     private final PircBotX bot;
-    private final Activity activity;
 
-    public OperLogin(Context context, PircBotX bot, Activity activity) {
+    public OperLogin(Context context, Activity activity, PircBotX bot) {
         this.context = context;
-        this.bot = bot;
         this.activity = activity;
+        this.bot = bot;
     }
 
     public void startOperLoginProcess() {
@@ -74,7 +76,7 @@ public class OperLogin {
                         String command = "OPER " + nick + " " + password;
                         bot.sendRaw().rawLine(command);
                         showMessage("Sent OPER command for " + nick);
-
+                        refreshChat();
                         // Additional actions if needed
                         // For example, switch to a specific channel or update UI
 
@@ -98,5 +100,9 @@ public class OperLogin {
     private boolean isNetworkAvailable() {
         // Implement actual network check logic here
         return true;
+    }
+
+    private void refreshChat() {
+        new Handler(Looper.getMainLooper()).post(() -> ((ChatActivity) activity).getChatAdapter().notifyDataSetChanged());
     }
 }

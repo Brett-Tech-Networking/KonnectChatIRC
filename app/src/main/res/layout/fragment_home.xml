@@ -40,19 +40,40 @@
         android:layout_centerHorizontal="true"
         android:layout_marginTop="20dp"/>
 
-    <!-- Textbox for desired nick -->
-    <EditText
-        android:id="@+id/nickEditText"
-        android:layout_width="wrap_content"
+    <!-- LinearLayout to arrange nick and password fields side by side -->
+    <LinearLayout
+        android:id="@+id/nickPasswordLayout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Enter desired nick"
-        android:textColor="@color/white"
-        android:background="@drawable/edit_text_border"
-        android:visibility="gone"
-        android:textColorHint="#808080"
         android:layout_below="@id/nickCheckBox"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="1dp"/>
+        android:visibility="gone"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp">
+
+        <!-- Textbox for desired nick -->
+        <EditText
+            android:id="@+id/nickEditText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Enter desired nick"
+            android:textColor="@color/white"
+            android:background="@drawable/edit_text_border"
+            android:textColorHint="#808080" />
+
+        <!-- Password EditText -->
+        <EditText
+            android:id="@+id/passwordEditText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Password"
+            android:inputType="textPassword"
+            android:background="@drawable/edit_text_border"
+            android:textColor="@android:color/white"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
 
     <!-- Spinner for server selection -->
     <Spinner
@@ -60,7 +81,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/edit_text_border"
-        android:layout_below="@id/nickEditText"
+        android:layout_below="@id/nickPasswordLayout"
         android:layout_centerHorizontal="true"
         android:padding="4dp"
         android:layout_marginTop="20dp"/>

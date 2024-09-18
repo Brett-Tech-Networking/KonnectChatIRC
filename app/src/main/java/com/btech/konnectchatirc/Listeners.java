@@ -18,7 +18,7 @@ public class Listeners extends ListenerAdapter {
     @Override
     public void onNotice(NoticeEvent event) {
         String channel = event.getChannel() != null ? event.getChannel().getName() : "";
-        processServerMessage(event.getUser().getNick(), event.getNotice(), channel);
+        chatActivity.processServerMessage(event.getUser().getNick(), event.getNotice(), channel);
     }
 
     @Override
@@ -38,13 +38,13 @@ public class Listeners extends ListenerAdapter {
             return;
         }
         if (rawMessage.contains("MODE")) {
-            processServerMessage("SERVER", rawMessage, chatActivity.getActiveChannel());
+            chatActivity.processServerMessage("SERVER", rawMessage, chatActivity.getActiveChannel());
         }
 
         if (event.getCode() == 381) {
-            processServerMessage("Server", "You are now an IRC Operator", chatActivity.getActiveChannel());
+            chatActivity.processServerMessage("Server", "You are now an IRC Operator", chatActivity.getActiveChannel());
         } else if (event.getCode() == 491) {
-            processServerMessage("Server", "Failed to become an IRC Operator: " + rawMessage, chatActivity.getActiveChannel());
+            chatActivity.processServerMessage("Server", "Failed to become an IRC Operator: " + rawMessage, chatActivity.getActiveChannel());
         }
 
         if (rawMessage.matches(".*CAP.*ACK :Multi-prefix.*") || rawMessage.matches(".*CAP.*ACK :away-notify.*")) {
@@ -64,7 +64,7 @@ public class Listeners extends ListenerAdapter {
             return;
         }
 
-        processServerMessage("SERVER", code + ": " + rawMessage, chatActivity.getActiveChannel());
+        chatActivity.processServerMessage("SERVER", code + ": " + rawMessage, chatActivity.getActiveChannel());
     }
 
     @Override
@@ -76,15 +76,37 @@ public class Listeners extends ListenerAdapter {
     @Override
     public void onMessage(MessageEvent event) {
         String channel = event.getChannel().getName();
-        chatActivity.processServerMessage(event.getUser().getNick(), event.getMessage(), channel);
+        String message = event.getMessage();
+        String sender = event.getUser().getNick();
+        chatActivity.processServerMessage(sender, message, channel);
+
+        // Process server messages related to identification
+        if (sender.equalsIgnoreCase("NickServ")) {
+            if (message.contains("Password accepted")) {
+                // Identification successful
+                chatActivity.addChatMessage("Successfully identified with NickServ.");
+                Log.d("IRC", "Identification successful.");
+            } else if (message.contains("Incorrect password")) {
+                // Identification failed
+                chatActivity.addChatMessage("Failed to identify with NickServ. Incorrect password.");
+                Log.e("IRC", "Identification failed: Incorrect password.");
+            } else {
+                // Other NickServ messages
+                chatActivity.addChatMessage("NickServ: " + message);
+                Log.d("IRC", "NickServ message: " + message);
+            }
+        } else {
+            // Existing message processing
+            chatActivity.processServerMessage(sender, message, channel);
+        }
+
     }
 
     @Override
     public void onMode(ModeEvent event) {
         String mode = event.getMode();
-        String user = event.getUser().getNick();
+        String userNick = event.getUser().getNick();
         String channel = event.getChannel().getName();
-
         String action = "";
 
         if (mode.contains("+o")) {
@@ -104,19 +126,21 @@ public class Listeners extends ListenerAdapter {
         } else if (mode.contains("-h")) {
             action = "removed from half-operator status";
         }
-
-        String targetUser = event.getUser().getNick();
+        refreshChat();
         String performingUser = event.getUserHostmask().getNick();
-        String message = targetUser + " was " + action + " in " + channel + " by " + performingUser;
+        String message = userNick + " was " + action + " in " + channel + " by " + performingUser;
 
-        processServerMessage("SERVER", message, channel);
+        // Refresh the user list to reflect the status change
+        chatActivity.runOnUiThread(() -> chatActivity.getChatAdapter().notifyDataSetChanged());
+
+        chatActivity.processServerMessage("SERVER", message, channel);
     }
+
 
     @Override
     public void onJoin(JoinEvent event) {
         String userNick = event.getUser().getNick();
         String channel = event.getChannel().getName();
-        String hostmask = event.getUserHostmask().getHostmask(); // Correct way to get hostmask
 
         runOnUiThread(() -> {
             if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
@@ -126,7 +150,22 @@ public class Listeners extends ListenerAdapter {
             } else if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
                 chatActivity.addChatMessage(userNick + " has joined the channel.");
             }
+            refreshChat();
         });
+
+        // Ensure network operation runs in a background thread
+        new Thread(() -> {
+            try {
+                if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
+                    // Send identification command to NickServ
+                    String identifyCommand = "PRIVMSG NickServ :IDENTIFY " + chatActivity.getUserNick() + " " + chatActivity.getDesiredPassword();
+                    event.getBot().sendRaw().rawLine(identifyCommand);
+                }
+            } catch (Exception e) {
+                Log.e("Listeners", "Error sending IDENTIFY command: " + e.getMessage());
+            }
+        }).start();
+        refreshChat();
     }
 
     @Override
@@ -134,6 +173,7 @@ public class Listeners extends ListenerAdapter {
         runOnUiThread(() -> {
             String userNick = event.getUser().getNick();
             String channel = event.getChannel().getName();
+            refreshChat();
             if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
                 chatActivity.addChatMessage("You have left the channel: " + channel);
                 chatActivity.partChannel(channel);
@@ -151,7 +191,10 @@ public class Listeners extends ListenerAdapter {
         String reason = event.getReason();
         String message = kickedUser + " was kicked from " + channel + " by " + kicker + " (" + reason + ")";
 
-        processServerMessage("SERVER", message, channel);
+        // Refresh the user list if the kicked user was the active user
+        chatActivity.runOnUiThread(() -> chatActivity.getChatAdapter().notifyDataSetChanged());
+
+        chatActivity.processServerMessage("SERVER", message, channel);
     }
 
     @Override
@@ -184,7 +227,11 @@ public class Listeners extends ListenerAdapter {
 
     @Override
     public void onNickChange(NickChangeEvent event) {
-        runOnUiThread(() -> chatActivity.addChatMessage(event.getOldNick() + " is now known as " + event.getNewNick()));
+        runOnUiThread(() -> {
+            chatActivity.addChatMessage(event.getOldNick() + " is now known as " + event.getNewNick());
+            chatActivity.getChatAdapter().notifyDataSetChanged();  // Update the UI to reflect the nick change
+            refreshChat();
+        });
     }
 
     private void runOnUiThread(Runnable runnable) {
@@ -224,5 +271,9 @@ public class Listeners extends ListenerAdapter {
         } else {
             chatActivity.addChatMessage("NickServ: " + message);
         }
+    }
+
+    private void refreshChat() {
+        new Handler(Looper.getMainLooper()).post(() -> chatActivity.getChatAdapter().notifyDataSetChanged());
     }
 }

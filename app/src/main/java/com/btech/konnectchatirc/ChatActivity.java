@@ -1,6 +1,7 @@
 package com.btech.konnectchatirc;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -28,6 +29,7 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
@@ -99,6 +101,13 @@ public class ChatActivity extends AppCompatActivity {
     private Map<String, List<String>> channelMessagesMap = new HashMap<>(); // Stores messages for each channel
     private TextView unreadBadge;
     private int totalUnreadMessages = 0;
+    private String desiredPassword;
+    private ProgressDialog progressDialog; // Declare ProgressDialog
+
+    public String getDesiredPassword() {
+        return desiredPassword;
+    }
+
 
     // Add bannedUsers list
     private List<String> bannedUsers = new ArrayList<>();
@@ -135,6 +144,7 @@ public class ChatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         getWindow().setFormat(PixelFormat.RGBA_8888);
         setContentView(R.layout.activity_chat);
+// Inside onCreate() in ChatActivity
         acquireWakeLock();
         acquireWifiLock();
 
@@ -149,7 +159,7 @@ public class ChatActivity extends AppCompatActivity {
         // Initialize the RecyclerView for chat messages
         chatRecyclerView = findViewById(R.id.chatRecyclerView);
         chatMessages = new ArrayList<>();
-        chatAdapter = new ChatAdapter(this, chatMessages);
+        chatAdapter = new ChatAdapter(this, chatMessages);  // Pass ChatActivity instance
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);  // Ensure the adapter is set here
 
@@ -176,6 +186,8 @@ public class ChatActivity extends AppCompatActivity {
 
         String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
         String desiredNick = getIntent().getStringExtra("DESIRED_NICK");
+        desiredPassword = getIntent().getStringExtra("DESIRED_PASSWORD"); // Retrieve password
+
 
         channelNameTextView = findViewById(R.id.ChannelName);
         chatEditText = findViewById(R.id.chatEditText);
@@ -256,7 +268,7 @@ public class ChatActivity extends AppCompatActivity {
 
         btnKill.setOnClickListener(v -> new Kill(this, bot, this).startKillProcess());
 
-        btnOperLogin.setOnClickListener(v -> new OperLogin(this, bot, this).startOperLoginProcess());
+        btnOperLogin.setOnClickListener(v -> new OperLogin(this, this, bot).startOperLoginProcess());
 
         btnSajoin.setOnClickListener(v -> new Sajoin(this, bot, this).startSajoinProcess());
         btnSapart.setOnClickListener(v -> new Sajoin(this, bot, this).startSapartProcess());
@@ -383,10 +395,13 @@ public class ChatActivity extends AppCompatActivity {
                     .addListener(new Listeners(this))
                     .addListener(new NickChangeListener(this));
 
-            if ("KonnectChat".equals(selectedServer)) {
+            if ("KonnectChat IRC".equals(selectedServer)) {
                 configurationBuilder.addServer("irc.konnectchatirc.net", 6667);
-            } else if ("KonnectChat NSFW".equals(selectedServer)) {
+            } else if ("KonnectChat IRC NSFW".equals(selectedServer)) {
                 configurationBuilder.addServer("Aaronz.konnectchatirc.net", 7100);
+            }
+            else if ("ThePlaceToChat IRC".equals(selectedServer)) {
+                configurationBuilder.addServer("irc.theplacetochat.net", 6667);
             }
 
             Configuration configuration = configurationBuilder.buildConfiguration();
@@ -399,14 +414,16 @@ public class ChatActivity extends AppCompatActivity {
     public PircBotX getBot() {
         return bot;
     }
-
     private void connectToIrcServer() {
         new Thread(() -> {
             int retries = 0;
-            while (retries < 5 && (bot == null || !bot.isConnected())) {
+            boolean connected = false;
+
+            while (retries < 5 && !connected && !isFinishing()) {
                 try {
                     bot.startBot();
                     if (bot.isConnected()) {
+                        connected = true;
                         String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
 
                         if (selectedChannel != null && !selectedChannel.isEmpty()) {
@@ -416,17 +433,31 @@ public class ChatActivity extends AppCompatActivity {
                                 setActiveChannel(selectedChannel);
                                 updateCurrentNick(userNick);
                             });
+
+                            // Adding a 3-second delay for the Identify command to ensure channel join is complete
+                            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                                // Check if a password is provided for identification
+                                if (desiredPassword != null && !desiredPassword.isEmpty()) {
+                                    String identifyCommand = "PRIVMSG NickServ :IDENTIFY " + userNick + " " + desiredPassword;
+                                    bot.sendRaw().rawLine(identifyCommand);
+                                    runOnUiThread(() -> addChatMessage("Identifying user: " + userNick));
+                                    Log.d("ChatActivity", "Sent IDENTIFY command: " + identifyCommand);
+                                } else {
+                                    runOnUiThread(() -> addChatMessage("No password provided for identification."));
+                                    Log.d("ChatActivity", "No password provided; skipping identification.");
+                                }
+                            }, 500); // 3-second delay
+
+                            updateChannelListAfterDelay();
+                            break;
                         } else {
                             runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No channel selected.", Toast.LENGTH_LONG).show());
                         }
-
-                        updateChannelListAfterDelay();
-                        break;
                     } else {
                         Log.e("IRC Connection", "Bot not connected, retrying...");
                         retries++;
                         try {
-                            Thread.sleep(5000);
+                            Thread.sleep(2000); // Wait for 5 seconds before retrying
                         } catch (InterruptedException e) {
                             Log.e("IRC Connection", "Thread interrupted during sleep", e);
                             Thread.currentThread().interrupt();
@@ -440,7 +471,7 @@ public class ChatActivity extends AppCompatActivity {
                     runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Error connecting to IRC server. Retrying...", Toast.LENGTH_LONG).show());
 
                     try {
-                        Thread.sleep(5000);
+                        Thread.sleep(5000); // Wait for 5 seconds before retrying
                     } catch (InterruptedException ex) {
                         Log.e("IRC Connection", "Thread interrupted during sleep", ex);
                         Thread.currentThread().interrupt();
@@ -449,11 +480,13 @@ public class ChatActivity extends AppCompatActivity {
                 }
             }
 
-            if (retries >= 5) {
+            if (!connected) {
                 runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Unable to connect to IRC server after multiple attempts.", Toast.LENGTH_LONG).show());
             }
         }).start();
     }
+
+
 
     private void updateChannelListAfterDelay() {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
@@ -484,10 +517,15 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void addChatMessage(String message) {
-        chatMessages.add(message);
-        chatAdapter.notifyDataSetChanged();
-        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+        // Prevent duplicate messages
+        if (!hasMessageBeenProcessed(message)) {
+            chatMessages.add(message);
+            chatAdapter.notifyDataSetChanged();
+            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+            markMessageAsProcessed(message);  // Mark message as processed to avoid duplication
+        }
     }
+
 
     public void addChatMessage(String message, String channel) {
         if (!channelMessagesMap.containsKey(channel)) {
@@ -1043,6 +1081,26 @@ public class ChatActivity extends AppCompatActivity {
             Zline zline = new Zline(this, bot, this);
             zline.startZlineProcess();
         });
-
     }
+    public ChatAdapter getChatAdapter() {
+        return chatAdapter;
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Terminate the IRC connection when the activity is paused or no longer visible
+        if (bot != null && bot.isConnected()) {
+            new Thread(() -> {
+                try {
+                    bot.sendIRC().quitServer("App is no longer active");
+                    bot.stopBotReconnect(); // Stop any auto-reconnect attempts if enabled
+                    bot.close(); // Properly close the connection
+                    Log.d("ChatActivity", "IRC connection terminated.");
+                } catch (Exception e) {
+                    Log.e("ChatActivity", "Error while disconnecting from IRC", e);
+                }
+            }).start();
+        }
+    }
+
 }

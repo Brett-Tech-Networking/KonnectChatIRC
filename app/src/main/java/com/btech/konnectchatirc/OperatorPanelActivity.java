@@ -41,7 +41,7 @@ public class OperatorPanelActivity extends Activity {
 
     // Method to handle OperLogin process
     private void startOperLoginProcess() {
-        OperLogin operLogin = new OperLogin(this, bot, this);  // Create an instance of OperLogin
+        OperLogin operLogin = new OperLogin(this, this, bot);  // Create an instance of OperLogin
         operLogin.startOperLoginProcess();  // Call the method to start the login process
     }
 

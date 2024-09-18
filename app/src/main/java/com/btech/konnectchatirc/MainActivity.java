@@ -13,6 +13,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,7 +43,9 @@ public class MainActivity extends AppCompatActivity {
     private SharedPreferences sharedPreferences;
     private static final String CHANNELS_KEY = "saved_channels";
     private EditText nickEditText;
+    private EditText passwordEditText;  // Added for password input
     private CheckBox nickCheckBox;
+    private LinearLayout nickPasswordLayout;  // Layout for the Nick and Password fields
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,22 +58,24 @@ public class MainActivity extends AppCompatActivity {
 
         sharedPreferences = getSharedPreferences("com.btech.konnectchatirc", Context.MODE_PRIVATE);
 
-        // Initialize the checkbox and edit text
+        // Initialize the checkbox and edit text for nickname and password
         nickCheckBox = findViewById(R.id.nickCheckBox);
         nickEditText = findViewById(R.id.nickEditText);
+        passwordEditText = findViewById(R.id.passwordEditText);  // Password field initialization
+        nickPasswordLayout = findViewById(R.id.nickPasswordLayout);  // Layout for nickname and password
 
-        // Handle checkbox state changes
+        // Handle checkbox state changes to toggle the nickname and password layout visibility
         nickCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
-                nickEditText.setVisibility(View.VISIBLE);
+                nickPasswordLayout.setVisibility(View.VISIBLE);  // Show the layout
             } else {
-                nickEditText.setVisibility(View.GONE);
+                nickPasswordLayout.setVisibility(View.GONE);  // Hide the layout
             }
         });
 
         // Initialize server spinner
         Spinner serverSpinner = findViewById(R.id.serverSpinner);
-        ArrayAdapter<String> serverAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, new String[]{"KonnectChat", "KonnectChat NSFW"}) {
+        ArrayAdapter<String> serverAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, new String[]{"KonnectChat IRC", "KonnectChat IRC NSFW", "ThePlaceToChat IRC"}) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 View view = super.getView(position, convertView, parent);
@@ -155,9 +160,10 @@ public class MainActivity extends AppCompatActivity {
             String selectedServer = serverSpinner.getSelectedItem().toString();
             Intent intent = new Intent(MainActivity.this, ChatActivity.class);
 
-            // Pass the desired nick to ChatActivity if provided
-            if (nickCheckBox.isChecked() && !nickEditText.getText().toString().trim().isEmpty()) {
+            // Pass the desired nick and password to ChatActivity if provided
+            if (nickCheckBox.isChecked() && !nickEditText.getText().toString().trim().isEmpty() && !passwordEditText.getText().toString().trim().isEmpty()) {
                 intent.putExtra("DESIRED_NICK", nickEditText.getText().toString().trim());
+                intent.putExtra("DESIRED_PASSWORD", passwordEditText.getText().toString().trim());  // Pass the password
             }
 
             intent.putExtra("SELECTED_CHANNEL", selectedChannel);

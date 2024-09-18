@@ -18,6 +18,7 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.ChannelV
     public ChannelAdapter(List<ChannelItem> channelList, OnChannelClickListener listener) {
         this.channelList = channelList;
         this.listener = listener;
+
     }
 
     @NonNull

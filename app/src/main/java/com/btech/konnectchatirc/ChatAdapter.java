@@ -17,12 +17,17 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DecodeFormat;
 import com.bumptech.glide.request.RequestOptions;
 
+import org.pircbotx.Channel;
+import org.pircbotx.PircBotX;
+import org.pircbotx.User;
+
 import java.util.List;
 
 public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private Context context;
-    private List<Object> messages;
+    private final Context context;
+    private final List<Object> messages;
+    private final PircBotX bot;
 
     private static final int TYPE_TEXT = 0;
     private static final int TYPE_IMAGE = 1;
@@ -30,6 +35,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public ChatAdapter(Context context, List<Object> messages) {
         this.context = context;
         this.messages = messages;
+        this.bot = ((ChatActivity) context).getBot(); // Initialize bot instance from ChatActivity
     }
 
     @Override
@@ -60,12 +66,32 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (holder instanceof TextViewHolder) {
             String message = (String) messages.get(position);
             TextViewHolder textViewHolder = (TextViewHolder) holder;
+
+            // Extract nickname from message
+            String nick = extractNickFromMessage(message);
+
+            // Get user status and apply nickname color
+            User user = getUserFromNick(nick);
+            if (user != null) {
+                if (user.isIrcop()) {
+                    nick = "<font color='#FF0000'>" + nick + "</font>";
+                    // IRC operator in red
+                } else if (user.getChannelsOpIn().contains(getActiveChannel())) {
+                    nick = "<font color='#0000FF'>" + nick + "</font>";  // Channel operator in blue
+                }
+            }
+
+            // Avoid duplicating nick in message
+            if (!message.contains(":")) {
+                message = nick + ": " + message;
+            }
+
             textViewHolder.messageTextView.setText(Html.fromHtml(message));  // Handle HTML styling
 
             if (isServerMessage(message)) {
                 textViewHolder.messageTextView.setTextColor(Color.parseColor("#00FF00")); // Set server messages to lime color
             } else {
-                textViewHolder.messageTextView.setTextColor(Color.parseColor("#FFFFFF")); // Default color (white)
+                textViewHolder.messageTextView.setTextColor(Color.WHITE); // Message text remains white
             }
         } else if (holder instanceof ImageViewHolder) {
             Bitmap image = (Bitmap) messages.get(position);
@@ -120,5 +146,30 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 || message.contains("was opped") || message.contains("was deopped")
                 || message.contains("was half-operator") || message.contains("connected")
                 || message.contains("owner status");
+    }
+
+    private String extractNickFromMessage(String message) {
+        // Assuming the nickname is at the start of the message followed by a colon
+        if (message.contains(":")) {
+            return message.substring(0, message.indexOf(":")).trim();
+        }
+        return message;
+    }
+
+    private User getUserFromNick(String nick) {
+        if (bot != null) {
+            Channel activeChannel = getActiveChannel();
+            if (activeChannel != null) {
+                return bot.getUserChannelDao().getUser(nick);
+            }
+        }
+        return null;
+    }
+
+    private Channel getActiveChannel() {
+        if (bot != null) {
+            return bot.getUserChannelDao().getChannel(((ChatActivity) context).getActiveChannel());
+        }
+        return null;
     }
 }

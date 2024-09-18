@@ -55,6 +55,7 @@
             android:name=".JoinChannel"
             android:theme="@style/Theme.KonnectChatIRC.NoActionBar"
             android:exported="false" />
+
     </application>
 
 </manifest>

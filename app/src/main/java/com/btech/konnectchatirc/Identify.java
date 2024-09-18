@@ -2,6 +2,8 @@ package com.btech.konnectchatirc;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
@@ -63,6 +65,7 @@ public class Identify {
                     if (bot.isConnected()) {
                         Log.d(TAG, "Executing identify command for nick " + nick);
                         bot.sendRaw().rawLine("PRIVMSG NickServ :IDENTIFY " + nick + " " + password);
+                        refreshChat();
                         // Don't display any messages here, let NickServ's response be handled by the Listeners class
                     } else {
                         chatActivity.runOnUiThread(() -> {
@@ -99,5 +102,8 @@ public class Identify {
 
             }
         });
+    }
+    private void refreshChat() {
+        new Handler(Looper.getMainLooper()).post(() -> chatActivity.getChatAdapter().notifyDataSetChanged());
     }
 }
