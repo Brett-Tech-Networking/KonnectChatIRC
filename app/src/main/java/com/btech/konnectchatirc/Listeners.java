@@ -107,15 +107,19 @@ public class Listeners extends ListenerAdapter {
             }
         }
     }
-
-
     @Override
     public void onMode(ModeEvent event) {
         String mode = event.getMode();
-        String userNick = event.getUser().getNick();
         String channel = event.getChannel().getName();
         String action = "";
+        String targetNick = null;
 
+        // Modes that affect users typically have a parameter (e.g., +o nick, -v nick)
+        if (event.getUser() != null) {
+            targetNick = event.getUser().getNick();  // Get the target user's nickname
+        }
+
+        // Determine the type of mode change
         if (mode.contains("+o")) {
             action = "opped";
         } else if (mode.contains("-o")) {
@@ -135,13 +139,15 @@ public class Listeners extends ListenerAdapter {
         }
 
         String performingUser = event.getUserHostmask().getNick();
-        String message = userNick + " was " + action + " in " + channel + " by " + performingUser;
+        String message = (targetNick != null ? targetNick : "Someone") + " was " + action + " in " + channel + " by " + performingUser;
+
+        // Display the server message
+        runOnUiThread(() -> chatActivity.processServerMessage("SERVER", message, channel));
 
         // Refresh the user list to reflect the status change
-        chatActivity.runOnUiThread(() -> chatActivity.getChatAdapter().notifyDataSetChanged());
-
-        chatActivity.processServerMessage("SERVER", message, channel);
+        refreshChat();
     }
+
 
     @Override
     public void onJoin(JoinEvent event) {
