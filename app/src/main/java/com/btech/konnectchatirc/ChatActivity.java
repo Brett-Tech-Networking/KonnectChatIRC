@@ -22,16 +22,22 @@ import android.os.PowerManager;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.InputType;
+import android.text.Spannable;
+import android.text.style.ClickableSpan;
 import android.util.Base64;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -61,6 +67,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -69,6 +77,15 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
+import android.text.util.Linkify;
+import androidx.recyclerview.widget.LinearLayoutManager;
+
 
 public class ChatActivity extends AppCompatActivity {
 
@@ -104,6 +121,33 @@ public class ChatActivity extends AppCompatActivity {
     private String desiredPassword;
     private ProgressDialog progressDialog; // Declare ProgressDialog
     private String desiredNick;  // Declare desiredNick as a class-level variable
+    private PopupWindow mentionPopupWindow;
+    private MentionSuggestionAdapter suggestionAdapter;
+    private RecyclerView suggestionRecyclerView;
+    private boolean isMentionActive = false;
+    private int mentionStartIndex = -1;
+
+
+    public SpannableString createMentionSpannable(String messageContent) {
+        SpannableString spannableString = new SpannableString(messageContent);
+
+        // Logic to detect @mentions and apply a clickable span.
+        Pattern mentionPattern = Pattern.compile("@\\w+");
+        Matcher matcher = mentionPattern.matcher(messageContent);
+
+        while (matcher.find()) {
+            String mention = matcher.group();
+            ClickableSpan clickableSpan = new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+                    // Handle mention click if needed
+                }
+            };
+            spannableString.setSpan(clickableSpan, matcher.start(), matcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        return spannableString;
+    }
 
     public String getDesiredPassword() {
         return desiredPassword;
@@ -182,6 +226,58 @@ public class ChatActivity extends AppCompatActivity {
 
         channelNameTextView = findViewById(R.id.ChannelName);
         chatEditText = findViewById(R.id.chatEditText);
+        // Initialize the mention popup
+        initializeMentionPopup();
+
+// Add TextWatcher to chatEditText
+        chatEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // No action needed
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Detect if the cursor is currently typing a mention
+                int cursorPosition = chatEditText.getSelectionStart();
+                if (cursorPosition < 0) return; // Invalid cursor position
+
+                String text = s.toString();
+                if (cursorPosition > text.length()) return; // Cursor beyond text
+
+                // Find the last '@' before the cursor
+                int atIndex = text.lastIndexOf('@', cursorPosition - 1);
+
+                if (atIndex != -1) {
+                    // Ensure that '@' is not part of an email or already part of a mention
+                    if (atIndex == 0 || Character.isWhitespace(text.charAt(atIndex - 1))) {
+                        // Check if there's no space between '@' and the cursor
+                        if (atIndex < cursorPosition) {
+                            String mentionText = text.substring(atIndex + 1, cursorPosition);
+                            if (!mentionText.contains(" ")) { // No space within the mention
+                                isMentionActive = true;
+                                mentionStartIndex = atIndex;
+                                showMentionPopup(mentionText);
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                // If no active mention is detected, dismiss the popup
+                if (isMentionActive) {
+                    isMentionActive = false;
+                    mentionStartIndex = -1;
+                    dismissMentionPopup();
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // No action needed
+            }
+        });
+
         adminButton = findViewById(R.id.adminButton);
         ImageButton sendButton = findViewById(R.id.sendButton);
         Button disconnectButton = findViewById(R.id.disconnectButton);
@@ -291,6 +387,9 @@ public class ChatActivity extends AppCompatActivity {
                 } else {
                     addChatMessage(userNick + ": " + message);
                     chatEditText.setText("");
+
+                    // Dismiss mention popup if active
+                    dismissMentionPopup();
 
                     new Thread(() -> {
                         try {
@@ -509,7 +608,14 @@ public class ChatActivity extends AppCompatActivity {
     public void addChatMessage(String message) {
         // Prevent duplicate messages
         if (!hasMessageBeenProcessed(message)) {
-            chatMessages.add(message);
+            // Check if the message contains any mention format
+            if (message.contains("@")) {
+                Spannable spannableMessage = createMentionSpannable(message);
+                chatMessages.add(spannableMessage);
+            } else {
+                chatMessages.add(message);
+            }
+
             chatAdapter.notifyDataSetChanged();
             chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
             markMessageAsProcessed(message);  // Mark message as processed to avoid duplication
@@ -517,19 +623,6 @@ public class ChatActivity extends AppCompatActivity {
     }
 
 
-    public void addChatMessage(String message, String channel) {
-        if (!channelMessagesMap.containsKey(channel)) {
-            channelMessagesMap.put(channel, new ArrayList<>());
-        }
-        channelMessagesMap.get(channel).add(message);
-        if (channel.equals(activeChannel)) {
-            runOnUiThread(() -> {
-                chatMessages.add(message);
-                chatAdapter.notifyDataSetChanged();
-                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-            });
-        }
-    }
 
     private void storeMessageForChannel(String channel, String message) {
         if (!channelMessagesMap.containsKey(channel)) {
@@ -920,6 +1013,7 @@ public class ChatActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        dismissMentionPopup();
         disconnectFromServer();
     }
 
@@ -1096,4 +1190,189 @@ public class ChatActivity extends AppCompatActivity {
         super.onStop();
         // Do not disconnect from the server on stop, unless the user manually initiates disconnection
     }
+    private void initializeMentionPopup() {
+        // Inflate the suggestion list layout
+        View popupView = LayoutInflater.from(this).inflate(R.layout.popup_mentions, null);
+        suggestionRecyclerView = popupView.findViewById(R.id.suggestionRecyclerView);
+        suggestionRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        // Initialize the adapter with an empty list
+        // After:
+        suggestionAdapter = new MentionSuggestionAdapter(new ArrayList<>(), suggestion -> {
+            insertMention(suggestion, mentionStartIndex);
+            dismissMentionPopup();
+        });
+
+        suggestionRecyclerView.setAdapter(suggestionAdapter);
+
+        // Measure the height of the RecyclerView to adjust the PopupWindow height dynamically
+        suggestionRecyclerView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            int height = suggestionRecyclerView.getHeight();
+            if (height > 600) { // Set a maximum height (e.g., 600 pixels)
+                height = 600;
+            }
+            mentionPopupWindow.setHeight(height);
+        });
+
+        // Initialize the PopupWindow with adjusted height and width
+        mentionPopupWindow = new PopupWindow(
+                popupView,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                true
+        );
+
+        // Allow the PopupWindow to adjust its position based on the keyboard
+        mentionPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+
+        // Ensure the PopupWindow doesn't overlap the EditText
+        mentionPopupWindow.setBackgroundDrawable(getResources().getDrawable(R.drawable.popup_background));
+        mentionPopupWindow.setOutsideTouchable(true);
+        mentionPopupWindow.setFocusable(false); // Allow EditText to retain focus
+    }
+
+    private void showMentionPopup(String currentQuery) {
+        if (bot == null || !bot.isConnected()) {
+            return;
+        }
+
+        List<String> userList = getUserListFromActiveChannel();
+        if (userList.isEmpty()) {
+            return;
+        }
+
+        List<String> filteredList;
+        if (currentQuery.isEmpty()) {
+            // Show all users if no query is present
+            filteredList = new ArrayList<>(userList);
+        } else {
+            // Filter users based on the current query
+            filteredList = new ArrayList<>();
+            for (String user : userList) {
+                if (user.toLowerCase().startsWith(currentQuery.toLowerCase())) {
+                    filteredList.add(user);
+                }
+            }
+        }
+
+        if (filteredList.isEmpty()) {
+            dismissMentionPopup();
+            return;
+        }
+
+        // Update the adapter with the new list
+        suggestionAdapter.updateSuggestions(filteredList);
+
+        // Calculate the position to show the popup above the EditText
+        int[] location = new int[2];
+        chatEditText.getLocationOnScreen(location);
+        int yOffset = location[1] - chatEditText.getHeight() - mentionPopupWindow.getHeight();
+
+        // Ensure yOffset is not negative to prevent the popup from appearing off-screen
+        if (yOffset < 0) {
+            yOffset = 0;
+        }
+
+        // Show the popup at the calculated position
+        mentionPopupWindow.showAtLocation(chatEditText, Gravity.NO_GRAVITY, 0, yOffset);
+    }
+
+
+
+
+    private void updateMentionSuggestions() {
+        int cursorPosition = chatEditText.getSelectionStart();
+        if (mentionStartIndex < 0 || cursorPosition < mentionStartIndex) {
+            dismissMentionPopup();
+            return;
+        }
+
+        // Ensure that mentionStartIndex + 1 <= cursorPosition to prevent IndexOutOfBounds
+        if (mentionStartIndex + 1 > cursorPosition) {
+            dismissMentionPopup();
+            return;
+        }
+
+        String query = chatEditText.getText().toString().substring(mentionStartIndex + 1, cursorPosition).toLowerCase();
+
+        if (query.isEmpty()) {
+            // If there's nothing typed after '@', show all users
+            List<String> userList = getUserListFromActiveChannel();
+            suggestionAdapter.updateSuggestions(userList);
+        } else {
+            // Filter the user list based on the query
+            List<String> userList = getUserListFromActiveChannel();
+            List<String> filteredList = new ArrayList<>();
+
+            for (String user : userList) {
+                if (user.toLowerCase().startsWith(query)) {
+                    filteredList.add(user);
+                }
+            }
+
+            if (filteredList.isEmpty()) {
+                dismissMentionPopup();
+            } else {
+                suggestionAdapter.updateSuggestions(filteredList);
+            }
+        }
+    }
+
+
+    private void dismissMentionPopup() {
+        if (mentionPopupWindow != null && mentionPopupWindow.isShowing()) {
+            mentionPopupWindow.dismiss();
+        }
+        isMentionActive = false;
+        mentionStartIndex = -1;
+        Log.d("MentionFeature", "Mention popup dismissed and indices reset.");
+    }
+
+
+    private void insertMention(String nickname, int mentionStartIndex) {
+        // Enhanced implementation with safety checks...
+        if (mentionStartIndex < 0) {
+            Log.e("MentionFeature", "Invalid mentionStartIndex: " + mentionStartIndex);
+            return;
+        }
+
+        Editable editable = chatEditText.getText();
+        if (editable == null) {
+            Log.e("MentionFeature", "Editable text is null.");
+            return;
+        }
+
+        int cursorPosition = chatEditText.getSelectionStart();
+        if (cursorPosition < mentionStartIndex) {
+            Log.e("MentionFeature", "Cursor position (" + cursorPosition + ") is before mentionStartIndex (" + mentionStartIndex + ").");
+            dismissMentionPopup();
+            return;
+        }
+
+        // Ensure that mentionStartIndex + 1 <= cursorPosition to prevent IndexOutOfBounds
+        if (mentionStartIndex + 1 > cursorPosition) {
+            Log.e("MentionFeature", "mentionStartIndex + 1 (" + (mentionStartIndex + 1) + ") exceeds cursorPosition (" + cursorPosition + ").");
+            dismissMentionPopup();
+            return;
+        }
+
+        // Remove the '@' and partial text
+        try {
+            editable.delete(mentionStartIndex, cursorPosition);
+        } catch (IndexOutOfBoundsException e) {
+            Log.e("MentionFeature", "Error deleting text for mention insertion.", e);
+            dismissMentionPopup();
+            return;
+        }
+
+        // Insert the selected nickname with '@' and a space
+        editable.insert(mentionStartIndex, "@" + nickname + " ");
+
+        // Reset mention tracking
+        isMentionActive = false;
+        mentionStartIndex = -1;
+
+        Log.d("MentionFeature", "Inserted mention: @" + nickname + " at index: " + mentionStartIndex);
+    }
+
 }

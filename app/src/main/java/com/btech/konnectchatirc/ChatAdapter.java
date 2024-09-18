@@ -6,7 +6,9 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.text.Html;
+import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 import android.text.util.Linkify;
@@ -36,8 +38,9 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final List<Object> messages;
     private final PircBotX bot;
 
-    private static final int TYPE_TEXT = 0;
-    private static final int TYPE_IMAGE = 1;
+    private static final int VIEW_TYPE_TEXT = 0;
+    private static final int VIEW_TYPE_IMAGE = 1;
+    private static final int VIEW_TYPE_SPANNABLE = 2;
 
     public ChatAdapter(Context context, List<Object> messages) {
         this.context = context;
@@ -47,103 +50,42 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public int getItemViewType(int position) {
-        if (messages.get(position) instanceof String) {
-            return TYPE_TEXT;
+        // Check if the item at this position is a Spannable or an image or text
+        if (messages.get(position) instanceof Spannable) {
+            return VIEW_TYPE_SPANNABLE;
         } else if (messages.get(position) instanceof Bitmap) {
-            return TYPE_IMAGE;
+            return VIEW_TYPE_IMAGE;
+        } else {
+            return VIEW_TYPE_TEXT;
         }
-        return -1;
     }
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if (viewType == TYPE_TEXT) {
-            View view = LayoutInflater.from(context).inflate(R.layout.item_chat_message, parent, false);
-            return new TextViewHolder(view);
-        } else if (viewType == TYPE_IMAGE) {
-            View view = LayoutInflater.from(context).inflate(R.layout.image_message, parent, false);
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View view;
+        if (viewType == VIEW_TYPE_SPANNABLE) {
+            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_spannable_message, parent, false);
+            return new SpannableMessageViewHolder(view);
+        } else if (viewType == VIEW_TYPE_IMAGE) {
+            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_image_message, parent, false);
             return new ImageViewHolder(view);
+        } else {
+            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_text_message, parent, false);
+            return new TextViewHolder(view);
         }
-        throw new RuntimeException("Unknown view type in ChatAdapter");
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof TextViewHolder) {
-            final String message = (String) messages.get(position);
-            TextViewHolder textViewHolder = (TextViewHolder) holder;
+        Object item = messages.get(position);
 
-            // Extract nickname from message
-            String nick = extractNickFromMessage(message);
-
-            // Get user status and apply nickname color
-            User user = getUserFromNick(nick);
-            if (user != null) {
-                if (user.isIrcop()) {
-                    nick = "<font color='#FF0000'>" + nick + "</font>";
-                    // IRC operator in red
-                } else if (user.getChannelsOpIn().contains(getActiveChannel())) {
-                    nick = "<font color='#0000FF'>" + nick + "</font>";  // Channel operator in blue
-                }
-            }
-
-            // Avoid duplicating nick in message
-            final String finalMessage;
-            if (!message.contains(":")) {
-                finalMessage = nick + ": " + message;
-            } else {
-                finalMessage = message;
-            }
-
-            // Parse HTML content
-            Spanned spannedMessage = Html.fromHtml(finalMessage);
-
-            // Create a SpannableString from the spanned text to apply Linkify
-            SpannableString spannableString = new SpannableString(spannedMessage);
-            Linkify.addLinks(spannableString, Linkify.WEB_URLS);
-
-            textViewHolder.messageTextView.setText(spannableString);
-            textViewHolder.messageTextView.setMovementMethod(LinkMovementMethod.getInstance());
-
-            // Enable long-click to copy text
-            textViewHolder.messageTextView.setOnLongClickListener(v -> {
-                ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText("chat message", finalMessage);
-                if (clipboard != null) {
-                    clipboard.setPrimaryClip(clip);
-                    Toast.makeText(context, "Message copied to clipboard", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(context, "Clipboard unavailable", Toast.LENGTH_SHORT).show();
-                }
-                return true;
-            });
-
-            if (isServerMessage(finalMessage)) {
-                textViewHolder.messageTextView.setTextColor(Color.parseColor("#00FF00")); // Set server messages to lime color
-            } else {
-                textViewHolder.messageTextView.setTextColor(Color.WHITE); // Message text remains white
-            }
+        if (holder instanceof SpannableMessageViewHolder) {
+            ((SpannableMessageViewHolder) holder).bind((Spannable) item);
+        } else if (holder instanceof TextViewHolder) {
+            ((TextViewHolder) holder).bind((String) item);
         } else if (holder instanceof ImageViewHolder) {
-            Bitmap image = (Bitmap) messages.get(position);
-            ImageViewHolder imageViewHolder = (ImageViewHolder) holder;
-
-            if (image != null && imageViewHolder.imageView != null) {
-                // Use Glide to load the bitmap into the ImageView with hardware configuration disabled
-                Glide.with(context)
-                        .load(image)
-                        .apply(new RequestOptions()
-                                .placeholder(R.drawable.konnectchattrans) // Ensure this drawable exists
-                                .error(R.drawable.ic_error) // Ensure this drawable exists
-                                .format(DecodeFormat.PREFER_RGB_565) // Explicitly use non-hardware config
-                                .disallowHardwareConfig() // Ensure hardware bitmaps are disabled
-                        )
-                        .into(imageViewHolder.imageView);
-
-            } else if (imageViewHolder.imageView != null) {
-                // Handle case where image or imageView is null
-                imageViewHolder.imageView.setImageResource(R.drawable.ic_error); // Set error image
-            }
+            ((ImageViewHolder) holder).bind((Bitmap) item);
         }
     }
 
@@ -152,27 +94,108 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return messages.size();
     }
 
-    public static class TextViewHolder extends RecyclerView.ViewHolder {
+    public class TextViewHolder extends RecyclerView.ViewHolder {
         TextView messageTextView;
 
         public TextViewHolder(@NonNull View itemView) {
             super(itemView);
             messageTextView = itemView.findViewById(R.id.messageTextView);
         }
+
+        public void bind(String message) {
+            // Extract nickname from message
+            String nick = extractNickFromMessage(message);
+
+            // Get user status and apply nickname color (sender nickname is not clickable)
+            User user = getUserFromNick(nick);
+            String formattedNick = nick;
+            if (user != null) {
+                if (user.isIrcop()) {
+                    formattedNick = "<font color='#FF0000'>" + nick + "</font>";  // IRC operator in red
+                } else if (user.getChannelsOpIn().contains(getActiveChannel())) {
+                    formattedNick = "<font color='#0000FF'>" + nick + "</font>";  // Channel operator in blue
+                } else {
+                    formattedNick = "<font color='#FFFFFF'>" + nick + "</font>";  // Regular nickname in white
+                }
+            }
+
+            // Ensure the sender's nickname is NOT clickable
+            StringBuilder finalMessageBuilder = new StringBuilder(formattedNick + ": ");
+
+            // Search for @mentions and apply link style only to mentions
+            String messageContent = message.substring(message.indexOf(":") + 1).trim();
+
+            // Call the createMentionSpannable from ChatActivity (through context)
+            ChatActivity activity = (ChatActivity) context;
+            SpannableString spannableMessage = activity.createMentionSpannable(messageContent);  // Call method from ChatActivity
+
+            // Build the full message with non-clickable nick and clickable mentions
+            finalMessageBuilder.append(spannableMessage);
+
+            // Parse the final message (with nickname and mentions)
+            Spanned spannedMessage = Html.fromHtml(finalMessageBuilder.toString());
+
+            // Set the spanned message (nickname + clickable mentions)
+            messageTextView.setText(spannedMessage);
+            messageTextView.setMovementMethod(LinkMovementMethod.getInstance());
+
+            // Enable long-click to copy text
+            messageTextView.setOnLongClickListener(v -> {
+                ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("chat message", spannedMessage);
+                if (clipboard != null) {
+                    clipboard.setPrimaryClip(clip);
+                    Toast.makeText(v.getContext(), "Message copied to clipboard", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            });
+
+            // Set message color based on content (server message or regular message)
+            if (isServerMessage(message)) {
+                messageTextView.setTextColor(Color.parseColor("#00FF00")); // Server messages in lime color
+            } else {
+                messageTextView.setTextColor(Color.WHITE); // Regular messages in white
+            }
+        }
     }
 
-    public static class ImageViewHolder extends RecyclerView.ViewHolder {
+    public class SpannableMessageViewHolder extends RecyclerView.ViewHolder {
+        TextView messageTextView;
+
+        public SpannableMessageViewHolder(@NonNull View itemView) {
+            super(itemView);
+            messageTextView = itemView.findViewById(R.id.spannableMessageTextView);
+        }
+
+        public void bind(Spannable message) {
+            messageTextView.setText(message);
+            messageTextView.setMovementMethod(LinkMovementMethod.getInstance());
+        }
+    }
+
+    public class ImageViewHolder extends RecyclerView.ViewHolder {
         ImageView imageView;
 
         public ImageViewHolder(@NonNull View itemView) {
             super(itemView);
-            imageView = itemView.findViewById(R.id.imageView); // Ensure this ID matches your image_message layout
+            imageView = itemView.findViewById(R.id.imageView);
+        }
+
+        public void bind(Bitmap image) {
+            Glide.with(imageView.getContext())
+                    .load(image)
+                    .apply(new RequestOptions()
+                            .placeholder(R.drawable.konnectchattrans)
+                            .error(R.drawable.ic_error)
+                            .format(DecodeFormat.PREFER_RGB_565)
+                            .disallowHardwareConfig())
+                    .into(imageView);
         }
     }
 
     private boolean isServerMessage(String message) {
-        return message.contains("joined") || message.contains("left") || message.contains("was kicked") ||
-                message.contains("was banned") || message.contains("was killed")
+        return message.contains("joined") || message.contains("left") || message.contains("was kicked")
+                || message.contains("was banned") || message.contains("was killed")
                 || message.contains("SERVER") || message.contains("Connected to")
                 || message.contains("was opped") || message.contains("was deopped")
                 || message.contains("was half-operator") || message.contains("connected")
@@ -180,7 +203,6 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private String extractNickFromMessage(String message) {
-        // Assuming the nickname is at the start of the message followed by a colon
         if (message.contains(":")) {
             return message.substring(0, message.indexOf(":")).trim();
         }
