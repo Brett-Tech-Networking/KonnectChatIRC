@@ -1,14 +1,21 @@
 package com.btech.konnectchatirc;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.text.Html;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
+import android.text.util.Linkify;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -64,7 +71,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof TextViewHolder) {
-            String message = (String) messages.get(position);
+            final String message = (String) messages.get(position);
             TextViewHolder textViewHolder = (TextViewHolder) holder;
 
             // Extract nickname from message
@@ -82,13 +89,37 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
 
             // Avoid duplicating nick in message
+            final String finalMessage;
             if (!message.contains(":")) {
-                message = nick + ": " + message;
+                finalMessage = nick + ": " + message;
+            } else {
+                finalMessage = message;
             }
 
-            textViewHolder.messageTextView.setText(Html.fromHtml(message));  // Handle HTML styling
+            // Parse HTML content
+            Spanned spannedMessage = Html.fromHtml(finalMessage);
 
-            if (isServerMessage(message)) {
+            // Create a SpannableString from the spanned text to apply Linkify
+            SpannableString spannableString = new SpannableString(spannedMessage);
+            Linkify.addLinks(spannableString, Linkify.WEB_URLS);
+
+            textViewHolder.messageTextView.setText(spannableString);
+            textViewHolder.messageTextView.setMovementMethod(LinkMovementMethod.getInstance());
+
+            // Enable long-click to copy text
+            textViewHolder.messageTextView.setOnLongClickListener(v -> {
+                ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("chat message", finalMessage);
+                if (clipboard != null) {
+                    clipboard.setPrimaryClip(clip);
+                    Toast.makeText(context, "Message copied to clipboard", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(context, "Clipboard unavailable", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            });
+
+            if (isServerMessage(finalMessage)) {
                 textViewHolder.messageTextView.setTextColor(Color.parseColor("#00FF00")); // Set server messages to lime color
             } else {
                 textViewHolder.messageTextView.setTextColor(Color.WHITE); // Message text remains white
