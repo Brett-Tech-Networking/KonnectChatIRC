@@ -12,61 +12,74 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
+import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
+import org.pircbotx.exception.IrcException;
+
+import java.io.IOException;
 
 public class IrcForegroundService extends Service {
 
     private static final String CHANNEL_ID = "IrcServiceChannel";
     private static final int NOTIFICATION_ID = 1;
-    private PircBotX bot; // Ensure this is properly initialized if used
+    private PircBotX bot;
 
     @Override
     public void onCreate() {
         super.onCreate();
         createNotificationChannel();
-        startForeground(NOTIFICATION_ID, getNotification("Service is running..."));
+        startForeground(NOTIFICATION_ID, getNotification("IRC service is running..."));
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // Check for null intent
-        if (intent == null) {
-            Log.e("IrcForegroundService", "Received null Intent");
+        if (intent != null) {
+            String channelName = intent.getStringExtra("SELECTED_CHANNEL");
+            String serverAddress = intent.getStringExtra("SELECTED_SERVER");
+            if (channelName != null && serverAddress != null) {
+                Log.d("IrcForegroundService", "Connecting to channel: " + channelName);
+                keepBotConnected(serverAddress, channelName);
+            }
+        } else {
+            Log.e("IrcForegroundService", "Received null Intent, stopping service.");
             stopSelf();
-            return START_NOT_STICKY;
         }
-
-        // Check for required extra data
-        String channelName = intent.getStringExtra("CHANNEL_NAME");
-        if (channelName == null) {
-            Log.e("IrcForegroundService", "Missing required channel name");
-            stopSelf();
-            return START_NOT_STICKY;
-        }
-
-        // Use channelName or other data as needed
-        Log.d("IrcForegroundService", "Connecting to channel: " + channelName);
-
-        // Example of starting bot or other operations
-        // startBot(channelName); // Your method to start the bot with the channel
-
         return START_STICKY;
+    }
+
+    private void keepBotConnected(String serverAddress, String channelName) {
+        if (bot == null || !bot.isConnected()) {
+            new Thread(() -> {
+                try {
+                    Configuration.Builder config = new Configuration.Builder()
+                            .setName("GuestUser") // Use default guest nickname if not provided
+                            .addServer(serverAddress)
+                            .addAutoJoinChannel(channelName)
+                            .setAutoNickChange(true)
+                            .addListener(new Listeners(null)); // Add relevant listeners here
+
+                    bot = new PircBotX(config.buildConfiguration());
+                    bot.startBot();
+                } catch (IOException | IrcException e) {
+                    Log.e("IrcForegroundService", "Error connecting bot", e);
+                }
+            }).start();
+        }
     }
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
-        // Properly disconnect bot if it was initialized
-        if (bot != null) {
+        if (bot != null && bot.isConnected()) {
             new Thread(() -> {
                 try {
                     bot.sendIRC().quitServer("Service stopped");
                     bot.close();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e("IrcForegroundService", "Error disconnecting bot", e);
                 }
             }).start();
         }
+        super.onDestroy();
     }
 
     @Nullable
@@ -80,10 +93,8 @@ public class IrcForegroundService extends Service {
             NotificationChannel serviceChannel = new NotificationChannel(
                     CHANNEL_ID,
                     "IRC Foreground Service Channel",
-                    NotificationManager.IMPORTANCE_HIGH
+                    NotificationManager.IMPORTANCE_LOW
             );
-            serviceChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-            serviceChannel.setShowBadge(false);
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
                 manager.createNotificationChannel(serviceChannel);
@@ -93,9 +104,9 @@ public class IrcForegroundService extends Service {
 
     private Notification getNotification(String contentText) {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("IRC Foreground Service")
+                .setContentTitle("IRC Connection")
                 .setContentText(contentText)
-                .setSmallIcon(R.drawable.ic_notification) // Replace with your own icon
+                .setSmallIcon(R.drawable.ic_notification)  // Set your notification icon
                 .build();
     }
 }

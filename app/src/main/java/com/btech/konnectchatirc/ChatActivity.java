@@ -113,22 +113,13 @@ public class ChatActivity extends AppCompatActivity {
     // Add bannedUsers list
     private List<String> bannedUsers = new ArrayList<>();
 
-    // Define networkCallback once at the class level
     private ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
         @Override
         public void onAvailable(Network network) {
             super.onAvailable(network);
-            Log.d("NetworkCallback", "Network available, attempting to connect.");
-            if (bot == null || !bot.isConnected()) {
-                connectToIrcServer();
-            } else {
-                // Bind bot to the current active network
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    connectivityManager.bindProcessToNetwork(network);
-                } else {
-                    ConnectivityManager.setProcessDefaultNetwork(network);
-                }
-                Log.d("NetworkCallback", "Bound to network: " + network.toString());
+            Log.d("NetworkCallback", "Network available, reconnecting if needed.");
+            if (bot != null && !bot.isConnected()) {
+                connectToIrcServer();  // Reconnect when network is back
             }
         }
 
@@ -136,9 +127,10 @@ public class ChatActivity extends AppCompatActivity {
         public void onLost(Network network) {
             super.onLost(network);
             Log.d("NetworkCallback", "Network lost.");
-            // Handle lost network if necessary, retry connection, etc.
+            // Optionally notify the user, but do not disconnect the bot right away
         }
     };
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -398,8 +390,7 @@ public class ChatActivity extends AppCompatActivity {
                 configurationBuilder.addServer("irc.konnectchatirc.net", 6667);
             } else if ("KonnectChat IRC NSFW".equals(selectedServer)) {
                 configurationBuilder.addServer("Aaronz.konnectchatirc.net", 7100);
-            }
-            else if ("ThePlaceToChat IRC".equals(selectedServer)) {
+            } else if ("ThePlaceToChat IRC".equals(selectedServer)) {
                 configurationBuilder.addServer("irc.theplacetochat.net", 6667);
             }
 
@@ -413,6 +404,7 @@ public class ChatActivity extends AppCompatActivity {
     public PircBotX getBot() {
         return bot;
     }
+
     private void connectToIrcServer() {
         new Thread(() -> {
             int retries = 0;
@@ -781,7 +773,8 @@ public class ChatActivity extends AppCompatActivity {
             Animation fadeOut = AnimationUtils.loadAnimation(this, R.anim.fade_out);
             fadeOut.setAnimationListener(new Animation.AnimationListener() {
                 @Override
-                public void onAnimationStart(Animation animation) {}
+                public void onAnimationStart(Animation animation) {
+                }
 
                 @Override
                 public void onAnimationEnd(Animation animation) {
@@ -792,7 +785,8 @@ public class ChatActivity extends AppCompatActivity {
                 }
 
                 @Override
-                public void onAnimationRepeat(Animation animation) {}
+                public void onAnimationRepeat(Animation animation) {
+                }
             });
             panel.startAnimation(fadeOut);
         } else {
@@ -921,16 +915,19 @@ public class ChatActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Intent stopServiceIntent = new Intent(this, IrcForegroundService.class);
-        stopService(stopServiceIntent);
+        disconnectFromServer();
+    }
 
+    private void disconnectFromServer() {
         if (bot != null && bot.isConnected()) {
             new Thread(() -> {
                 try {
-                    bot.sendIRC().quitServer("App closed");
-                    bot.close();
+                    bot.sendIRC().quitServer("App is closing");
+                    bot.stopBotReconnect(); // Stop auto-reconnect attempts
+                    bot.close(); // Properly close the connection
+                    Log.d("ChatActivity", "IRC connection terminated.");
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e("ChatActivity", "Error while disconnecting from IRC", e);
                 }
             }).start();
         }
@@ -1085,27 +1082,13 @@ public class ChatActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        // Do not disconnect from the server on pause
+        // You may want to release locks here if needed but maintain the connection
     }
+
     @Override
     protected void onStop() {
         super.onStop();
-        // Only disconnect if the user leaves the activity
-        if (!isFinishing()) {
-            disconnectFromServer();
-        }
-    }
-    private void disconnectFromServer() {
-        if (bot != null && bot.isConnected()) {
-            new Thread(() -> {
-                try {
-                    bot.sendIRC().quitServer("App is no longer active");
-                    bot.stopBotReconnect(); // Stop any auto-reconnect attempts
-                    bot.close(); // Properly close the connection
-                    Log.d("ChatActivity", "IRC connection terminated.");
-                } catch (Exception e) {
-                    Log.e("ChatActivity", "Error while disconnecting from IRC", e);
-                }
-            }).start();
-        }
+        // Do not disconnect from the server on stop, unless the user manually initiates disconnection
     }
 }
