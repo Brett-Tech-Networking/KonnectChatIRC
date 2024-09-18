@@ -843,7 +843,10 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void processServerMessage(String sender, String message, String channel) {
-
+        if (channel == null) {
+            // Handle null case if necessary, e.g., skip or set to a default channel
+            channel = getActiveChannel(); // Set to active channel as fallback
+        }
         String formattedMessage = sender + ": " + message;
         storeMessageForChannel(channel, formattedMessage);
 

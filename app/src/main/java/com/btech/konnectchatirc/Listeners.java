@@ -205,15 +205,21 @@ public class Listeners extends ListenerAdapter {
         runOnUiThread(() -> {
             String userNick = event.getUser().getNick();
             String channel = event.getChannel().getName();
-            refreshChat();
+
             if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
+                // Show the message when the bot itself leaves the channel
                 chatActivity.addChatMessage("You have left the channel: " + channel);
                 chatActivity.partChannel(channel);
             } else if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
-                chatActivity.addChatMessage(userNick + " has left the channel.");
+                // Process server message only for other users
+                String partMessage = userNick + " has left the channel.";
+                chatActivity.processServerMessage("SERVER", partMessage, channel);
             }
+
+            refreshChat();
         });
     }
+
 
     @Override
     public void onKick(KickEvent event) {
@@ -260,11 +266,17 @@ public class Listeners extends ListenerAdapter {
     @Override
     public void onNickChange(NickChangeEvent event) {
         runOnUiThread(() -> {
-            chatActivity.addChatMessage(event.getOldNick() + " is now known as " + event.getNewNick());
+            String newNick = event.getNewNick();
+            String oldNick = event.getOldNick();
+            String message = oldNick + " is now known as " + newNick;
+
+            // Only process server messages for nick changes, avoiding the extra display
+            chatActivity.processServerMessage("SERVER", message, null);
             chatActivity.getChatAdapter().notifyDataSetChanged();  // Update the UI to reflect the nick change
             refreshChat();
         });
     }
+
 
     private void runOnUiThread(Runnable runnable) {
         new Handler(Looper.getMainLooper()).post(runnable);
