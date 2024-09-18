@@ -18,8 +18,11 @@ public class Listeners extends ListenerAdapter {
     @Override
     public void onNotice(NoticeEvent event) {
         String channel = event.getChannel() != null ? event.getChannel().getName() : "";
-        chatActivity.processServerMessage(event.getUser().getNick(), event.getNotice(), channel);
+        String notice = event.getNotice();
+
+        chatActivity.processServerMessage(event.getUser().getNick(), notice, channel);
     }
+
 
     @Override
     public void onServerResponse(ServerResponseEvent event) {
@@ -78,6 +81,13 @@ public class Listeners extends ListenerAdapter {
         String channel = event.getChannel().getName();
         String message = event.getMessage();
         String sender = event.getUser().getNick();
+
+        // Check if the message is a join message and skip processing to prevent duplication
+        if (message.contains("has joined the channel")) {
+            return; // Skip server-sent join messages
+        }
+
+        // Process other messages normally
         chatActivity.processServerMessage(sender, message, channel);
 
         // Process server messages related to identification
@@ -95,12 +105,9 @@ public class Listeners extends ListenerAdapter {
                 chatActivity.addChatMessage("NickServ: " + message);
                 Log.d("IRC", "NickServ message: " + message);
             }
-        } else {
-            // Existing message processing
-            chatActivity.processServerMessage(sender, message, channel);
         }
-
     }
+
 
     @Override
     public void onMode(ModeEvent event) {
@@ -126,7 +133,7 @@ public class Listeners extends ListenerAdapter {
         } else if (mode.contains("-h")) {
             action = "removed from half-operator status";
         }
-        refreshChat();
+
         String performingUser = event.getUserHostmask().getNick();
         String message = userNick + " was " + action + " in " + channel + " by " + performingUser;
 
@@ -136,28 +143,52 @@ public class Listeners extends ListenerAdapter {
         chatActivity.processServerMessage("SERVER", message, channel);
     }
 
-
     @Override
     public void onJoin(JoinEvent event) {
         String userNick = event.getUser().getNick();
         String channel = event.getChannel().getName();
+        if (!userNick.equalsIgnoreCase(event.getBot().getNick())) {
+            chatActivity.runOnUiThread(() -> {
+                String joinMessage = userNick + " has joined the channel.";
+                chatActivity.processServerMessage("SERVER", joinMessage, channel);
+                chatActivity.markMessageAsProcessed(joinMessage); // Mark as processed to prevent duplicates
 
-        runOnUiThread(() -> {
-            if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
+            });
+        }
+        // Only handle join messages for the bot itself
+        if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
+            runOnUiThread(() -> {
                 chatActivity.setActiveChannel(channel);
                 chatActivity.addChatMessage("You have joined the channel: " + channel);
                 chatActivity.checkAndAddActiveChannel();
-            } else if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
-                chatActivity.addChatMessage(userNick + " has joined the channel.");
-            }
-            refreshChat();
-        });
+            });
 
-        // Ensure network operation runs in a background thread
+            // Send identification command to NickServ
+            new Thread(() -> {
+                try {
+                    String identifyCommand = "PRIVMSG NickServ :IDENTIFY " + chatActivity.getUserNick() + " " + chatActivity.getDesiredPassword();
+                    event.getBot().sendRaw().rawLine(identifyCommand);
+                } catch (Exception e) {
+                    Log.e("Listeners", "Error sending IDENTIFY command: " + e.getMessage());
+                }
+            }).start();
+        }
+
+        // Do not handle join messages for other users to prevent duplication
+
+    // Handle bot join
+        if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
+            runOnUiThread(() -> {
+                chatActivity.setActiveChannel(channel);
+                chatActivity.addChatMessage("You have joined the channel: " + channel);
+                chatActivity.checkAndAddActiveChannel();
+            });
+        }
+
+        // Send IDENTIFY command to NickServ if the bot joins
         new Thread(() -> {
             try {
                 if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
-                    // Send identification command to NickServ
                     String identifyCommand = "PRIVMSG NickServ :IDENTIFY " + chatActivity.getUserNick() + " " + chatActivity.getDesiredPassword();
                     event.getBot().sendRaw().rawLine(identifyCommand);
                 }
@@ -165,6 +196,7 @@ public class Listeners extends ListenerAdapter {
                 Log.e("Listeners", "Error sending IDENTIFY command: " + e.getMessage());
             }
         }).start();
+
         refreshChat();
     }
 

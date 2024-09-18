@@ -340,7 +340,7 @@ public class ChatActivity extends AppCompatActivity {
             if (bot != null) {
                 new Thread(() -> {
                     try {
-                        bot.sendIRC().quitServer("good bye");
+                        bot.sendIRC().quitServer("https://www.BrettTechCoding.com, A BrettTech Client, Goodbye!");
                         bot.close();
                         runOnUiThread(this::finish);
                     } catch (Exception e) {
@@ -380,6 +380,7 @@ public class ChatActivity extends AppCompatActivity {
 
             Configuration.Builder configurationBuilder = new Configuration.Builder()
                     .setName(userNick)
+                    .setLogin("KCIRC")
                     .setAutoNickChange(true)
                     .setRealName("TPTC IRC Client")
                     .addAutoJoinChannel(selectedChannel)
@@ -842,6 +843,7 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void processServerMessage(String sender, String message, String channel) {
+
         String formattedMessage = sender + ": " + message;
         storeMessageForChannel(channel, formattedMessage);
 
@@ -922,7 +924,7 @@ public class ChatActivity extends AppCompatActivity {
         if (bot != null && bot.isConnected()) {
             new Thread(() -> {
                 try {
-                    bot.sendIRC().quitServer("App is closing");
+                    bot.sendIRC().quitServer("https://www.BrettTechCoding.com, A BrettTech Client, Goodbye!");
                     bot.stopBotReconnect(); // Stop auto-reconnect attempts
                     bot.close(); // Properly close the connection
                     Log.d("ChatActivity", "IRC connection terminated.");
