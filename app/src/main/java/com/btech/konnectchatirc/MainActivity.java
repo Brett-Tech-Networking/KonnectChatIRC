@@ -234,6 +234,7 @@ public class MainActivity extends AppCompatActivity {
         sharedPreferences.edit().putStringSet(CHANNELS_KEY, savedChannels).apply();
     }
 
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);

@@ -7,6 +7,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.List;
+
+
 public class Listeners extends ListenerAdapter {
 
     private final ChatActivity chatActivity;
@@ -148,20 +152,32 @@ public class Listeners extends ListenerAdapter {
         refreshChat();
     }
 
+    private List<String> appChannelsList = new ArrayList<>();
 
     @Override
     public void onJoin(JoinEvent event) {
         String userNick = event.getUser().getNick();
         String channel = event.getChannel().getName();
-        if (!userNick.equalsIgnoreCase(event.getBot().getNick())) {
+
+        // Check if the bot itself joined a channel
+        if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
+            // Ensure each joined channel is processed and updated in the app's channel list
+            if (!appChannelsList.contains(channel)) {
+                appChannelsList.add(channel);  // Add to the list of joined channels
+            }
+
+            // Log the joined channel
+            System.out.println("Bot joined channel: " + channel);
+        } else {
+            // Handle when another user joins the channel
             chatActivity.runOnUiThread(() -> {
                 String joinMessage = userNick + " has joined the channel.";
                 chatActivity.processServerMessage("SERVER", joinMessage, channel);
-                chatActivity.markMessageAsProcessed(joinMessage); // Mark as processed to prevent duplicates
-
+                chatActivity.markMessageAsProcessed(joinMessage);  // Mark as processed to prevent duplicates
             });
         }
-        // Only handle join messages for the bot itself
+
+    // Only handle join messages for the bot itself
         if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
             runOnUiThread(() -> {
                 chatActivity.setActiveChannel(channel);
