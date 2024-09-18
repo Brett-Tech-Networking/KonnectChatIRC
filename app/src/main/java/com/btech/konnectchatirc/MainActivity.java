@@ -160,16 +160,21 @@ public class MainActivity extends AppCompatActivity {
             String selectedServer = serverSpinner.getSelectedItem().toString();
             Intent intent = new Intent(MainActivity.this, ChatActivity.class);
 
-            // Pass the desired nick and password to ChatActivity if provided
-            if (nickCheckBox.isChecked() && !nickEditText.getText().toString().trim().isEmpty() && !passwordEditText.getText().toString().trim().isEmpty()) {
-                intent.putExtra("DESIRED_NICK", nickEditText.getText().toString().trim());
-                intent.putExtra("DESIRED_PASSWORD", passwordEditText.getText().toString().trim());  // Pass the password
+            // Pass the desired nick if the checkbox is checked, regardless of the password
+            if (nickCheckBox.isChecked()) {
+                if (!nickEditText.getText().toString().trim().isEmpty()) {
+                    intent.putExtra("DESIRED_NICK", nickEditText.getText().toString().trim());
+                }
+                if (!passwordEditText.getText().toString().trim().isEmpty()) {
+                    intent.putExtra("DESIRED_PASSWORD", passwordEditText.getText().toString().trim());  // Pass the password if present
+                }
             }
 
             intent.putExtra("SELECTED_CHANNEL", selectedChannel);
             intent.putExtra("SELECTED_SERVER", selectedServer);
             startActivity(intent);
         });
+
 
         FloatingActionButton fab = findViewById(R.id.fabbutton);
         fab.setOnClickListener(view -> showAddChannelDialog());
