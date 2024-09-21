@@ -31,7 +31,9 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
@@ -73,37 +75,23 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Initialize server spinner
+        // Initialize server spinner with icons
         Spinner serverSpinner = findViewById(R.id.serverSpinner);
-        ArrayAdapter<String> serverAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, new String[]{"KonnectChat IRC", "KonnectChat IRC NSFW", "ThePlaceToChat IRC"}) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                View view = super.getView(position, convertView, parent);
-                TextView textView = (TextView) view.findViewById(android.R.id.text1);
-                if (textView != null) {
-                    textView.setTextColor(getResources().getColor(R.color.white)); // Set the text color to white
-                }
-                return view;
-            }
 
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                View view = super.getDropDownView(position, convertView, parent);
-                TextView textView = (TextView) view.findViewById(android.R.id.text1);
-                if (textView != null) {
-                    textView.setTextColor(getResources().getColor(R.color.white)); // Set the text color to white in the dropdown list
-                }
-                return view;
-            }
-        };
-        serverAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        List<ServerItem> serverItems = Arrays.asList(
+                new ServerItem("KonnectChat IRC", R.drawable.konnectchattrans),
+                new ServerItem("KonnectChat IRC NSFW", R.drawable.nsfw),
+                new ServerItem("ThePlaceToChat IRC", R.drawable.chat)
+        );
+
+        ServerSpinnerAdapter serverAdapter = new ServerSpinnerAdapter(this, serverItems);
         serverSpinner.setAdapter(serverAdapter);
 
         // Warning message for NSFW server selection
         serverSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position == 1) { // "KonnectChat NSFW" is selected
+                if (position == 1) { // "KonnectChat IRC NSFW" is selected
                     new AlertDialog.Builder(MainActivity.this)
                             .setTitle("NSFW Server Warning")
                             .setMessage("You have selected a server that contains NSFW (Not Safe For Work) content. Proceed with caution.")
