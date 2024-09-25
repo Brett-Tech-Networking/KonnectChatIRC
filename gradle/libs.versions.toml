@@ -17,6 +17,7 @@ lifecycleViewmodelKtx = "2.8.4"
 navigationFragment = "2.7.7"
 navigationUi = "2.7.7"
 okhttp = "4.9.3"
+slf4jAndroid = "1.7.30"
 
 [libraries]
 compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
@@ -37,6 +38,7 @@ mxscho-pircbotx = { module = "com.github.mxscho:pircbotx", version.ref = "github
 navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "navigationFragment" }
 navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigationUi" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+slf4j-android = { module = "org.slf4j:slf4j-android", version.ref = "slf4jAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -476,6 +476,12 @@ public class ChatActivity extends AppCompatActivity {
             if (selectedChannel == null || selectedChannel.isEmpty()) {
                 selectedChannel = "#ThePlaceToChat";
             }
+            Log.d("ChatActivity", "Selected Server: " + selectedServer);
+
+            if (selectedServer == null || selectedServer.isEmpty()) {
+                selectedServer = "KonnectChat IRC"; // Default or fallback server
+            }
+
 
             Configuration.Builder configurationBuilder = new Configuration.Builder()
                     .setName(userNick)
@@ -492,6 +498,8 @@ public class ChatActivity extends AppCompatActivity {
                 configurationBuilder.addServer("Aaronz.konnectchatirc.net", 7100);
             } else if ("ThePlaceToChat IRC".equals(selectedServer)) {
                 configurationBuilder.addServer("irc.theplacetochat.net", 6667);
+            } else {
+                throw new IllegalArgumentException("Unknown server: " + selectedServer);
             }
 
             Configuration configuration = configurationBuilder.buildConfiguration();

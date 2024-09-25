@@ -45,9 +45,9 @@ public class MainActivity extends AppCompatActivity {
     private SharedPreferences sharedPreferences;
     private static final String CHANNELS_KEY = "saved_channels";
     private EditText nickEditText;
-    private EditText passwordEditText;  // Added for password input
+    private EditText passwordEditText;
     private CheckBox nickCheckBox;
-    private LinearLayout nickPasswordLayout;  // Layout for the Nick and Password fields
+    private LinearLayout nickPasswordLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,15 +63,15 @@ public class MainActivity extends AppCompatActivity {
         // Initialize the checkbox and edit text for nickname and password
         nickCheckBox = findViewById(R.id.nickCheckBox);
         nickEditText = findViewById(R.id.nickEditText);
-        passwordEditText = findViewById(R.id.passwordEditText);  // Password field initialization
-        nickPasswordLayout = findViewById(R.id.nickPasswordLayout);  // Layout for nickname and password
+        passwordEditText = findViewById(R.id.passwordEditText);
+        nickPasswordLayout = findViewById(R.id.nickPasswordLayout);
 
         // Handle checkbox state changes to toggle the nickname and password layout visibility
         nickCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
-                nickPasswordLayout.setVisibility(View.VISIBLE);  // Show the layout
+                nickPasswordLayout.setVisibility(View.VISIBLE);
             } else {
-                nickPasswordLayout.setVisibility(View.GONE);  // Hide the layout
+                nickPasswordLayout.setVisibility(View.GONE);
             }
         });
 
@@ -146,6 +146,7 @@ public class MainActivity extends AppCompatActivity {
         joinButton.setOnClickListener(view -> {
             String selectedChannel = channelSpinner.getSelectedItem().toString();
             String selectedServer = serverSpinner.getSelectedItem().toString();
+            ServerItem selectedServerItem = (ServerItem) serverSpinner.getSelectedItem();
             Intent intent = new Intent(MainActivity.this, ChatActivity.class);
 
             // Pass the desired nick if the checkbox is checked, regardless of the password
@@ -154,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
                     intent.putExtra("DESIRED_NICK", nickEditText.getText().toString().trim());
                 }
                 if (!passwordEditText.getText().toString().trim().isEmpty()) {
-                    intent.putExtra("DESIRED_PASSWORD", passwordEditText.getText().toString().trim());  // Pass the password if present
+                    intent.putExtra("DESIRED_PASSWORD", passwordEditText.getText().toString().trim());
                 }
             }
 
@@ -162,7 +163,6 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("SELECTED_SERVER", selectedServer);
             startActivity(intent);
         });
-
 
         FloatingActionButton fab = findViewById(R.id.fabbutton);
         fab.setOnClickListener(view -> showAddChannelDialog());
@@ -221,7 +221,6 @@ public class MainActivity extends AppCompatActivity {
         savedChannels.add(channel);
         sharedPreferences.edit().putStringSet(CHANNELS_KEY, savedChannels).apply();
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

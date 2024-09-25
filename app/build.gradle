@@ -48,6 +48,7 @@ dependencies {
     implementation libs.json
     implementation libs.glide
     annotationProcessor libs.compiler
+    implementation libs.slf4j.android
 //    implementation libs.core.splashscreen
 
     implementation(libs.mxscho.pircbotx) {

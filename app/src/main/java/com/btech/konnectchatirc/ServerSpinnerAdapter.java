@@ -16,39 +16,39 @@ import java.util.List;
 public class ServerSpinnerAdapter extends ArrayAdapter<ServerItem> {
 
     private Context context;
-    private List<ServerItem> servers;
+    private List<ServerItem> serverList;
 
-    public ServerSpinnerAdapter(@NonNull Context context, @NonNull List<ServerItem> servers) {
-        super(context, 0, servers);
+    public ServerSpinnerAdapter(@NonNull Context context, @NonNull List<ServerItem> objects) {
+        super(context, 0, objects);
         this.context = context;
-        this.servers = servers;
+        this.serverList = objects;
     }
 
     @NonNull
     @Override
     public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-        return createItemView(position, convertView, parent);
+        return createServerView(position, convertView, parent);
     }
 
     @Override
     public View getDropDownView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-        return createItemView(position, convertView, parent);
+        return createServerView(position, convertView, parent);
     }
 
-    private View createItemView(int position, View convertView, ViewGroup parent) {
-        View view = convertView;
-        if (view == null) {
-            view = LayoutInflater.from(context).inflate(R.layout.spinner_item, parent, false);
+    private View createServerView(int position, View convertView, ViewGroup parent) {
+        ServerItem serverItem = getItem(position);
+        if (convertView == null) {
+            convertView = LayoutInflater.from(context).inflate(R.layout.spinner_item, parent, false);
         }
 
-        ImageView icon = view.findViewById(R.id.serverIcon);
-        TextView name = view.findViewById(R.id.serverName);
+        ImageView serverIcon = convertView.findViewById(R.id.serverIcon);
+        TextView serverName = convertView.findViewById(R.id.serverName);
 
-        ServerItem server = servers.get(position);
+        if (serverItem != null) {
+            serverIcon.setImageResource(serverItem.getIconResId());
+            serverName.setText(serverItem.getServerName());
+        }
 
-        icon.setImageResource(server.getIconResId());
-        name.setText(server.getName());
-
-        return view;
+        return convertView;
     }
 }
