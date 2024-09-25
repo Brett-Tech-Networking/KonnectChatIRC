@@ -5,13 +5,12 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
-import android.text.util.Linkify;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -103,46 +102,78 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
         public void bind(String message) {
-            // Extract nickname from message
-            String nick = extractNickFromMessage(message);
+            // Determine if the message is a server message
+            boolean isServer = isServerMessage(message);
 
-            // Get user status and apply nickname color (sender nickname is not clickable)
-            User user = getUserFromNick(nick);
-            String formattedNick = nick;
-            if (user != null) {
-                if (user.isIrcop()) {
-                    formattedNick = "<font color='#FF0000'>" + nick + "</font>";  // IRC operator in red
-                } else if (user.getChannelsOpIn().contains(getActiveChannel())) {
-                    formattedNick = "<font color='#0000FF'>" + nick + "</font>";  // Channel operator in blue
+            SpannableStringBuilder finalMessageBuilder = new SpannableStringBuilder();
+
+            if (isServer) {
+                // Apply a lime color span to the entire server message
+                SpannableString serverMessage = new SpannableString(message);
+                serverMessage.setSpan(
+                        new ForegroundColorSpan(Color.parseColor("#00FF00")), // Lime color
+                        0,
+                        message.length(),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+                finalMessageBuilder.append(serverMessage);
+            } else {
+                // Extract nickname from message
+                String nick = extractNickFromMessage(message);
+
+                // Get user status and apply nickname color
+                User user = getUserFromNick(nick);
+                SpannableStringBuilder nickBuilder = new SpannableStringBuilder();
+
+                if (user != null) {
+                    if (user.isIrcop()) {
+                        // IRC operator in red
+                        SpannableString nickSpan = new SpannableString(nick);
+                        nickSpan.setSpan(new ForegroundColorSpan(Color.RED), 0, nick.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        nickBuilder.append(nickSpan);
+                    } else if (user.getChannelsOpIn().contains(getActiveChannel())) {
+                        // Channel operator in blue
+                        SpannableString nickSpan = new SpannableString(nick);
+                        nickSpan.setSpan(new ForegroundColorSpan(Color.BLUE), 0, nick.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        nickBuilder.append(nickSpan);
+                    } else {
+                        // Regular nickname in white
+                        SpannableString nickSpan = new SpannableString(nick);
+                        nickSpan.setSpan(new ForegroundColorSpan(Color.WHITE), 0, nick.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        nickBuilder.append(nickSpan);
+                    }
                 } else {
-                    formattedNick = "<font color='#FFFFFF'>" + nick + "</font>";  // Regular nickname in white
+                    // If user not found, default to white
+                    SpannableString nickSpan = new SpannableString(nick);
+                    nickSpan.setSpan(new ForegroundColorSpan(Color.WHITE), 0, nick.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    nickBuilder.append(nickSpan);
+                }
+
+                // Append ": " after the nickname
+                nickBuilder.append(": ");
+                finalMessageBuilder.append(nickBuilder);
+
+                // Extract message content after ":"
+                int colonIndex = message.indexOf(":");
+                if (colonIndex != -1 && colonIndex + 1 < message.length()) {
+                    String messageContent = message.substring(colonIndex + 1).trim();
+
+                    // Call the createMentionSpannable from ChatActivity
+                    ChatActivity activity = (ChatActivity) context;
+                    SpannableString spannableMessage = activity.createMentionSpannable(messageContent);
+
+                    finalMessageBuilder.append(spannableMessage);
                 }
             }
 
-            // Ensure the sender's nickname is NOT clickable
-            StringBuilder finalMessageBuilder = new StringBuilder(formattedNick + ": ");
-
-            // Search for @mentions and apply link style only to mentions
-            String messageContent = message.substring(message.indexOf(":") + 1).trim();
-
-            // Call the createMentionSpannable from ChatActivity (through context)
-            ChatActivity activity = (ChatActivity) context;
-            SpannableString spannableMessage = activity.createMentionSpannable(messageContent);  // Call method from ChatActivity
-
-            // Build the full message with non-clickable nick and clickable mentions
-            finalMessageBuilder.append(spannableMessage);
-
-            // Parse the final message (with nickname and mentions)
-            Spanned spannedMessage = Html.fromHtml(finalMessageBuilder.toString());
-
-            // Set the spanned message (nickname + clickable mentions)
-            messageTextView.setText(spannedMessage);
+            // Set the combined spannable message
+            messageTextView.setText(finalMessageBuilder);
             messageTextView.setMovementMethod(LinkMovementMethod.getInstance());
 
             // Enable long-click to copy text
             messageTextView.setOnLongClickListener(v -> {
                 ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText("chat message", spannedMessage);
+                ClipData clip = ClipData.newPlainText("chat message", finalMessageBuilder);
                 if (clipboard != null) {
                     clipboard.setPrimaryClip(clip);
                     Toast.makeText(v.getContext(), "Message copied to clipboard", Toast.LENGTH_SHORT).show();
@@ -150,12 +181,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 return true;
             });
 
-            // Set message color based on content (server message or regular message)
-            if (isServerMessage(message)) {
-                messageTextView.setTextColor(Color.parseColor("#00FF00")); // Server messages in lime color
-            } else {
-                messageTextView.setTextColor(Color.WHITE); // Regular messages in white
-            }
+            // Removed global text color settings to preserve span colors
         }
     }
 
@@ -170,6 +196,34 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         public void bind(Spannable message) {
             messageTextView.setText(message);
             messageTextView.setMovementMethod(LinkMovementMethod.getInstance());
+
+            // Enable long-click to copy text
+            messageTextView.setOnLongClickListener(v -> {
+                ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("chat message", message);
+                if (clipboard != null) {
+                    clipboard.setPrimaryClip(clip);
+                    Toast.makeText(v.getContext(), "Message copied to clipboard", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            });
+
+            // Apply color based on message type
+            String messageStr = message.toString();
+            if (isServerMessage(messageStr)) {
+                // Apply lime color to entire message
+                SpannableString serverMessage = new SpannableString(messageStr);
+                serverMessage.setSpan(
+                        new ForegroundColorSpan(Color.parseColor("#00FF00")), // Lime color
+                        0,
+                        messageStr.length(),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+                messageTextView.setText(serverMessage);
+            } else {
+                // Regular message, already handled in TextViewHolder
+                messageTextView.setText(message);
+            }
         }
     }
 

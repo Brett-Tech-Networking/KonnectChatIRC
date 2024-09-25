@@ -5,6 +5,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.ImageDecoder;
 import android.graphics.PixelFormat;
 import android.net.ConnectivityManager;
@@ -23,6 +24,7 @@ import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.InputType;
 import android.text.Spannable;
+import android.text.TextPaint;
 import android.text.style.ClickableSpan;
 import android.util.Base64;
 import android.util.Log;
@@ -131,19 +133,73 @@ public class ChatActivity extends AppCompatActivity {
     public SpannableString createMentionSpannable(String messageContent) {
         SpannableString spannableString = new SpannableString(messageContent);
 
-        // Logic to detect @mentions and apply a clickable span.
+        // 1. Apply @mentions ClickableSpans
         Pattern mentionPattern = Pattern.compile("@\\w+");
-        Matcher matcher = mentionPattern.matcher(messageContent);
+        Matcher mentionMatcher = mentionPattern.matcher(messageContent);
 
-        while (matcher.find()) {
-            String mention = matcher.group();
-            ClickableSpan clickableSpan = new ClickableSpan() {
+        while (mentionMatcher.find()) {
+            final String mention = mentionMatcher.group();
+            ClickableSpan mentionClickableSpan = new ClickableSpan() {
                 @Override
                 public void onClick(@NonNull View widget) {
-                    // Handle mention click if needed
+                    // Handle @mention click, e.g., show user profile or highlight
+                    Toast.makeText(widget.getContext(), "Clicked on " + mention, Toast.LENGTH_SHORT).show();
+                    // Implement additional functionality as needed
+                }
+
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setColor(Color.BLUE); // Set @mention text color
+                    ds.setUnderlineText(false); // Remove underline for @mentions
                 }
             };
-            spannableString.setSpan(clickableSpan, matcher.start(), matcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            spannableString.setSpan(
+                    mentionClickableSpan,
+                    mentionMatcher.start(),
+                    mentionMatcher.end(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+        }
+
+        // 2. Apply URL ClickableSpans
+        Pattern urlPattern = Pattern.compile(
+                "(http://|https://|www\\.)[a-zA-Z0-9\\-\\.]+\\.[a-zA-Z]{2,}(/[a-zA-Z0-9\\-\\._~:/?#\\[\\]@!$&'()*+,;=]*)?"
+        );
+        Matcher urlMatcher = urlPattern.matcher(messageContent);
+
+        while (urlMatcher.find()) {
+            final String url = urlMatcher.group();
+
+            // Normalize URLs that start with "www." by prepending "http://"
+            final String normalizedUrl;
+            if (url.startsWith("www.")) {
+                normalizedUrl = "http://" + url;
+            } else {
+                normalizedUrl = url;
+            }
+
+            ClickableSpan urlClickableSpan = new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+                    // Launch the URL in the default browser
+                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(normalizedUrl));
+                    widget.getContext().startActivity(browserIntent);
+                }
+
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setColor(Color.CYAN); // Set URL text color
+                    ds.setUnderlineText(true); // Underline URLs
+                }
+            };
+            spannableString.setSpan(
+                    urlClickableSpan,
+                    urlMatcher.start(),
+                    urlMatcher.end(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
         }
 
         return spannableString;
@@ -616,12 +672,9 @@ public class ChatActivity extends AppCompatActivity {
     public void addChatMessage(String message) {
         // Prevent duplicate messages
             // Check if the message contains any mention format
-            if (message.contains("@")) {
+
                 Spannable spannableMessage = createMentionSpannable(message);
                 chatMessages.add(spannableMessage);
-            } else {
-                chatMessages.add(message);
-            }
 
             chatAdapter.notifyDataSetChanged();
             chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
