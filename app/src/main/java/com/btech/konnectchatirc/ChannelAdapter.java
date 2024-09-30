@@ -3,6 +3,7 @@ package com.btech.konnectchatirc;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -15,10 +16,10 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.ChannelV
     private List<ChannelItem> channelList;
     private OnChannelClickListener listener;
 
+
     public ChannelAdapter(List<ChannelItem> channelList, OnChannelClickListener listener) {
         this.channelList = channelList;
         this.listener = listener;
-
     }
 
     @NonNull
@@ -41,26 +42,39 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.ChannelV
         }
 
         holder.itemView.setOnClickListener(v -> listener.onChannelClick(channel));
-    }
 
-    @Override
+        holder.leaveChannelButton.setOnClickListener(v -> {
+            listener.onLeaveChannelClick(channel);
+
+            if (position >= 0 && position < channelList.size()) {
+                channelList.remove(position);
+                notifyItemRemoved(position);
+                notifyItemRangeChanged(position, channelList.size());
+            }
+        });
+    }
+        @Override
     public int getItemCount() {
         return channelList.size();
     }
 
     public interface OnChannelClickListener {
         void onChannelClick(ChannelItem channel);
+        void onLeaveChannelClick(ChannelItem channel);
     }
 
     static class ChannelViewHolder extends RecyclerView.ViewHolder {
 
         TextView channelName;
         TextView unreadBadge;
+        Button leaveChannelButton;
 
         public ChannelViewHolder(@NonNull View itemView) {
             super(itemView);
             channelName = itemView.findViewById(R.id.channelName);
             unreadBadge = itemView.findViewById(R.id.unreadBadge);
+            leaveChannelButton = itemView.findViewById(R.id.leaveChannelButton);
         }
+
     }
 }

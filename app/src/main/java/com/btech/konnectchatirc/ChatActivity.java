@@ -24,8 +24,10 @@ import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.InputType;
 import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
@@ -89,7 +91,7 @@ import android.text.util.Linkify;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 
-public class ChatActivity extends AppCompatActivity {
+public class ChatActivity extends AppCompatActivity implements ChannelAdapter.OnChannelClickListener{
 
     private PircBotX bot;
     private EditText chatEditText;
@@ -130,10 +132,11 @@ public class ChatActivity extends AppCompatActivity {
     private int mentionStartIndex = -1;
 
 
+
     public SpannableString createMentionSpannable(String messageContent) {
         SpannableString spannableString = new SpannableString(messageContent);
 
-        // 1. Apply @mentions ClickableSpans
+        // Apply @mentions ClickableSpans
         Pattern mentionPattern = Pattern.compile("@\\w+");
         Matcher mentionMatcher = mentionPattern.matcher(messageContent);
 
@@ -142,16 +145,13 @@ public class ChatActivity extends AppCompatActivity {
             ClickableSpan mentionClickableSpan = new ClickableSpan() {
                 @Override
                 public void onClick(@NonNull View widget) {
-                    // Handle @mention click, e.g., show user profile or highlight
-                    Toast.makeText(widget.getContext(), "Clicked on " + mention, Toast.LENGTH_SHORT).show();
-                    // Implement additional functionality as needed
+                    Toast.makeText(ChatActivity.this, "Clicked on mention: " + mention, Toast.LENGTH_SHORT).show();
                 }
 
                 @Override
                 public void updateDrawState(@NonNull TextPaint ds) {
                     super.updateDrawState(ds);
-                    ds.setColor(Color.BLUE); // Set @mention text color
-                    ds.setUnderlineText(false); // Remove underline for @mentions
+                    ds.setUnderlineText(true);
                 }
             };
             spannableString.setSpan(
@@ -162,27 +162,17 @@ public class ChatActivity extends AppCompatActivity {
             );
         }
 
-        // 2. Apply URL ClickableSpans
-        Pattern urlPattern = Pattern.compile(
-                "(http://|https://|www\\.)[a-zA-Z0-9\\-\\.]+\\.[a-zA-Z]{2,}(/[a-zA-Z0-9\\-\\._~:/?#\\[\\]@!$&'()*+,;=]*)?"
-        );
+        // Apply URL ClickableSpans
+        Pattern urlPattern = Pattern.compile("(http://|https://|www\\.)[a-zA-Z0-9\\-\\.]+\\.[a-zA-Z]{2,}(/[a-zA-Z0-9\\-\\._~:/?#\\[\\]@!$&'()*+,;=]*)?");
         Matcher urlMatcher = urlPattern.matcher(messageContent);
 
         while (urlMatcher.find()) {
             final String url = urlMatcher.group();
-
-            // Normalize URLs that start with "www." by prepending "http://"
-            final String normalizedUrl;
-            if (url.startsWith("www.")) {
-                normalizedUrl = "http://" + url;
-            } else {
-                normalizedUrl = url;
-            }
+            final String normalizedUrl = url.startsWith("www.") ? "http://" + url : url;
 
             ClickableSpan urlClickableSpan = new ClickableSpan() {
                 @Override
                 public void onClick(@NonNull View widget) {
-                    // Launch the URL in the default browser
                     Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(normalizedUrl));
                     widget.getContext().startActivity(browserIntent);
                 }
@@ -190,8 +180,8 @@ public class ChatActivity extends AppCompatActivity {
                 @Override
                 public void updateDrawState(@NonNull TextPaint ds) {
                     super.updateDrawState(ds);
-                    ds.setColor(Color.CYAN); // Set URL text color
-                    ds.setUnderlineText(true); // Underline URLs
+                    ds.setColor(Color.CYAN);
+                    ds.setUnderlineText(true);
                 }
             };
             spannableString.setSpan(
@@ -204,6 +194,7 @@ public class ChatActivity extends AppCompatActivity {
 
         return spannableString;
     }
+
 
     public String getDesiredPassword() {
         return desiredPassword;
@@ -431,7 +422,7 @@ public class ChatActivity extends AppCompatActivity {
         });
 
         RecyclerView channelRecyclerView = findViewById(R.id.channelRecyclerView);
-        channelAdapter = new ChannelAdapter(channelList, this::switchChannel);
+        channelAdapter = new ChannelAdapter(channelList, this);
         channelRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         channelRecyclerView.setAdapter(channelAdapter);
 
@@ -670,17 +661,47 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public void addChatMessage(String message) {
-        // Prevent duplicate messages
-            // Check if the message contains any mention format
+        SpannableStringBuilder spannableMessage = new SpannableStringBuilder(message);
 
-                Spannable spannableMessage = createMentionSpannable(message);
-                chatMessages.add(spannableMessage);
+        // Apply default white color to the entire message
+        ForegroundColorSpan defaultColorSpan = new ForegroundColorSpan(Color.WHITE);
+        spannableMessage.setSpan(defaultColorSpan, 0, spannableMessage.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
 
-            chatAdapter.notifyDataSetChanged();
-            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-            markMessageAsProcessed(message);  // Mark message as processed to avoid duplication
+        // Apply clickable red color only to @nick mentions
+        Pattern mentionPattern = Pattern.compile("@\\w+");
+        Matcher mentionMatcher = mentionPattern.matcher(message);
+
+        while (mentionMatcher.find()) {
+            final String mention = mentionMatcher.group();
+
+            // Apply the color to @nick
+            ForegroundColorSpan mentionColorSpan = new ForegroundColorSpan(Color.RED);
+            spannableMessage.setSpan(mentionColorSpan, mentionMatcher.start(), mentionMatcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+            // Make @nick clickable
+            ClickableSpan clickableSpan = new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+                    // Handle @nick click event here, e.g., show user profile or info
+                    Toast.makeText(widget.getContext(), "Clicked: " + mention, Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setColor(Color.RED); // Ensure the @nick remains red
+                    ds.setUnderlineText(false); // Remove underline if needed
+                }
+            };
+
+            spannableMessage.setSpan(clickableSpan, mentionMatcher.start(), mentionMatcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        chatMessages.add(spannableMessage);
+        chatAdapter.notifyDataSetChanged();
+        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+        markMessageAsProcessed(message);
     }
-
 
 
     private void storeMessageForChannel(String channel, String message) {
@@ -886,6 +907,7 @@ public class ChatActivity extends AppCompatActivity {
             try {
                 if (bot.isConnected()) {
                     bot.sendRaw().rawLine("PART " + channelName);
+
                     runOnUiThread(() -> removeChannel(channelName));
                 }
             } catch (Exception e) {
@@ -1432,6 +1454,33 @@ public class ChatActivity extends AppCompatActivity {
         mentionStartIndex = -1;
 
         Log.d("MentionFeature", "Inserted mention: @" + nickname + " at index: " + mentionStartIndex);
+    }
+    public void onRemoveChannel(String channelName) {
+        partChannel(channelName); // Part the channel
+        removeChannel(channelName); // Remove from the list
+
+        // Switch to the last active channel
+        if (!channelList.isEmpty()) {
+            setActiveChannel(channelList.get(channelList.size() - 1).getChannelName());
+        } else {
+            // Fallback to a default channel if none are left
+            setActiveChannel("#ThePlaceToChat");
+        }
+    }
+
+    @Override
+    public void onChannelClick(ChannelItem channel) {
+        switchChannel(channel); // Adjust this method as needed for your channel switching logic
+    }
+
+    @Override
+    public void onLeaveChannelClick(ChannelItem channel) {
+        onRemoveChannel(channel.getChannelName()); // Use onRemoveChannel instead
+    }
+
+    public interface OnChannelClickListener {
+        void onChannelClick(ChannelItem channel);
+        void onLeaveChannelClick(ChannelItem channel);
     }
 
 }

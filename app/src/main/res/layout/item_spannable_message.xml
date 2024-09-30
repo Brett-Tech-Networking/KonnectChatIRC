@@ -2,4 +2,7 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:text="Spannable message"
-    xmlns:android="http://schemas.android.com/apk/res/android" />
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:autoLink="web"
+    android:linksClickable="true"
+    android:textColorLink="@color/LightBlue" />
