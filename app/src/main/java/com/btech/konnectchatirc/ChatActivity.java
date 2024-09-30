@@ -673,6 +673,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
         while (mentionMatcher.find()) {
             final String mention = mentionMatcher.group();
+            final String nickWithoutAt = mention.substring(1); // Extract nick without the '@' character
+
 
             // Apply the color to @nick
             ForegroundColorSpan mentionColorSpan = new ForegroundColorSpan(Color.RED);
@@ -682,8 +684,22 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             ClickableSpan clickableSpan = new ClickableSpan() {
                 @Override
                 public void onClick(@NonNull View widget) {
-                    // Handle @nick click event here, e.g., show user profile or info
-                    Toast.makeText(widget.getContext(), "Clicked: " + mention, Toast.LENGTH_SHORT).show();
+                    if (bot != null && bot.isConnected()) {
+                        User clickedUser = bot.getUserChannelDao().getUser(nickWithoutAt);
+                        if (clickedUser != null) {
+                            new Thread(() -> {
+                                // Show the dialog on the main thread
+                                runOnUiThread(() -> {
+                                    UserOptionsDialog userOptionsDialog = new UserOptionsDialog(ChatActivity.this, clickedUser, ChatActivity.this);
+                                    userOptionsDialog.show();
+                                });
+                            }).start();
+                        } else {
+                            Toast.makeText(widget.getContext(), "User not found in the current channel.", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(widget.getContext(), "Not connected to a server.", Toast.LENGTH_SHORT).show();
+                    }
                 }
 
                 @Override
