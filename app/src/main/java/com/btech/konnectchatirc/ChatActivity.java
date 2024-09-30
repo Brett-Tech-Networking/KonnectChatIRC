@@ -66,6 +66,7 @@ import org.pircbotx.exception.IrcException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -130,7 +131,13 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private RecyclerView suggestionRecyclerView;
     private boolean isMentionActive = false;
     private int mentionStartIndex = -1;
-
+    private MentionSuggestionAdapter commandSuggestionAdapter;
+    private boolean isCommandActive = false;
+    private int commandStartIndex = -1;
+    private PopupWindow commandPopupWindow;
+    private RecyclerView commandSuggestionRecyclerView;
+    private List<String> commandList = Arrays.asList("/nick", "/id", "/join", "/part", "/list", "/clear");
+    private String currentQuery;
 
 
     public SpannableString createMentionSpannable(String messageContent) {
@@ -270,10 +277,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
         String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
 
-
         channelNameTextView = findViewById(R.id.ChannelName);
         chatEditText = findViewById(R.id.chatEditText);
-        // Initialize the mention popup
+
+        initializeCommandPopup();
         initializeMentionPopup();
 
 // Add TextWatcher to chatEditText
@@ -285,37 +292,50 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Detect if the cursor is currently typing a mention
                 int cursorPosition = chatEditText.getSelectionStart();
-                if (cursorPosition < 0) return; // Invalid cursor position
+                if (cursorPosition < 0) return;
 
                 String text = s.toString();
-                if (cursorPosition > text.length()) return; // Cursor beyond text
+                if (cursorPosition > text.length()) return;
 
-                // Find the last '@' before the cursor
-                int atIndex = text.lastIndexOf('@', cursorPosition - 1);
-
-                if (atIndex != -1) {
-                    // Ensure that '@' is not part of an email or already part of a mention
-                    if (atIndex == 0 || Character.isWhitespace(text.charAt(atIndex - 1))) {
-                        // Check if there's no space between '@' and the cursor
-                        if (atIndex < cursorPosition) {
-                            String mentionText = text.substring(atIndex + 1, cursorPosition);
-                            if (!mentionText.contains(" ")) { // No space within the mention
-                                isMentionActive = true;
-                                mentionStartIndex = atIndex;
-                                showMentionPopup(mentionText);
-                                return;
-                            }
-                        }
+                // **Detect if the cursor is currently typing a command** (starts with `/`)
+                int slashIndex = text.lastIndexOf('/', cursorPosition - 1);
+                if (slashIndex != -1 && (slashIndex == 0 || Character.isWhitespace(text.charAt(slashIndex - 1)))) {
+                    // Extract the command text after the '/'
+                    String commandText = text.substring(slashIndex + 1, cursorPosition);
+                    if (!commandText.contains(" ")) { // No space within the command
+                        isCommandActive = true;
+                        commandStartIndex = slashIndex;
+                        currentQuery = text.substring(commandStartIndex + 1, cursorPosition);
+                        showCommandPopup(currentQuery);
+                    }
+                } else {
+                    // If no active command is detected, dismiss the command popup
+                    if (isCommandActive) {
+                        isCommandActive = false;
+                        commandStartIndex = -1;
+                        dismissCommandPopup();
                     }
                 }
 
-                // If no active mention is detected, dismiss the popup
-                if (isMentionActive) {
-                    isMentionActive = false;
-                    mentionStartIndex = -1;
-                    dismissMentionPopup();
+                // **Detect if the cursor is currently typing a mention** (starts with `@`)
+                int atIndex = text.lastIndexOf('@', cursorPosition - 1);
+                if (atIndex != -1 && (atIndex == 0 || Character.isWhitespace(text.charAt(atIndex - 1)))) {
+                    // Extract the mention text after the '@'
+                    String mentionText = text.substring(atIndex + 1, cursorPosition);
+                    if (!mentionText.contains(" ")) { // No space within the mention
+                        isMentionActive = true;
+                        mentionStartIndex = atIndex;
+                        currentQuery = text.substring(mentionStartIndex + 1, cursorPosition);
+                        showMentionPopup(currentQuery);
+                    }
+                } else {
+                    // If no active mention is detected, dismiss the mention popup
+                    if (isMentionActive) {
+                        isMentionActive = false;
+                        mentionStartIndex = -1;
+                        dismissMentionPopup();
+                    }
                 }
             }
 
@@ -324,6 +344,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 // No action needed
             }
         });
+
+
 
         adminButton = findViewById(R.id.adminButton);
         ImageButton sendButton = findViewById(R.id.sendButton);
@@ -848,18 +870,23 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             chatEditText.setText("");
             return;
         }
+
+        // Convert the channel name to lowercase
+        final String lowerCaseChannelName = channelName.toLowerCase();
+
         new Thread(() -> {
             try {
                 if (isNetworkAvailable()) {
                     if (bot.isConnected()) {
-                        bot.sendIRC().joinChannel(channelName);
+                        bot.sendIRC().joinChannel(lowerCaseChannelName);
                         runOnUiThread(() -> {
-                            if (!isChannelInList(channelName)) {
-                                channelList.add(new ChannelItem(channelName));
-                                channelMessagesMap.put(channelName, new ArrayList<>());
+                            // Check if the channel is already in the list before adding
+                            if (!isChannelInList(lowerCaseChannelName)) {
+                                channelList.add(new ChannelItem(lowerCaseChannelName));
+                                channelMessagesMap.put(lowerCaseChannelName, new ArrayList<>());
                                 channelAdapter.notifyDataSetChanged();
                             }
-                            setActiveChannel(channelName);
+                            setActiveChannel(lowerCaseChannelName);
                             chatEditText.setText("");
                         });
                     } else {
@@ -876,12 +903,13 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
     private boolean isChannelInList(String channelName) {
         for (ChannelItem channel : channelList) {
-            if (channel.getChannelName().equals(channelName)) {
+            if (channel.getChannelName().equalsIgnoreCase(channelName)) {
                 return true;
             }
         }
         return false;
     }
+
 
     private void switchChannel(ChannelItem channel) {
         setActiveChannel(channel.getChannelName());
@@ -1415,7 +1443,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         }
     }
 
-
     private void dismissMentionPopup() {
         if (mentionPopupWindow != null && mentionPopupWindow.isShowing()) {
             mentionPopupWindow.dismiss();
@@ -1475,12 +1502,14 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         partChannel(channelName); // Part the channel
         removeChannel(channelName); // Remove from the list
 
-        // Switch to the last active channel
         if (!channelList.isEmpty()) {
             setActiveChannel(channelList.get(channelList.size() - 1).getChannelName());
         } else {
-            // Fallback to a default channel if none are left
-            setActiveChannel("#ThePlaceToChat");
+            // No channels left, so do not set any active channel
+            activeChannel = null;
+            updateChannelName(""); // Clear the displayed channel name or handle it accordingly
+            chatMessages.clear(); // Clear chat messages since no channel is active
+            chatAdapter.notifyDataSetChanged();
         }
     }
 
@@ -1497,6 +1526,89 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     public interface OnChannelClickListener {
         void onChannelClick(ChannelItem channel);
         void onLeaveChannelClick(ChannelItem channel);
+    }
+
+    private void initializeCommandPopup() {
+        // Inflate the layout for the command suggestions
+        View popupView = LayoutInflater.from(this).inflate(R.layout.popup_commands, null);
+        commandSuggestionRecyclerView = popupView.findViewById(R.id.suggestionRecyclerView);
+        commandSuggestionRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        // Initialize the adapter with an empty list
+        commandSuggestionAdapter = new MentionSuggestionAdapter(new ArrayList<>(), suggestion -> {
+            insertCommand(suggestion, commandStartIndex);
+            dismissCommandPopup();
+        });
+
+        commandSuggestionRecyclerView.setAdapter(commandSuggestionAdapter);
+
+        // Create the PopupWindow
+        commandPopupWindow = new PopupWindow(
+                popupView,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                true
+        );
+
+        // Adjust the popup window to work with the soft keyboard
+        commandPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        commandPopupWindow.setOutsideTouchable(true);
+        commandPopupWindow.setFocusable(false); // Allow EditText to retain focus
+    }
+
+    private void showCommandPopup(String currentQuery) {
+        if (commandPopupWindow == null) return;
+
+        List<String> filteredCommands;
+        if (currentQuery.isEmpty()) {
+            filteredCommands = new ArrayList<>(commandList);
+        } else {
+            filteredCommands = new ArrayList<>();
+            for (String command : commandList) {
+                if (command.toLowerCase().startsWith(currentQuery.toLowerCase())) {
+                    filteredCommands.add(command);
+                }
+            }
+        }
+
+        if (filteredCommands.isEmpty()) {
+            dismissCommandPopup();
+            return;
+        }
+
+        // Update the adapter with filtered commands
+        commandSuggestionAdapter.updateSuggestions(filteredCommands);
+
+        // Display the popup below the EditText
+        commandPopupWindow.showAsDropDown(chatEditText);
+    }
+
+    private void dismissCommandPopup() {
+        if (commandPopupWindow != null && commandPopupWindow.isShowing()) {
+            commandPopupWindow.dismiss();
+        }
+        isCommandActive = false;
+        commandStartIndex = -1;
+    }
+
+    private void insertCommand(String command, int commandStartIndex) {
+        if (commandStartIndex < 0) return;
+
+        Editable editable = chatEditText.getText();
+        if (editable == null) return;
+
+        int cursorPosition = chatEditText.getSelectionStart();
+        if (cursorPosition < commandStartIndex) return;
+
+        try {
+            editable.delete(commandStartIndex, cursorPosition);
+        } catch (IndexOutOfBoundsException e) {
+            dismissCommandPopup();
+            return;
+        }
+
+        // Insert the selected command with a space
+        editable.insert(commandStartIndex, command + " ");
     }
 
 }
