@@ -1,9 +1,12 @@
 package com.btech.konnectchatirc;
 
-import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.ServerResponseEvent;
+import org.pircbotx.hooks.Listener;
 
-public class NickChangeListener extends ListenerAdapter {
+import org.pircbotx.hooks.ListenerAdapter;
+import org.pircbotx.hooks.events.NickChangeEvent;
+
+public class NickChangeListener extends ListenerAdapter implements NickChangeListenerr {
     private final ChatActivity chatActivity;
 
     public NickChangeListener(ChatActivity chatActivity) {

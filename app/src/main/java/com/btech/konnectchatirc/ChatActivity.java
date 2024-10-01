@@ -1,5 +1,7 @@
 package com.btech.konnectchatirc;
 
+import static androidx.core.util.TypedValueCompat.dpToPx;
+
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -30,6 +32,7 @@ import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.util.Base64;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -45,6 +48,9 @@ import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.pircbotx.cap.EnableCapHandler;
+import org.pircbotx.hooks.Listener;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -62,6 +68,8 @@ import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 import org.pircbotx.exception.DaoException;
 import org.pircbotx.exception.IrcException;
+import org.pircbotx.hooks.Listener;
+import org.pircbotx.hooks.events.WhoEvent;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -559,7 +567,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     .setRealName("TPTC IRC Client")
                     .addAutoJoinChannel(selectedChannel)
                     .addListener(new Listeners(this))
-                    .addListener(new NickChangeListener(this));
+                    .addCapHandler(new EnableCapHandler("extended-join"))
+                    .setAutoSplitMessage(true)
+                    .setAutoReconnect(true)
+                    .addListener((Listener) new NickChangeListener(this));
+
 
             if ("KonnectChat IRC".equals(selectedServer)) {
                 configurationBuilder.addServer("irc.konnectchatirc.net", 6667);
@@ -707,17 +719,35 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 @Override
                 public void onClick(@NonNull View widget) {
                     if (bot != null && bot.isConnected()) {
-                        User clickedUser = bot.getUserChannelDao().getUser(nickWithoutAt);
-                        if (clickedUser != null) {
-                            new Thread(() -> {
-                                // Show the dialog on the main thread
+                        // Get the active channel
+                        String activeChannelName = getActiveChannel();
+                        Channel activeChannel = bot.getUserChannelDao().getChannel(activeChannelName);
+
+                        if (activeChannel != null) {
+                            User clickedUser = null;
+
+                            // Iterate over users in the active channel to find the matching nick
+                            for (User user : activeChannel.getUsers()) {
+                                if (user.getNick().equalsIgnoreCase(nickWithoutAt)) {
+                                    clickedUser = user;
+                                    break;
+                                }
+                            }
+
+                            if (clickedUser != null) {
+                                final User finalClickedUser = clickedUser; // Declare final variable
                                 runOnUiThread(() -> {
-                                    UserOptionsDialog userOptionsDialog = new UserOptionsDialog(ChatActivity.this, clickedUser, ChatActivity.this);
+                                    UserOptionsDialog userOptionsDialog = new UserOptionsDialog(ChatActivity.this, finalClickedUser, ChatActivity.this);
                                     userOptionsDialog.show();
                                 });
-                            }).start();
+                            } else {
+                                // User not in the current channel
+                                Toast.makeText(widget.getContext(), "User not found in the current channel.", Toast.LENGTH_SHORT).show();
+                            }
+
                         } else {
-                            Toast.makeText(widget.getContext(), "User not found in the current channel.", Toast.LENGTH_SHORT).show();
+                            // Active channel is null
+                            Toast.makeText(widget.getContext(), "Active channel not found.", Toast.LENGTH_SHORT).show();
                         }
                     } else {
                         Toast.makeText(widget.getContext(), "Not connected to a server.", Toast.LENGTH_SHORT).show();
@@ -731,6 +761,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     ds.setUnderlineText(false); // Remove underline if needed
                 }
             };
+
 
             spannableMessage.setSpan(clickableSpan, mentionMatcher.start(), mentionMatcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
@@ -1339,11 +1370,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             mentionPopupWindow.setHeight(height);
         });
 
-        // Initialize the PopupWindow with adjusted height and width
         mentionPopupWindow = new PopupWindow(
                 popupView,
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
+                dpToPx(200), // Set maximum height to 200dp
                 true
         );
 
@@ -1355,7 +1385,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         mentionPopupWindow.setOutsideTouchable(true);
         mentionPopupWindow.setFocusable(false); // Allow EditText to retain focus
     }
-
+    // Method to convert dp to pixels
+    private int dpToPx(int dp) {
+        return (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
+    }
     private void showMentionPopup(String currentQuery) {
         if (bot == null || !bot.isConnected()) {
             return;
@@ -1610,5 +1644,4 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         // Insert the selected command with a space
         editable.insert(commandStartIndex, command + " ");
     }
-
 }

@@ -1,7 +1,24 @@
 package com.btech.konnectchatirc;
 
+import org.pircbotx.Configuration;
+import org.pircbotx.PircBotX;
+import org.pircbotx.User;
 import org.pircbotx.hooks.ListenerAdapter;
-import org.pircbotx.hooks.events.*;
+import org.pircbotx.hooks.events.ActionEvent;
+import org.pircbotx.hooks.events.ConnectEvent;
+import org.pircbotx.hooks.events.DisconnectEvent;
+import org.pircbotx.hooks.events.JoinEvent;
+import org.pircbotx.hooks.events.KickEvent;
+import org.pircbotx.hooks.events.MessageEvent;
+import org.pircbotx.hooks.events.ModeEvent;
+import org.pircbotx.hooks.events.NickChangeEvent;
+import org.pircbotx.hooks.events.NoticeEvent;
+import org.pircbotx.hooks.events.PartEvent;
+import org.pircbotx.hooks.events.ServerResponseEvent;
+import org.pircbotx.hooks.events.UnknownEvent;
+import org.pircbotx.hooks.events.WhoEvent;
+import org.pircbotx.hooks.types.GenericMessageEvent;
+import org.pircbotx.hooks.Listener;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -9,7 +26,6 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
-
 
 public class Listeners extends ListenerAdapter {
 
@@ -90,6 +106,16 @@ public class Listeners extends ListenerAdapter {
         if (message.contains("has joined the channel")) {
             return; // Skip server-sent join messages
         }
+        if (message.contains("sets mode +v")) {
+            String[] parts = message.split(" ");
+            // Extracting the target nick who received the mode
+            if (parts.length >= 5) { // Ensure we have enough parts
+                String targetNick = parts[4]; // The user being voiced
+                String modeChangeMessage = "[" + sender + "] - " + targetNick + " (Nick: " + event.getUser().getNick() + ") has been voiced.";
+                chatActivity.processServerMessage("SERVER", modeChangeMessage, channel);
+                return; // Skip processing as it's already handled
+            }
+        }
 
         // Process other messages normally
         chatActivity.processServerMessage(sender, message, channel);
@@ -113,44 +139,71 @@ public class Listeners extends ListenerAdapter {
     }
     @Override
     public void onMode(ModeEvent event) {
-        String mode = event.getMode();
         String channel = event.getChannel().getName();
-        String action = "";
-        String targetNick = null;
+        String performingUser = event.getUser().getNick(); // User who set the mode
+        String modeLine = event.getMode(); // This might include the mode and parameters
 
-        // Modes that affect users typically have a parameter (e.g., +o nick, -v nick)
-        if (event.getUser() != null) {
-            targetNick = event.getUser().getNick();  // Get the target user's nickname
+        if (modeLine == null || modeLine.isEmpty()) {
+            return;
         }
 
-        // Determine the type of mode change
-        if (mode.contains("+o")) {
-            action = "opped";
-        } else if (mode.contains("-o")) {
-            action = "deopped";
-        } else if (mode.contains("+v")) {
-            action = "voiced";
-        } else if (mode.contains("-v")) {
-            action = "devoiced";
-        } else if (mode.contains("+q")) {
-            action = "given owner status";
-        } else if (mode.contains("-q")) {
-            action = "removed from owner status";
-        } else if (mode.contains("+h")) {
-            action = "given half-operator status";
-        } else if (mode.contains("-h")) {
-            action = "removed from half-operator status";
+        // Split the mode line into mode changes and parameters
+        String[] modeParts = modeLine.split(" ");
+        if (modeParts.length < 2) {
+            // If there are no parameters, we can't proceed
+            return;
         }
 
-        String performingUser = event.getUserHostmask().getNick();
-        String message = (targetNick != null ? targetNick : "Someone") + " was " + action + " in " + channel + " by " + performingUser;
+        String modeString = modeParts[0]; // "+v", "-o", etc.
+        List<String> params = new ArrayList<>();
+        for (int i = 1; i < modeParts.length; i++) {
+            params.add(modeParts[i]); // Collect target nicknames
+        }
 
-        // Display the server message
-        runOnUiThread(() -> chatActivity.processServerMessage("SERVER", message, channel));
+        char modeSign = modeString.charAt(0); // '+' or '-'
+        String modeFlags = modeString.substring(1); // "v", "o", etc.
+
+        int targetIndex = 0;
+        for (char modeChar : modeFlags.toCharArray()) {
+            if (targetIndex < params.size()) {
+                String targetNick = params.get(targetIndex);
+                String modeAction = "";
+
+                switch (modeChar) {
+                    case 'v':
+                        modeAction = "voiced";
+                        break;
+                    case 'o':
+                        modeAction = "opped";
+                        break;
+                    case 'h':
+                        modeAction = "half-opped";
+                        break;
+                    // Add other modes if needed
+                    default:
+                        modeAction = "had mode " + modeChar + " set";
+                        break;
+                }
+
+                if (!modeAction.isEmpty()) {
+                    String action = (modeSign == '+') ? "has been " + modeAction + " by " + performingUser
+                            : "has been de-" + modeAction + " by " + performingUser;
+                    String message = targetNick + " " + action + " in " + channel;
+                    runOnUiThread(() -> chatActivity.processServerMessage("SERVER", message, channel));
+                }
+
+                targetIndex++;
+            } else {
+                // No more targets, break out of the loop
+                break;
+            }
+        }
 
         // Refresh the user list to reflect the status change
         refreshChat();
     }
+
+
 
     private List<String> appChannelsList = new ArrayList<>();
 
@@ -194,6 +247,20 @@ public class Listeners extends ListenerAdapter {
                     Log.e("Listeners", "Error sending IDENTIFY command: " + e.getMessage());
                 }
             }).start();
+            new Thread(() -> {
+                try {
+                    event.getBot().sendRaw().rawLine("WHO " + channel);
+                } catch (Exception e) {
+                    Log.e("Listeners", "Error sending WHO command: " + e.getMessage());
+                }
+            }).start();
+        } else {
+            // Handle when another user joins the channel
+            chatActivity.runOnUiThread(() -> {
+                String joinMessage = userNick + " has joined the channel.";
+                chatActivity.processServerMessage("SERVER", joinMessage, channel);
+                chatActivity.markMessageAsProcessed(joinMessage);  // Mark as processed to prevent duplicates
+            });
         }
 
         // Do not handle join messages for other users to prevent duplication

@@ -9,6 +9,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import org.pircbotx.PircBotX;
+import org.pircbotx.hooks.Listener;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.ServerResponseEvent;
 
@@ -17,7 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class JoinChannel extends ListenerAdapter {
+public class JoinChannel extends ListenerAdapter  implements OnServerResponse {
 
     private final Context context;
     private final PircBotX bot;
