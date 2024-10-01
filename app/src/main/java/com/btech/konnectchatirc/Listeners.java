@@ -245,6 +245,24 @@ public class Listeners extends ListenerAdapter {
 
             // Log the joined channel
             System.out.println("Bot joined channel: " + channel);
+
+            // Send identification command to NickServ if needed
+            event.getBot().sendIRC().message("NickServ", "IDENTIFY " + chatActivity.getDesiredPassword());
+
+            // Send WHO command for the channel after joining
+            try {
+                event.getBot().sendRaw().rawLine("WHO " + channel);
+            } catch (Exception e) {
+                Log.e("Listeners", "Error sending WHO command: " + e.getMessage());
+            }
+
+            // Send MODE command for own nick to get user modes
+            try {
+                event.getBot().sendRaw().rawLine("MODE " + event.getBot().getNick());
+            } catch (Exception e) {
+                Log.e("Listeners", "Error sending MODE command: " + e.getMessage());
+            }
+
         } else {
             // Handle when another user joins the channel
             chatActivity.runOnUiThread(() -> {
@@ -252,17 +270,8 @@ public class Listeners extends ListenerAdapter {
                 chatActivity.processServerMessage("SERVER", joinMessage, channel);
                 chatActivity.markMessageAsProcessed(joinMessage);  // Mark as processed to prevent duplicates
             });
-            // Send WHO command for the channel after joining
-            if (event.getUser().equals(event.getBot().getUserBot())) {
-                new Thread(() -> {
-                    try {
-                        event.getBot().sendRaw().rawLine("WHO " + event.getChannel().getName());
-                    } catch (Exception e) {
-                        Log.e("Listeners", "Error sending WHO command: " + e.getMessage());
-                    }
-                }).start();
-            }
         }
+
 
     // Only handle join messages for the bot itself
         if (userNick.equalsIgnoreCase(event.getBot().getNick())) {

@@ -44,10 +44,12 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -148,6 +150,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private RecyclerView commandSuggestionRecyclerView;
     private List<String> commandList = Arrays.asList("/nick", "/id", "/join", "/part", "/list", "/clear");
     private String currentQuery;
+    private ArrayAdapter<String> userListAdapter;
+    private List<String> userList = new ArrayList<>();
 
 
     public SpannableString createMentionSpannable(String messageContent) {
@@ -284,6 +288,12 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 Toast.makeText(ChatActivity.this, "Cannot upload images without being connected to the server.", Toast.LENGTH_SHORT).show();
             }
         });
+        // Initialize the user list adapter
+        userListAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, userList);
+
+        // Assuming you have a ListView for the user list in your layout
+        ListView userListView = findViewById(R.id.userListView);
+        userListView.setAdapter(userListAdapter);
 
         String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
 
@@ -1665,5 +1675,22 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
         // Insert the selected command with a space
         editable.insert(commandStartIndex, command + " ");
+    }
+
+    public void updateUserList() {
+        // Get the active channel
+        String activeChannel = getActiveChannel();
+        if (activeChannel != null && bot != null) {
+            Channel channel = bot.getUserChannelDao().getChannel(activeChannel);
+            if (channel != null) {
+                userList.clear();
+                for (User user : channel.getUsers()) {
+                    String prefix = IrcUtils.getUserPrefix(user, channel);
+                    userList.add(prefix + user.getNick());
+                }
+                // Notify the adapter of the changes
+                runOnUiThread(() -> userListAdapter.notifyDataSetChanged());
+            }
+        }
     }
 }
