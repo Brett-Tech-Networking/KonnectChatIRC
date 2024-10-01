@@ -3,35 +3,33 @@ package com.btech.konnectchatirc;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ForegroundColorSpan;
 import android.text.util.Linkify;
+import android.util.Base64;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.text.method.LinkMovementMethod;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.DecodeFormat;
-import com.bumptech.glide.request.RequestOptions;
-
 import org.pircbotx.Channel;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
+import org.pircbotx.UserLevel;
 
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -40,8 +38,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final PircBotX bot;
 
     private static final int VIEW_TYPE_TEXT = 0;
-    private static final int VIEW_TYPE_IMAGE = 1;
-    private static final int VIEW_TYPE_SPANNABLE = 2;
+    private static final int VIEW_TYPE_SPANNABLE = 1;
 
     public ChatAdapter(Context context, List<Object> messages) {
         this.context = context;
@@ -51,11 +48,9 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public int getItemViewType(int position) {
-        // Check if the item at this position is a Spannable or an image or text
+        // Check if the item at this position is a Spannable or a String
         if (messages.get(position) instanceof Spannable) {
             return VIEW_TYPE_SPANNABLE;
-        } else if (messages.get(position) instanceof Bitmap) {
-            return VIEW_TYPE_IMAGE;
         } else {
             return VIEW_TYPE_TEXT;
         }
@@ -73,9 +68,6 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (viewType == VIEW_TYPE_SPANNABLE) {
             view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_spannable_message, parent, false);
             return new SpannableMessageViewHolder(view);
-        } else if (viewType == VIEW_TYPE_IMAGE) {
-            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_image_message, parent, false);
-            return new ImageViewHolder(view);
         } else {
             view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_text_message, parent, false);
             return new TextViewHolder(view);
@@ -90,8 +82,6 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((SpannableMessageViewHolder) holder).bind((Spannable) item);
         } else if (holder instanceof TextViewHolder) {
             ((TextViewHolder) holder).bind((String) item);
-        } else if (holder instanceof ImageViewHolder) {
-            ((ImageViewHolder) holder).bind((Bitmap) item);
         }
     }
 
@@ -109,7 +99,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             SpannableStringBuilder finalMessageBuilder = new SpannableStringBuilder();
 
             if (isServer) {
-                SpannableString serverMessage = new SpannableString(message);
+                SpannableStringBuilder serverMessage = new SpannableStringBuilder(message);
                 serverMessage.setSpan(
                         new ForegroundColorSpan(Color.parseColor("#00FF00")), // Lime color
                         0,
@@ -120,34 +110,55 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             } else {
                 String nick = extractNickFromMessage(message);
                 User user = getUserFromNick(nick);
+                Channel channel = getActiveChannel();
+
+                // Get the prefix based on user's levels in the channel
+                String prefix = getUserPrefix(user, channel);
+
+                // Build the nick with prefix
+                String nickWithPrefix = prefix + nick;
+
                 SpannableStringBuilder nickBuilder = new SpannableStringBuilder();
 
+                nickBuilder.append(nickWithPrefix + ": ");
+
+                // Optionally, apply color based on user modes
                 if (user != null) {
-                    SpannableString nickSpan = new SpannableString(nick);
                     if (user.isIrcop()) {
-                        nickSpan.setSpan(new ForegroundColorSpan(Color.RED), 0, nick.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        nickBuilder.setSpan(new ForegroundColorSpan(Color.RED), 0, nickBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     } else if (user.getChannelsOpIn().contains(getActiveChannel())) {
-                        nickSpan.setSpan(new ForegroundColorSpan(Color.BLUE), 0, nick.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        nickBuilder.setSpan(new ForegroundColorSpan(Color.BLUE), 0, nickBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     } else {
-                        nickSpan.setSpan(new ForegroundColorSpan(Color.WHITE), 0, nick.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        nickBuilder.setSpan(new ForegroundColorSpan(Color.WHITE), 0, nickBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
-                    nickBuilder.append(nickSpan);
-                } else {
-                    SpannableString nickSpan = new SpannableString(nick);
-                    nickSpan.setSpan(new ForegroundColorSpan(Color.WHITE), 0, nick.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    nickBuilder.append(nickSpan);
                 }
 
-                nickBuilder.append(": ");
                 finalMessageBuilder.append(nickBuilder);
 
                 int colonIndex = message.indexOf(":");
                 if (colonIndex != -1 && colonIndex + 1 < message.length()) {
                     String messageContent = message.substring(colonIndex + 1).trim();
-                    ChatActivity activity = (ChatActivity) context;
-                    SpannableString spannableMessage = activity.createMentionSpannable(messageContent);
-                    Linkify.addLinks(spannableMessage, Linkify.WEB_URLS); // Ensure URL linking
-                    finalMessageBuilder.append(spannableMessage);
+
+                    // Create a SpannableString for the message content
+                    SpannableStringBuilder messageContentSpannable = new SpannableStringBuilder(messageContent);
+
+                    // Auto-link URLs
+                    Linkify.addLinks(messageContentSpannable, Linkify.WEB_URLS);
+
+                    // Handle mentions (@username)
+                    Pattern mentionPattern = Pattern.compile("@\\w+");
+                    Matcher mentionMatcher = mentionPattern.matcher(messageContentSpannable);
+
+                    while (mentionMatcher.find()) {
+                        messageContentSpannable.setSpan(
+                                new ForegroundColorSpan(Color.YELLOW),
+                                mentionMatcher.start(),
+                                mentionMatcher.end(),
+                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                        );
+                    }
+
+                    finalMessageBuilder.append(messageContentSpannable);
                 }
             }
 
@@ -176,7 +187,6 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
         public void bind(Spannable message) {
-            Linkify.addLinks(message, Linkify.WEB_URLS); // Ensure URL linking
             messageTextView.setText(message);
             messageTextView.setMovementMethod(LinkMovementMethod.getInstance());
 
@@ -190,26 +200,6 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 }
                 return true;
             });
-        }
-    }
-
-    public class ImageViewHolder extends RecyclerView.ViewHolder {
-        ImageView imageView;
-
-        public ImageViewHolder(@NonNull View itemView) {
-            super(itemView);
-            imageView = itemView.findViewById(R.id.imageView);
-        }
-
-        public void bind(Bitmap image) {
-            Glide.with(imageView.getContext())
-                    .load(image)
-                    .apply(new RequestOptions()
-                            .placeholder(R.drawable.konnectchattrans)
-                            .error(R.drawable.ic_error)
-                            .format(DecodeFormat.PREFER_RGB_565)
-                            .disallowHardwareConfig())
-                    .into(imageView);
         }
     }
 
@@ -244,5 +234,17 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return bot.getUserChannelDao().getChannel(((ChatActivity) context).getActiveChannel());
         }
         return null;
+    }
+
+    private String getUserPrefix(User user, Channel channel) {
+        if (user == null || channel == null) return "";
+        Set<UserLevel> levels = user.getUserLevels(channel);
+
+        if (levels.contains(UserLevel.OWNER)) return "~";
+        if (levels.contains(UserLevel.SUPEROP)) return "&";
+        if (levels.contains(UserLevel.OP)) return "@";
+        if (levels.contains(UserLevel.HALFOP)) return "%";
+        if (levels.contains(UserLevel.VOICE)) return "+";
+        return "";
     }
 }

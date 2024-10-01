@@ -1,27 +1,38 @@
 package com.btech.konnectchatirc;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.pircbotx.Channel;
+import org.pircbotx.PircBotX;
 import org.pircbotx.User;
+import org.pircbotx.UserLevel;
 
 import java.util.List;
+import java.util.Set;
 
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
 
     private final List<User> userList;
     private final Context context;
     private int selectedPosition = -1;  // Variable to track the selected position
+    private final Channel activeChannel;
 
-    public UserAdapter(Context context, List<User> userList) {
+    public UserAdapter(Context context, List<User> userList, Channel activeChannel) {
         this.context = context;
         this.userList = userList;
+        this.activeChannel = activeChannel;
     }
 
     @NonNull
@@ -34,7 +45,28 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     @Override
     public void onBindViewHolder(@NonNull UserViewHolder holder, int position) {
         User user = userList.get(holder.getAdapterPosition());
-        holder.userNameTextView.setText(user.getNick());
+
+        // Get the prefix based on user's levels in the channel
+        String prefix = getUserPrefix(user, activeChannel);
+
+        // Build the nick with prefix
+        String nickWithPrefix = prefix + user.getNick();
+
+        SpannableStringBuilder nickBuilder = new SpannableStringBuilder(nickWithPrefix);
+
+        // Optionally, apply color based on user modes
+        if (user != null) {
+            if (user.isIrcop()) {
+                nickBuilder.setSpan(new ForegroundColorSpan(Color.RED), 0, nickBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else if (!user.getChannelsOpIn().isEmpty()) {
+                nickBuilder.setSpan(new ForegroundColorSpan(Color.BLUE), 0, nickBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else {
+                nickBuilder.setSpan(new ForegroundColorSpan(Color.WHITE), 0, nickBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+        }
+
+        // Set the text with the prefix
+        holder.userNameTextView.setText(nickBuilder);
 
         // Highlight the selected item
         holder.itemView.setSelected(holder.getAdapterPosition() == selectedPosition);
@@ -56,6 +88,18 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
     public int getSelectedPosition() {
         return selectedPosition;
+    }
+
+    private String getUserPrefix(User user, Channel channel) {
+        if (user == null || channel == null) return "";
+        Set<UserLevel> levels = user.getUserLevels(channel);
+
+        if (levels.contains(UserLevel.OWNER)) return "~";
+        if (levels.contains(UserLevel.SUPEROP)) return "&";
+        if (levels.contains(UserLevel.OP)) return "@";
+        if (levels.contains(UserLevel.HALFOP)) return "%";
+        if (levels.contains(UserLevel.VOICE)) return "+";
+        return "";
     }
 
     static class UserViewHolder extends RecyclerView.ViewHolder {

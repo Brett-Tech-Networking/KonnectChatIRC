@@ -1,8 +1,10 @@
 package com.btech.konnectchatirc;
 
+import org.pircbotx.Channel;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.User;
+import org.pircbotx.UserLevel;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.ActionEvent;
 import org.pircbotx.hooks.events.ConnectEvent;
@@ -16,6 +18,7 @@ import org.pircbotx.hooks.events.NoticeEvent;
 import org.pircbotx.hooks.events.PartEvent;
 import org.pircbotx.hooks.events.ServerResponseEvent;
 import org.pircbotx.hooks.events.UnknownEvent;
+import org.pircbotx.hooks.events.UserListEvent;
 import org.pircbotx.hooks.events.WhoEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
 import org.pircbotx.hooks.Listener;
@@ -26,6 +29,7 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class Listeners extends ListenerAdapter {
 
@@ -76,7 +80,27 @@ public class Listeners extends ListenerAdapter {
         if (rawMessage.contains("CAP") && rawMessage.contains("ACK")) {
             return;
         }
+        if (event.getCode() == 353) { // RPL_NAMREPLY
+            String rawLine = event.getRawLine();
+            // Example rawLine: ":server 353 yournick = #channel :@nick1 +nick2 nick3"
+            String[] parts = rawLine.split(" :");
+            if (parts.length >= 2) {
+                String[] users = parts[1].split(" ");
+                for (String userEntry : users) {
+                    char prefix = userEntry.charAt(0);
+                    String nick = userEntry;
+                    if ("~&@%+".indexOf(prefix) != -1) {
+                        nick = userEntry.substring(1);
+                    } else {
+                        prefix = ' '; // No prefix
+                    }
+                    System.out.println("User: " + nick + ", Prefix: " + prefix);
+                    // Store this information in a map for later use
+                }
+            }
+            System.out.println("Server Response: " + rawLine);
 
+        }
         int code = event.getCode();
         if (code == 001 || code == 002 || code == 003 || code == 004 || code == 005 ||
                 code == 253 || code == 252 || code == 255 || code == 265 ||
@@ -94,6 +118,14 @@ public class Listeners extends ListenerAdapter {
     public void onConnect(ConnectEvent event) {
         String serverAddress = event.getBot().getServerHostname();
         runOnUiThread(() -> chatActivity.addChatMessage("Connected to: " + serverAddress + " a TPTC Client"));
+    }
+    @Override
+    public void onUserList(UserListEvent event) {
+        Channel channel = event.getChannel();
+        for (User user : event.getUsers()) {
+            Set<UserLevel> levels = user.getUserLevels(channel);
+            System.out.println("User " + user.getNick() + " has levels: " + levels);
+        }
     }
 
     @Override

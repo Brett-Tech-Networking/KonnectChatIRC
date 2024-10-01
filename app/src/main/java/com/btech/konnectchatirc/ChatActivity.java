@@ -12,6 +12,10 @@ import android.graphics.ImageDecoder;
 import android.graphics.PixelFormat;
 import android.net.ConnectivityManager;
 import android.net.Network;
+import org.pircbotx.UserLevel;
+import java.util.Set;
+import org.pircbotx.UserLevel;
+import org.pircbotx.cap.EnableCapHandler;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.net.NetworkRequest;
@@ -48,8 +52,6 @@ import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import org.pircbotx.cap.EnableCapHandler;
 import org.pircbotx.hooks.Listener;
 
 import androidx.annotation.NonNull;
@@ -100,7 +102,7 @@ import android.text.util.Linkify;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 
-public class ChatActivity extends AppCompatActivity implements ChannelAdapter.OnChannelClickListener{
+public class ChatActivity extends AppCompatActivity implements ChannelAdapter.OnChannelClickListener {
 
     private PircBotX bot;
     private EditText chatEditText;
@@ -354,7 +356,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         });
 
 
-
         adminButton = findViewById(R.id.adminButton);
         ImageButton sendButton = findViewById(R.id.sendButton);
         Button disconnectButton = findViewById(R.id.disconnectButton);
@@ -570,6 +571,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     .addCapHandler(new EnableCapHandler("extended-join"))
                     .setAutoSplitMessage(true)
                     .setAutoReconnect(true)
+                    .addCapHandler(new EnableCapHandler("multi-prefix"))
                     .addListener((Listener) new NickChangeListener(this));
 
 
@@ -1096,39 +1098,43 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             // Handle null case if necessary, e.g., skip or set to a default channel
             channel = getActiveChannel(); // Set to active channel as fallback
         }
-        String formattedMessage = sender + ": " + message;
-        storeMessageForChannel(channel, formattedMessage);
 
-        if (message.startsWith("005")) {
-            return;
+        String prefix = "";
+        User senderUser = null;
+
+        if (bot != null && bot.isConnected()) {
+            Channel channelObj = bot.getUserChannelDao().getChannel(channel);
+            if (channelObj != null) {
+                // Retrieve the senderUser from the channel's user list
+                senderUser = channelObj.getUsers().stream()
+                    .filter(user -> user.getNick().equals(sender))
+                    .findFirst()
+                    .orElse(null);
+
+                if (senderUser != null) {
+                    prefix = getUserPrefix(senderUser, channelObj);
+                    System.out.println("User: " + senderUser.getNick() + ", Prefix: " + prefix);
+                } else {
+                    System.out.println("Sender user not found in channel user list.");
+                }
+            } else {
+                System.out.println("Channel object is null for channel: " + channel);
+            }
+        } else {
+            System.out.println("Bot is null or not connected.");
         }
+
+        String formattedMessage = prefix + " " +  sender + ": " + message;
+        storeMessageForChannel(channel, formattedMessage);
 
         boolean isActiveChannel = channel.equalsIgnoreCase(getActiveChannel());
 
         if (isActiveChannel) {
-            if (message.contains("DEFCON")) {
-                runOnUiThread(() -> addChatMessage(formattedMessage));
-                return;
-            }
-
-            if ("ACTION".equals(sender)) {
-                runOnUiThread(() -> addChatMessage("* " + sender + " " + message));
-            } else {
-                runOnUiThread(() -> addChatMessage(formattedMessage));
-            }
+            runOnUiThread(() -> addChatMessage(formattedMessage));
         } else {
-            for (ChannelItem channelItem : channelList) {
-                if (channelItem.getChannelName().equals(channel)) {
-                    channelItem.incrementUnreadCount();
-                    runOnUiThread(() -> channelAdapter.notifyDataSetChanged());
-                    incrementUnreadCount();
-                    break;
-                }
-            }
+            // Handle messages from other channels if necessary
         }
-    }
-
-    private void acquireWakeLock() {
+    }    private void acquireWakeLock() {
         if (wakeLock == null) {
             PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
             wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChatActivity::WakeLock");
@@ -1286,6 +1292,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         });
     }
 
+
     public List<String> getUserListFromActiveChannel() {
         List<String> userList = new ArrayList<>();
 
@@ -1297,7 +1304,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             Channel activeChannelObj = bot.getUserChannelDao().getChannel(activeChannel);
             if (activeChannelObj != null) {
                 for (User user : activeChannelObj.getUsers()) {
-                    userList.add(user.getNick());
+                    String prefix = getUserPrefix(user, activeChannelObj);
+                    userList.add(prefix + user.getNick());
                 }
             }
         } catch (DaoException e) {
@@ -1307,6 +1315,19 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
         return userList;
     }
+
+    private String getUserPrefix(User user, Channel channel) {
+        if (user == null || channel == null) return "";
+        Set<UserLevel> levels = user.getUserLevels(channel);
+
+        if (levels.contains(UserLevel.OWNER)) return "~";
+        if (levels.contains(UserLevel.SUPEROP)) return "&";
+        if (levels.contains(UserLevel.OP)) return "@";
+        if (levels.contains(UserLevel.HALFOP)) return "%";
+        if (levels.contains(UserLevel.VOICE)) return "+";
+        return "";
+    }
+
 
     public void addBannedUser(String banEntry) {
         if (!bannedUsers.contains(banEntry)) {
