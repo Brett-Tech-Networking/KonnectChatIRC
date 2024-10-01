@@ -119,14 +119,6 @@ public class Listeners extends ListenerAdapter {
         String serverAddress = event.getBot().getServerHostname();
         runOnUiThread(() -> chatActivity.addChatMessage("Connected to: " + serverAddress + " a TPTC Client"));
     }
-    @Override
-    public void onUserList(UserListEvent event) {
-        Channel channel = event.getChannel();
-        for (User user : event.getUsers()) {
-            Set<UserLevel> levels = user.getUserLevels(channel);
-            System.out.println("User " + user.getNick() + " has levels: " + levels);
-        }
-    }
 
     @Override
     public void onMessage(MessageEvent event) {
@@ -260,6 +252,16 @@ public class Listeners extends ListenerAdapter {
                 chatActivity.processServerMessage("SERVER", joinMessage, channel);
                 chatActivity.markMessageAsProcessed(joinMessage);  // Mark as processed to prevent duplicates
             });
+            // Send WHO command for the channel after joining
+            if (event.getUser().equals(event.getBot().getUserBot())) {
+                new Thread(() -> {
+                    try {
+                        event.getBot().sendRaw().rawLine("WHO " + event.getChannel().getName());
+                    } catch (Exception e) {
+                        Log.e("Listeners", "Error sending WHO command: " + e.getMessage());
+                    }
+                }).start();
+            }
         }
 
     // Only handle join messages for the bot itself

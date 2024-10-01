@@ -572,6 +572,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     .setAutoSplitMessage(true)
                     .setAutoReconnect(true)
                     .addCapHandler(new EnableCapHandler("multi-prefix"))
+                    .addCapHandler(new EnableCapHandler("userhost-in-names"))
                     .addListener((Listener) new NickChangeListener(this));
 
 
