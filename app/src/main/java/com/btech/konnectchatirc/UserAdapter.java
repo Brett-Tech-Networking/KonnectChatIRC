@@ -8,14 +8,13 @@ import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.pircbotx.Channel;
-import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 import org.pircbotx.UserLevel;
 
@@ -38,7 +37,8 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     @NonNull
     @Override
     public UserViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(android.R.layout.simple_list_item_1, parent, false);
+        // Inflate the custom layout for user list items
+        View view = LayoutInflater.from(context).inflate(R.layout.dialog_user_list_item, parent, false);
         return new UserViewHolder(view);
     }
 
@@ -46,8 +46,9 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     public void onBindViewHolder(@NonNull UserViewHolder holder, int position) {
         User user = userList.get(holder.getAdapterPosition());
 
-        // Get the prefix based on user's levels in the channel
+        // Get the prefix and drawable based on user's levels in the channel
         String prefix = getUserPrefix(user, activeChannel);
+        int drawableResId = getUserIconResId(prefix); // This should return the correct drawable
 
         // Build the nick with prefix
         String nickWithPrefix = prefix + user.getNick();
@@ -65,8 +66,16 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             }
         }
 
-        // Set the text with the prefix
+        // Set the nickname text
         holder.userNameTextView.setText(nickBuilder);
+
+        // Set the drawable icon for the user if available
+        if (drawableResId != 0) {
+            holder.userIconImageView.setImageResource(drawableResId);
+            holder.userIconImageView.setVisibility(View.VISIBLE);
+        } else {
+            holder.userIconImageView.setVisibility(View.GONE); // Hide the icon if no drawable
+        }
 
         // Highlight the selected item
         holder.itemView.setSelected(holder.getAdapterPosition() == selectedPosition);
@@ -102,12 +111,31 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         return "";
     }
 
+    private int getUserIconResId(String prefix) {
+        switch (prefix) {
+            case "~":
+                return R.drawable.shield; // Drawable for owner
+            case "&":
+                return R.drawable.mod; // Drawable for super-op
+            case "@":
+                return R.drawable.mod; // Drawable for op
+            case "%":
+                return R.drawable.mod; // Drawable for half-op
+            case "+":
+                return R.drawable.voice; // Drawable for voice
+            default:
+                return 0; // No drawable for regular users
+        }
+    }
+
     static class UserViewHolder extends RecyclerView.ViewHolder {
+        ImageView userIconImageView;
         TextView userNameTextView;
 
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
-            userNameTextView = itemView.findViewById(android.R.id.text1);
+            userIconImageView = itemView.findViewById(R.id.userIcon);  // The ImageView for drawable
+            userNameTextView = itemView.findViewById(R.id.userNick);  // The TextView for the nickname
         }
     }
 }

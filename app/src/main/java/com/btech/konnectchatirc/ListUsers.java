@@ -7,8 +7,10 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -18,7 +20,6 @@ import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -31,10 +32,10 @@ public class ListUsers {
     private Activity activity;
     private List<UserItem> userList = new ArrayList<>();
     private List<UserItem> filteredUserList = new ArrayList<>();
-    private ArrayAdapter<String> adapter;
+    private ArrayAdapter<UserItem> adapter;
 
     // List of slap messages
-    private List<String> slapMessages = Arrays.asList(
+    private List<String> slapMessages = List.of(
             "slaps %s viciously with a sharp rock",
             "delivers a powerful backhand to %s",
             "smacks %s across the face with force",
@@ -67,10 +68,10 @@ public class ListUsers {
         Channel channel = bot.getUserChannelDao().getChannel(activeChannel);
 
         if (channel != null) {
-            // Populate the user list with prefixes
+            // Populate the user list with prefixes and icons
             for (User user : channel.getUsers()) {
-                String prefix = IrcUtils.getUserPrefix(user, channel);
-                userList.add(new UserItem(prefix, user.getNick()));
+                IrcUtils.UserPrefix userPrefix = IrcUtils.getUserPrefix(user, channel);
+                userList.add(new UserItem(userPrefix.getSymbol(), user.getNick(), userPrefix.getDrawableResId()));
             }
         } else {
             Toast.makeText(context, "Active channel not found or bot not connected.", Toast.LENGTH_SHORT).show();
@@ -90,19 +91,43 @@ public class ListUsers {
         filteredUserList.clear();
         filteredUserList.addAll(userList);
 
-        // Prepare the list of display names for the adapter
-        List<String> displayNames = new ArrayList<>();
-        for (UserItem userItem : filteredUserList) {
-            displayNames.add(userItem.getDisplayName());
-        }
-
         // Inflate the custom layout for the user list dialog
         LayoutInflater inflater = LayoutInflater.from(context);
         View userListViewDialog = inflater.inflate(R.layout.dialog_user_list, null);
 
         // Find the ListView and set the adapter
         ListView userListView = userListViewDialog.findViewById(R.id.userListView);
-        adapter = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, displayNames);
+        adapter = new ArrayAdapter<UserItem>(context, R.layout.dialog_user_list_item, filteredUserList) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                // Get the current user
+                UserItem currentUser = getItem(position);
+
+                // Inflate the custom layout if it is not already inflated
+                if (convertView == null) {
+                    convertView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_user_list_item, parent, false);
+                }
+
+                // Get references to the ImageView and TextView in the custom layout
+                ImageView userIcon = convertView.findViewById(R.id.userIcon);
+                TextView userNick = convertView.findViewById(R.id.userNick);
+
+                // Set the nickname of the user
+                userNick.setText(currentUser.getNick());
+
+                // Set the user icon based on the prefix, if available
+                if (currentUser.getDrawableResId() != 0) {
+                    userIcon.setImageResource(currentUser.getDrawableResId());
+                    userIcon.setVisibility(View.VISIBLE);  // Ensure the icon is visible if it exists
+                } else {
+                    userIcon.setVisibility(View.GONE);  // Hide the icon if there is no drawable
+                }
+
+                return convertView;
+            }
+        };
+
+        // Set the adapter to the ListView
         userListView.setAdapter(adapter);
 
         // Handle the search EditText
@@ -143,7 +168,7 @@ public class ListUsers {
 
         // Set up the ListView item click listener
         userListView.setOnItemClickListener((parent, view, position, id) -> {
-            String selectedDisplayName = adapter.getItem(position); // Use adapter's data
+            String selectedDisplayName = adapter.getItem(position).getNick(); // Use adapter's data
             dialog.dismiss();
 
             // Show options for the selected user
@@ -171,14 +196,9 @@ public class ListUsers {
         }
 
         // Update the adapter data
-        List<String> displayNames = new ArrayList<>();
-        for (UserItem userItem : filteredUserList) {
-            displayNames.add(userItem.getDisplayName());
-        }
-
         activity.runOnUiThread(() -> {
             adapter.clear();
-            adapter.addAll(displayNames);
+            adapter.addAll(filteredUserList);
             adapter.notifyDataSetChanged();
         });
     }

@@ -17,7 +17,7 @@
         android:layout_gravity="center_horizontal"
         android:paddingBottom="8dp" />
 
-    <!-- Added Search EditText -->
+    <!-- Search EditText remains unchanged -->
     <EditText
         android:id="@+id/searchUserEditText"
         android:layout_width="match_parent"
@@ -31,6 +31,7 @@
         android:drawablePadding="8dp"
         android:inputType="text" />
 
+    <!-- Existing ListView -->
     <ListView
         android:id="@+id/userListView"
         android:layout_width="match_parent"
@@ -38,5 +39,6 @@
         android:divider="@android:color/darker_gray"
         android:dividerHeight="1dp"
         android:paddingTop="8dp"
-        android:paddingBottom="8dp"/>
+        android:paddingBottom="8dp" />
+
 </LinearLayout>

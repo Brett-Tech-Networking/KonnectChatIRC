@@ -420,13 +420,18 @@ public class Listeners extends ListenerAdapter {
             runOnUiThread(() -> {
                 Log.d("IRCMessage", "Message from " + sender + ": " + message);
                 chatActivity.addChatMessage(sender + ": " + message);
-
+            });
+        } else {
+            // Message is from an inactive channel
+            runOnUiThread(() -> {
+                chatActivity.storeMessageForChannel(channel, sender + ": " + message);
+                chatActivity.incrementUnreadCount(); // Increment unread count and show badge
+            });
                 if (sender.equalsIgnoreCase("NickServ")) {
                     Log.d("NickServMessage", "NickServ message: " + message);
                     handleNickServResponse(message);
                 }
-            });
-        }
+            }
     }
 
     private void handleNickServResponse(String message) {

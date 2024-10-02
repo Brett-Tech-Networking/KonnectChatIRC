@@ -786,7 +786,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     }
 
 
-    private void storeMessageForChannel(String channel, String message) {
+    void storeMessageForChannel(String channel, String message) {
         if (!channelMessagesMap.containsKey(channel)) {
             channelMessagesMap.put(channel, new ArrayList<>());
         }
@@ -1091,7 +1091,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         processedMessages.add(message);
     }
 
-    private void incrementUnreadCount() {
+    void incrementUnreadCount() {
         totalUnreadMessages++;
         runOnUiThread(() -> {
             unreadBadge.setText(String.valueOf(totalUnreadMessages));
@@ -1124,6 +1124,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
                 if (senderUser != null) {
                     prefix = getUserPrefix(senderUser, channelObj);
+
                     System.out.println("User: " + senderUser.getNick() + ", Prefix: " + prefix);
                 } else {
                     System.out.println("Sender user not found in channel user list.");
@@ -1143,9 +1144,25 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         if (isActiveChannel) {
             runOnUiThread(() -> addChatMessage(formattedMessage));
         } else {
-            // Handle messages from other channels if necessary
+            final String finalChannel = channel;
+            runOnUiThread(() -> {
+                incrementUnreadCount();  // Increments the unread message badge
+                updateUnreadCountForChannel(finalChannel); // Update unread count for the specific channel
+            });
         }
-    }    private void acquireWakeLock() {
+    }
+
+    private void updateUnreadCountForChannel(String channel) {
+        for (ChannelItem channelItem : channelList) {
+            if (channelItem.getChannelName().equals(channel)) {
+                channelItem.incrementUnreadCount();
+                break;
+            }
+        }
+        channelAdapter.notifyDataSetChanged();
+    }
+
+    private void acquireWakeLock() {
         if (wakeLock == null) {
             PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
             wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ChatActivity::WakeLock");
@@ -1685,7 +1702,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             if (channel != null) {
                 userList.clear();
                 for (User user : channel.getUsers()) {
-                    String prefix = IrcUtils.getUserPrefix(user, channel);
+                    String prefix = String.valueOf(IrcUtils.getUserPrefix(user, channel));
                     userList.add(prefix + user.getNick());
                 }
                 // Notify the adapter of the changes
