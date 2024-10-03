@@ -645,6 +645,20 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                             }
 
                             updateChannelListAfterDelay();
+
+                            // Start the custom ping thread after the bot is connected
+                            new Thread(() -> {
+                                while (true) {
+                                    try {
+                                        bot.sendRaw().rawLine("PING " + bot.getServerInfo().getServerName());
+                                        Thread.sleep(60 * 1000); // Send PING every 60 seconds
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                        break; // Exit the loop if something goes wrong
+                                    }
+                                }
+                            }).start();
+
                             break;
                         } else {
                             runOnUiThread(() -> Toast.makeText(ChatActivity.this, "No channel selected.", Toast.LENGTH_LONG).show());
@@ -1209,6 +1223,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         super.onDestroy();
         dismissMentionPopup();
         disconnectFromServer();
+        releaseWakeLock();
+        releaseWifiLock();
     }
 
     private void disconnectFromServer() {
