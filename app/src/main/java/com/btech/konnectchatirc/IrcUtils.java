@@ -12,9 +12,9 @@ public class IrcUtils {
         Set<UserLevel> levels = user.getUserLevels(channel);
 
         if (levels.contains(UserLevel.OWNER)) return new UserPrefix("~", R.drawable.shield);
-        if (levels.contains(UserLevel.SUPEROP)) return new UserPrefix("&", R.drawable.mod);
-        if (levels.contains(UserLevel.OP)) return new UserPrefix("@", R.drawable.mod);
-        if (levels.contains(UserLevel.HALFOP)) return new UserPrefix("%", R.drawable.mod);
+        if (levels.contains(UserLevel.SUPEROP)) return new UserPrefix("&", R.drawable.mod1);
+        if (levels.contains(UserLevel.OP)) return new UserPrefix("@", R.drawable.mod1);
+        if (levels.contains(UserLevel.HALFOP)) return new UserPrefix("%", R.drawable.mod1);
         if (levels.contains(UserLevel.VOICE)) return new UserPrefix("+", R.drawable.voice);
         return new UserPrefix("", 0); // No prefix
     }

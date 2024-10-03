@@ -3,12 +3,12 @@ package com.btech.konnectchatirc;
 public class UserItem {
     private String prefix;
     private String nick;
-    private int drawableResId;  // New field for drawable resource ID
+    private int drawableResId;
 
     public UserItem(String prefix, String nick, int drawableResId) {
         this.prefix = prefix;
         this.nick = nick;
-        this.drawableResId = drawableResId;  // Initialize the drawable resource ID
+        this.drawableResId = drawableResId;
     }
 
     public String getPrefix() {
@@ -24,20 +24,13 @@ public class UserItem {
     }
 
     public int getSortOrder() {
-        switch (prefix) {
-            case "~":
-                return 1;
-            case "&":
-                return 2;
-            case "@":
-                return 3;
-            case "%":
-                return 4;
-            case "+":
-                return 5;
-            default:
-                return 6;
-        }
+        // Define the sort order based on the prefix
+        if ("~".equals(prefix)) return 1;
+        if ("&".equals(prefix)) return 2;
+        if ("@".equals(prefix)) return 3;
+        if ("%".equals(prefix)) return 4;
+        if ("+".equals(prefix)) return 5;
+        return 6; // No prefix
     }
 
     public String getDisplayName() {

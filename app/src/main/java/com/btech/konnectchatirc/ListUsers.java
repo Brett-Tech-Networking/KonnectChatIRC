@@ -98,6 +98,7 @@ public class ListUsers {
         // Find the ListView and set the adapter
         ListView userListView = userListViewDialog.findViewById(R.id.userListView);
         adapter = new ArrayAdapter<UserItem>(context, R.layout.dialog_user_list_item, filteredUserList) {
+
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 // Get the current user
@@ -112,8 +113,8 @@ public class ListUsers {
                 ImageView userIcon = convertView.findViewById(R.id.userIcon);
                 TextView userNick = convertView.findViewById(R.id.userNick);
 
-                // Set the nickname of the user
-                userNick.setText(currentUser.getNick());
+                // Set the prefix and nickname of the user
+                userNick.setText(currentUser.getPrefix() + " " + currentUser.getNick());
 
                 // Set the user icon based on the prefix, if available
                 if (currentUser.getDrawableResId() != 0) {
@@ -127,7 +128,7 @@ public class ListUsers {
             }
         };
 
-        // Set the adapter to the ListView
+            // Set the adapter to the ListView
         userListView.setAdapter(adapter);
 
         // Handle the search EditText
