@@ -247,4 +247,5 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (levels.contains(UserLevel.VOICE)) return "+";
         return "";
     }
+
 }

@@ -11,59 +11,97 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Hello World"
-        android:textSize="20dp"
+        android:textSize="20sp"
         android:textColor="@color/lightblue"
-        android:layout_marginTop="0dp"/>
+        android:layout_gravity="center" />
 
-    <!-- New TextView for Host and IP Address -->
     <TextView
         android:id="@+id/options_host_ip"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Host: N/A"
-        android:textSize="14dp"
+        android:textSize="14sp"
         android:textColor="@color/white"
         android:layout_marginTop="8dp"
         android:layout_gravity="center" />
 
-    <LinearLayout
+    <!-- GridLayout for two rows with three buttons per row -->
+    <GridLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"/>
+        android:layout_marginTop="20dp"
+        android:columnCount="2"
+        android:rowCount="2"
+        android:orientation="horizontal"
+        android:gravity="center">
 
-    <Button
-        android:id="@+id/btnKick"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Kick"
-        android:background="@drawable/rounded_option_menu"
-        android:textSize="14sp"
-        android:textColor="@color/white"
-        android:padding="4dp"
-        android:layout_marginBottom="6dp"
-        style="@style/CustomButtonStyle"
-        android:layout_gravity="center" />
+        <!-- First row of buttons: Kick, Ban, Slap -->
+        <Button
+            android:id="@+id/btnKick"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Kick"
+            android:background="@drawable/rounded_option_menu"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:padding="8dp"
+            android:layout_margin="10dp" />
 
-    <Button
-        android:id="@+id/btnBan"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Ban"
-        android:textSize="14sp"
-        android:textColor="@color/white"
-        android:background="@drawable/rounded_option_menu"
-        android:padding="4dp"
-        android:layout_marginBottom="6dp"
-        android:layout_gravity="center" />
+        <Button
+            android:id="@+id/btnBan"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ban"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/rounded_option_menu"
+            android:padding="8dp"
+            android:layout_margin="10dp" />
 
-    <Button
-        android:id="@+id/btnSlap"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Slap"
-        android:textSize="14sp"
-        android:textColor="@color/white"
-        android:background="@drawable/rounded_option_menu"
-        android:padding="4dp"
-        android:layout_gravity="center" />
+        <Button
+            android:id="@+id/btnSlap"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Slap"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/rounded_option_menu"
+            android:padding="8dp"
+            android:layout_margin="10dp" />
+
+        <!-- Second row of buttons: Op, Deop refresh -->
+        <Button
+            android:id="@+id/btnRefresh"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Refresh"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/rounded_option_menu"
+            android:padding="8dp"
+            android:layout_margin="10dp" />
+
+        <Button
+            android:id="@+id/btnDeop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Deop"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/rounded_option_menu"
+            android:padding="8dp"
+            android:layout_margin="10dp" />
+        <Button
+            android:id="@+id/btnOp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Op"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:background="@drawable/rounded_option_menu"
+            android:padding="8dp"
+            android:layout_margin="10dp" />
+
+
+    </GridLayout>
 </LinearLayout>

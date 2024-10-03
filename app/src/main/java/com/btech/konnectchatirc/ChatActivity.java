@@ -1199,6 +1199,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             Log.d("WifiLock", "WifiLock released");
         }
     }
+    public void refreshChat() {
+        // this is in listeners
+        Toast.makeText(this, "Refreshing Data", Toast.LENGTH_SHORT).show();
+    }
 
     @Override
     protected void onDestroy() {

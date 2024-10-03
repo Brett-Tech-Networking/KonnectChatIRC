@@ -23,9 +23,12 @@ import org.pircbotx.hooks.events.WhoEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
 import org.pircbotx.hooks.Listener;
 
+import android.app.Activity;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -408,6 +411,18 @@ public class Listeners extends ListenerAdapter {
             refreshChat();
         });
     }
+    // Inside Listeners.java
+    public void setRefreshButtonListener(Activity activity) {
+        Button refreshButton = activity.findViewById(R.id.btnRefresh); // Adjust ID if different
+        refreshButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (activity instanceof ChatActivity) {
+                    ((ChatActivity) activity).refreshChat(); // Calls refreshChat() method from ChatActivity
+                }
+            }
+        });
+    }
 
 
     private void runOnUiThread(Runnable runnable) {
@@ -453,6 +468,7 @@ public class Listeners extends ListenerAdapter {
             chatActivity.addChatMessage("NickServ: " + message);
         }
     }
+
 
     private void refreshChat() {
         new Handler(Looper.getMainLooper()).post(() -> chatActivity.getChatAdapter().notifyDataSetChanged());
