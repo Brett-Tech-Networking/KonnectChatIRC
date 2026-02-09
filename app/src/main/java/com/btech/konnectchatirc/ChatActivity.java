@@ -4,8 +4,11 @@ import static androidx.core.util.TypedValueCompat.dpToPx;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.ImageDecoder;
@@ -48,7 +51,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
@@ -104,7 +109,7 @@ import android.text.util.Linkify;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 
-public class ChatActivity extends AppCompatActivity implements ChannelAdapter.OnChannelClickListener {
+public class ChatActivity extends AppCompatActivity implements ChannelAdapter.OnChannelClickListener, BotProvider {
 
     private PircBotX bot;
     private EditText chatEditText;
@@ -152,6 +157,15 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private String currentQuery;
     private ArrayAdapter<String> userListAdapter;
     private List<String> userList = new ArrayList<>();
+    
+    // Private messaging fields
+    private PrivateMessageStorage messageStorage;
+    private ListView privateConversationListView;
+    private ArrayAdapter<String> privateConversationAdapter;
+    private List<String> privateConversations = new ArrayList<>();
+    private String selectedPrivateConversation = null;
+    private boolean isViewingPrivateMessages = false;
+    private BroadcastReceiver privateMessageReceiver;
 
 
     public SpannableString createMentionSpannable(String messageContent) {
@@ -247,6 +261,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Register this activity as the active bot provider
+        BotManager.setActiveBotProvider(this);
+        
         getWindow().setFormat(PixelFormat.RGBA_8888);
         setContentView(R.layout.activity_chat);
 // Inside onCreate() in ChatActivity
@@ -265,7 +282,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         // Initialize the RecyclerView for chat messages
         chatRecyclerView = findViewById(R.id.chatRecyclerView);
         chatMessages = new ArrayList<>();
-        chatAdapter = new ChatAdapter(this, chatMessages);  // Pass ChatActivity instance
+        chatAdapter = new ChatAdapter((BotProvider) this, chatMessages);  // Pass ChatActivity instance
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);  // Ensure the adapter is set here
 
@@ -467,10 +484,16 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         channelRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         channelRecyclerView.setAdapter(channelAdapter);
 
+        // Initialize private messaging
+        initializePrivateMessaging();
+
         sendButton.setOnClickListener(v -> {
             String message = chatEditText.getText().toString();
             if (!message.isEmpty()) {
-                if (message.startsWith("/")) {
+                if (isViewingPrivateMessages && selectedPrivateConversation != null) {
+                    // Send private message
+                    sendPrivateMessage(message);
+                } else if (message.startsWith("/")) {
                     handleCommand(message);
                 } else {
                     addChatMessage(userNick + ": " + message);
@@ -1219,8 +1242,35 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        if (privateMessageReceiver != null) {
+            try {
+                registerReceiver(privateMessageReceiver, new IntentFilter("private_message"), Context.RECEIVER_EXPORTED);
+            } catch (Exception e) {
+                // Already registered
+            }
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (privateMessageReceiver != null) {
+            try {
+                unregisterReceiver(privateMessageReceiver);
+            } catch (IllegalArgumentException e) {
+                // Receiver was not registered
+            }
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Clear the bot provider registration
+        BotManager.clearActiveBotProvider();
+        
         dismissMentionPopup();
         disconnectFromServer();
         releaseWakeLock();
@@ -1239,6 +1289,129 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     Log.e("ChatActivity", "Error while disconnecting from IRC", e);
                 }
             }).start();
+        }
+    }
+
+    private void initializePrivateMessaging() {
+        // Initialize message storage
+        SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
+        messageStorage = new PrivateMessageStorage(prefs);
+
+        // Get UI elements
+        privateConversationListView = findViewById(R.id.privateConversationListView);
+        Button btnChannelsTab = findViewById(R.id.btnChannelsTab);
+        Button btnPrivateMessagesTab = findViewById(R.id.btnPrivateMessagesTab);
+        FrameLayout channelsSection = findViewById(R.id.channelsSection);
+        FrameLayout privateMessagesSection = findViewById(R.id.privateMessagesSection);
+
+        // Set up adapter for conversations
+        privateConversationAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, privateConversations);
+        privateConversationListView.setAdapter(privateConversationAdapter);
+
+        // Handle conversation selection
+        privateConversationListView.setOnItemClickListener((parent, view, position, id) -> {
+            selectedPrivateConversation = privateConversations.get(position);
+            loadPrivateConversation(selectedPrivateConversation);
+        });
+
+        // Set up tab switching
+        btnChannelsTab.setOnClickListener(v -> {
+            isViewingPrivateMessages = false;
+            channelsSection.setVisibility(View.VISIBLE);
+            privateMessagesSection.setVisibility(View.GONE);
+            btnChannelsTab.setBackgroundColor(getResources().getColor(android.R.color.darker_gray));
+            btnChannelsTab.setTextColor(Color.WHITE);
+            btnPrivateMessagesTab.setBackgroundColor(Color.parseColor("#222222"));
+            btnPrivateMessagesTab.setTextColor(Color.parseColor("#AAAAAA"));
+        });
+
+        btnPrivateMessagesTab.setOnClickListener(v -> {
+            isViewingPrivateMessages = true;
+            channelsSection.setVisibility(View.GONE);
+            privateMessagesSection.setVisibility(View.VISIBLE);
+            btnChannelsTab.setBackgroundColor(Color.parseColor("#222222"));
+            btnChannelsTab.setTextColor(Color.parseColor("#AAAAAA"));
+            btnPrivateMessagesTab.setBackgroundColor(getResources().getColor(android.R.color.darker_gray));
+            btnPrivateMessagesTab.setTextColor(Color.WHITE);
+            loadPrivateConversationList();
+        });
+
+        // Set up broadcast receiver for private messages
+        privateMessageReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String sender = intent.getStringExtra("sender");
+                String message = intent.getStringExtra("message");
+                
+                if (sender != null && !message.isEmpty()) {
+                    // Save message to storage
+                    messageStorage.saveMessage(userNick, sender, message, false);
+                    
+                    // Add to conversation list if not already there
+                    if (!privateConversations.contains(sender)) {
+                        privateConversations.add(0, sender);
+                        privateConversationAdapter.notifyDataSetChanged();
+                    }
+                    
+                    // If this conversation is selected, update display
+                    if (sender.equalsIgnoreCase(selectedPrivateConversation)) {
+                        loadPrivateConversation(sender);
+                    }
+                }
+            }
+        };
+    }
+
+    private void loadPrivateConversationList() {
+        privateConversations.clear();
+        privateConversations.addAll(messageStorage.getAllConversations(userNick));
+        privateConversationAdapter.notifyDataSetChanged();
+    }
+
+    private void loadPrivateConversation(String nick) {
+        selectedPrivateConversation = nick;
+        channelNameTextView.setText("Private: " + nick);
+        
+        chatMessages.clear();
+        
+        // Load messages from storage
+        List<PrivateMessageStorage.PrivateMessage> messages = messageStorage.getMessages(userNick, nick);
+        for (PrivateMessageStorage.PrivateMessage msg : messages) {
+            chatMessages.add(msg.sender + ": " + msg.message);
+        }
+        
+        chatAdapter.notifyDataSetChanged();
+        if (chatMessages.size() > 0) {
+            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+        }
+    }
+
+    private void sendPrivateMessage(String message) {
+        if (selectedPrivateConversation == null || selectedPrivateConversation.isEmpty()) {
+            Toast.makeText(this, "No conversation selected", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (bot != null && bot.isConnected()) {
+            // Send via IRC
+            new Thread(() -> {
+                try {
+                    bot.sendIRC().message(selectedPrivateConversation, message);
+                    
+                    // Save message
+                    messageStorage.saveMessage(userNick, selectedPrivateConversation, message, true);
+                    
+                    // Update UI
+                    runOnUiThread(() -> {
+                        loadPrivateConversation(selectedPrivateConversation);
+                        chatEditText.setText("");
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        } else {
+            Toast.makeText(this, "Not connected to IRC.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -1410,11 +1583,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         // You may want to release locks here if needed but maintain the connection
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        // Do not disconnect from the server on stop, unless the user manually initiates disconnection
-    }
     private void initializeMentionPopup() {
         // Inflate the suggestion list layout
         View popupView = LayoutInflater.from(this).inflate(R.layout.popup_mentions, null);

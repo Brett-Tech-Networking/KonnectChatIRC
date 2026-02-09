@@ -67,6 +67,11 @@
             android:theme="@style/Theme.KonnectChatIRC.NoActionBar"
             android:exported="false" />
 
+        <activity
+            android:name=".PrivateChatActivity"
+            android:theme="@style/Theme.KonnectChatIRC.NoActionBar"
+            android:exported="false" />
+
     </application>
 
 </manifest>

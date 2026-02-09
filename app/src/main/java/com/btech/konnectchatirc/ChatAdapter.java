@@ -10,7 +10,6 @@ import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ForegroundColorSpan;
 import android.text.util.Linkify;
-import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,22 +32,27 @@ import java.util.regex.Pattern;
 
 public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private final Context context;
     private final List<Object> messages;
-    private final PircBotX bot;
+    private final BotProvider botProvider;
+    private final String recipient;
 
     private static final int VIEW_TYPE_TEXT = 0;
     private static final int VIEW_TYPE_SPANNABLE = 1;
 
-    public ChatAdapter(Context context, List<Object> messages) {
-        this.context = context;
+    public ChatAdapter(BotProvider botProvider, List<Object> messages) {
+        this.botProvider = botProvider;
         this.messages = messages;
-        this.bot = ((ChatActivity) context).getBot(); // Initialize bot instance from ChatActivity
+        this.recipient = null; // Not a private message
+    }
+
+    public ChatAdapter(Context context, List<Object> messages) {
+        this.botProvider = (BotProvider) context;
+        this.messages = messages;
+        this.recipient = null; // Assume not private if context is provided
     }
 
     @Override
     public int getItemViewType(int position) {
-        // Check if the item at this position is a Spannable or a String
         if (messages.get(position) instanceof Spannable) {
             return VIEW_TYPE_SPANNABLE;
         } else {
@@ -107,26 +111,25 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
                 );
                 finalMessageBuilder.append(serverMessage);
-            } else {
+            } else if (botProvider.getActiveChannel() == null) { // Private message
+                finalMessageBuilder.append(message);
+            }else {
                 String nick = extractNickFromMessage(message);
                 User user = getUserFromNick(nick);
                 Channel channel = getActiveChannel();
 
-                // Get the prefix based on user's levels in the channel
                 String prefix = getUserPrefix(user, channel);
 
-                // Build the nick with prefix
                 String nickWithPrefix = prefix + nick;
 
                 SpannableStringBuilder nickBuilder = new SpannableStringBuilder();
 
                 nickBuilder.append(nickWithPrefix + ": ");
 
-                // Optionally, apply color based on user modes
                 if (user != null) {
                     if (user.isIrcop()) {
                         nickBuilder.setSpan(new ForegroundColorSpan(Color.RED), 0, nickBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    } else if (user.getChannelsOpIn().contains(getActiveChannel())) {
+                    } else if (channel != null && user.getChannelsOpIn().contains(channel)) {
                         nickBuilder.setSpan(new ForegroundColorSpan(Color.BLUE), 0, nickBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     } else {
                         nickBuilder.setSpan(new ForegroundColorSpan(Color.WHITE), 0, nickBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -139,13 +142,10 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 if (colonIndex != -1 && colonIndex + 1 < message.length()) {
                     String messageContent = message.substring(colonIndex + 1).trim();
 
-                    // Create a SpannableString for the message content
                     SpannableStringBuilder messageContentSpannable = new SpannableStringBuilder(messageContent);
 
-                    // Auto-link URLs
                     Linkify.addLinks(messageContentSpannable, Linkify.WEB_URLS);
 
-                    // Handle mentions (@username)
                     Pattern mentionPattern = Pattern.compile("@\\w+");
                     Matcher mentionMatcher = mentionPattern.matcher(messageContentSpannable);
 
@@ -163,9 +163,8 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
 
             messageTextView.setText(finalMessageBuilder);
-            messageTextView.setMovementMethod(LinkMovementMethod.getInstance()); // Make links clickable
+            messageTextView.setMovementMethod(LinkMovementMethod.getInstance());
 
-            // Enable long-click to copy text
             messageTextView.setOnLongClickListener(v -> {
                 ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
                 ClipData clip = ClipData.newPlainText("chat message", finalMessageBuilder);
@@ -190,7 +189,6 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             messageTextView.setText(message);
             messageTextView.setMovementMethod(LinkMovementMethod.getInstance());
 
-            // Enable long-click to copy text
             messageTextView.setOnLongClickListener(v -> {
                 ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
                 ClipData clip = ClipData.newPlainText("chat message", message);
@@ -220,18 +218,17 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private User getUserFromNick(String nick) {
+        PircBotX bot = botProvider.getBot();
         if (bot != null) {
-            Channel activeChannel = getActiveChannel();
-            if (activeChannel != null) {
-                return bot.getUserChannelDao().getUser(nick);
-            }
+            return bot.getUserChannelDao().getUser(nick);
         }
         return null;
     }
 
     private Channel getActiveChannel() {
-        if (bot != null) {
-            return bot.getUserChannelDao().getChannel(((ChatActivity) context).getActiveChannel());
+        PircBotX bot = botProvider.getBot();
+        if (bot != null && botProvider.getActiveChannel() != null) {
+            return bot.getUserChannelDao().getChannel(botProvider.getActiveChannel());
         }
         return null;
     }
@@ -248,4 +245,8 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return "";
     }
 
+    public interface OnChannelClickListener {
+        void onChannelClick(ChannelItem item);
+        void onLeaveChannelClick(ChannelItem item);
+    }
 }

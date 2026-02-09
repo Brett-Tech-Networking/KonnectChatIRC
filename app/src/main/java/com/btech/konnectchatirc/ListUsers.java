@@ -3,6 +3,7 @@ package com.btech.konnectchatirc;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -64,7 +65,7 @@ public class ListUsers {
         userList.clear();
 
         // Fetch the active channel
-        String activeChannel = ((ChatActivity) activity).getActiveChannel();
+        String activeChannel = (activity instanceof BotProvider) ? ((BotProvider) activity).getActiveChannel() : null;
         Channel channel = bot.getUserChannelDao().getChannel(activeChannel);
 
         if (channel != null) {
@@ -213,6 +214,9 @@ public class ListUsers {
             selectedUser = selectedUserWithPrefix;
         }
 
+        // Get the active channel safely using BotProvider
+        String activeChannel = (activity instanceof BotProvider) ? ((BotProvider) activity).getActiveChannel() : null;
+
         LayoutInflater inflater = LayoutInflater.from(context);
         View optionsView = inflater.inflate(R.layout.dialog_user_options, null);
 
@@ -244,17 +248,25 @@ public class ListUsers {
 
         // Set up button click listeners
         optionsView.findViewById(R.id.btnKick).setOnClickListener(v -> {
-            showKickDialog(selectedUser, ((ChatActivity) activity).getActiveChannel());
+            showKickDialog(selectedUser, activeChannel);
             dialog.dismiss();
         });
 
         optionsView.findViewById(R.id.btnBan).setOnClickListener(v -> {
-            executeBanCommand(selectedUser, ((ChatActivity) activity).getActiveChannel());
+            executeBanCommand(selectedUser, activeChannel);
             dialog.dismiss();
         });
 
         optionsView.findViewById(R.id.btnSlap).setOnClickListener(v -> {
-            executeSlapCommand(selectedUser, ((ChatActivity) activity).getActiveChannel());
+            executeSlapCommand(selectedUser, activeChannel);
+            dialog.dismiss();
+        });
+
+        optionsView.findViewById(R.id.btnPrivateMessage).setOnClickListener(v -> {
+            Intent intent = new Intent(context, PrivateChatActivity.class);
+            intent.putExtra("RECIPIENT_NICK", selectedUser);
+            intent.putExtra("USER_NICK", bot.getNick());
+            context.startActivity(intent);
             dialog.dismiss();
         });
 
@@ -334,14 +346,30 @@ public class ListUsers {
                     // Display the slap action immediately in the sender's chat
                     activity.runOnUiThread(() -> {
                         String message = "* " + bot.getNick() + " " + slapMessage;
-                        ((ChatActivity) activity).addChatMessage(message);
+                        if (activity instanceof ChatActivity) {
+                            ((ChatActivity) activity).addChatMessage(message);
+                        } else if (activity instanceof PrivateChatActivity) {
+                            ((PrivateChatActivity) activity).addChatMessage(message);
+                        }
                     });
 
                 } catch (Exception e) {
-                    activity.runOnUiThread(() -> ((ChatActivity) activity).addChatMessage("Failed to slap user."));
+                    activity.runOnUiThread(() -> {
+                        if (activity instanceof ChatActivity) {
+                            ((ChatActivity) activity).addChatMessage("Failed to slap user.");
+                        } else if (activity instanceof PrivateChatActivity) {
+                            ((PrivateChatActivity) activity).addChatMessage("Failed to slap user.");
+                        }
+                    });
                 }
             } else {
-                activity.runOnUiThread(() -> ((ChatActivity) activity).addChatMessage("Bot is not connected to the server."));
+                activity.runOnUiThread(() -> {
+                    if (activity instanceof ChatActivity) {
+                        ((ChatActivity) activity).addChatMessage("Bot is not connected to the server.");
+                    } else if (activity instanceof PrivateChatActivity) {
+                        ((PrivateChatActivity) activity).addChatMessage("Bot is not connected to the server.");
+                    }
+                });
             }
         }).start();
     }

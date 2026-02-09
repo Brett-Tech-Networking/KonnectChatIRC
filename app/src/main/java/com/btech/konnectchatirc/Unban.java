@@ -34,7 +34,7 @@ public class Unban {
 
         // Run the ban list request on a background thread to avoid NetworkOnMainThreadException
         new Thread(() -> {
-            String activeChannel = ((ChatActivity) activity).getActiveChannel();
+            String activeChannel = (activity instanceof BotProvider) ? ((BotProvider) activity).getActiveChannel() : null;
             if (bot != null && bot.isConnected()) {
                 try {
                     // Send the request to get the ban list
@@ -88,7 +88,7 @@ public class Unban {
     }
 
     private void executeUnbanCommand(String user) {
-        String activeChannel = ((ChatActivity) activity).getActiveChannel(); // Get the active channel from ChatActivity
+        String activeChannel = (activity instanceof BotProvider) ? ((BotProvider) activity).getActiveChannel() : null; // Get the active channel from ChatActivity
 
         new Thread(() -> {
             if (bot != null && bot.isConnected()) {

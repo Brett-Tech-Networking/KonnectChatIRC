@@ -60,7 +60,7 @@ public class Ban {
     }
 
     void executeBanCommand(String user) {
-        String activeChannel = ((ChatActivity) activity).getActiveChannel(); // Get the active channel from ChatActivity
+        String activeChannel = (activity instanceof BotProvider) ? ((BotProvider) activity).getActiveChannel() : null;
 
         if (bot != null && bot.isConnected()) {
             new Thread(() -> {
@@ -81,7 +81,7 @@ public class Ban {
 
     private List<String> getUserListFromActiveChannel() {
         List<String> userList = new ArrayList<>();
-        String activeChannel = ((ChatActivity) activity).getActiveChannel(); // Get the active channel from ChatActivity
+        String activeChannel = (activity instanceof BotProvider) ? ((BotProvider) activity).getActiveChannel() : null;
 
         // Fetch the active channel object from the bot
         Channel channel = bot.getUserChannelDao().getChannel(activeChannel);

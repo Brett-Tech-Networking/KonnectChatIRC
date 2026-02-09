@@ -5,6 +5,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
+import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
@@ -15,6 +16,8 @@ import androidx.core.app.NotificationCompat;
 import org.pircbotx.Configuration;
 import org.pircbotx.PircBotX;
 import org.pircbotx.exception.IrcException;
+import org.pircbotx.hooks.ListenerAdapter;
+import org.pircbotx.hooks.events.PrivateMessageEvent;
 
 import java.io.IOException;
 
@@ -23,6 +26,13 @@ public class IrcForegroundService extends Service {
     private static final String CHANNEL_ID = "IrcServiceChannel";
     private static final int NOTIFICATION_ID = 1;
     private PircBotX bot;
+    private final IBinder binder = new LocalBinder();
+
+    public class LocalBinder extends Binder {
+        IrcForegroundService getService() {
+            return IrcForegroundService.this;
+        }
+    }
 
     @Override
     public void onCreate() {
@@ -56,7 +66,7 @@ public class IrcForegroundService extends Service {
                             .addServer(serverAddress)
                             .addAutoJoinChannel(channelName)
                             .setAutoNickChange(true)
-                            .addListener(new Listeners(null)); // Add relevant listeners here
+                            .addListener(new PrivateMessageListener()); // Add relevant listeners here
 
                     bot = new PircBotX(config.buildConfiguration());
                     bot.startBot();
@@ -85,7 +95,7 @@ public class IrcForegroundService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null; // Not used since it's a foreground service
+        return binder;
     }
 
     private void createNotificationChannel() {
@@ -108,5 +118,20 @@ public class IrcForegroundService extends Service {
                 .setContentText(contentText)
                 .setSmallIcon(R.drawable.ic_notification)  // Set your notification icon
                 .build();
+    }
+
+    public PircBotX getBot() {
+        return bot;
+    }
+
+    public class PrivateMessageListener extends ListenerAdapter {
+        @Override
+        public void onPrivateMessage(PrivateMessageEvent event) {
+            // When a private message is received, broadcast it to the PrivateChatActivity
+            Intent intent = new Intent("private_message");
+            intent.putExtra("sender", event.getUser().getNick());
+            intent.putExtra("message", event.getMessage());
+            sendBroadcast(intent);
+        }
     }
 }

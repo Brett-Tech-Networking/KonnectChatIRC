@@ -103,6 +103,10 @@ public class OperLogin {
     }
 
     private void refreshChat() {
-        new Handler(Looper.getMainLooper()).post(() -> ((ChatActivity) activity).getChatAdapter().notifyDataSetChanged());
+        new Handler(Looper.getMainLooper()).post(() -> {
+            if (activity instanceof ChatActivity) {
+                ((ChatActivity) activity).getChatAdapter().notifyDataSetChanged();
+            }
+        });
     }
 }

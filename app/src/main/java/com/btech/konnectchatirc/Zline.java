@@ -37,7 +37,7 @@ public class Zline {
         userList.clear();
 
         // Fetch the active channel
-        String activeChannel = ((ChatActivity) activity).getActiveChannel();
+        String activeChannel = (activity instanceof BotProvider) ? ((BotProvider) activity).getActiveChannel() : null;
         org.pircbotx.Channel channel = bot.getUserChannelDao().getChannel(activeChannel);
 
         if (channel != null) {
@@ -48,7 +48,11 @@ public class Zline {
         }
 
         if (userList.isEmpty()) {
-            ((ChatActivity) activity).addChatMessage("No users found in the channel.");
+            if (activity instanceof ChatActivity) {
+                ((ChatActivity) activity).addChatMessage("No users found in the channel.");
+            } else if (activity instanceof PrivateChatActivity) {
+                ((PrivateChatActivity) activity).addChatMessage("No users found in the channel.");
+            }
             return;
         }
 
@@ -131,7 +135,7 @@ public class Zline {
     }
 
     public void executeZline(String nick) {
-        if (((ChatActivity) activity).isNetworkAvailable()) {
+        if (activity instanceof ChatActivity && ((ChatActivity) activity).isNetworkAvailable()) {
             new Thread(() -> {
                 try {
                     if (bot.isConnected()) {
@@ -139,7 +143,9 @@ public class Zline {
                         if (user != null) {
                             String hostmask = user.getHostmask();  // Get the user's hostmask
                             bot.sendRaw().rawLine("ZLINE " + hostmask + " 1d");
-                            ((ChatActivity) activity).processServerMessage("Server", nick + " Zlined for 1 day", ((ChatActivity) activity).getActiveChannel());
+                            if (activity instanceof ChatActivity) {
+                                ((ChatActivity) activity).processServerMessage("Server", nick + " Zlined for 1 day", ((BotProvider) activity).getActiveChannel());
+                            }
 
                             // Set operatorPanel visibility to GONE after the Zline command
                             activity.runOnUiThread(() -> {
@@ -149,17 +155,25 @@ public class Zline {
                                 }
                             });
                         } else {
-                            ((ChatActivity) activity).processServerMessage("Server", "Failed to execute Zline command: User not found.", ((ChatActivity) activity).getActiveChannel());
+                            if (activity instanceof ChatActivity) {
+                                ((ChatActivity) activity).processServerMessage("Server", "Failed to execute Zline command: User not found.", ((BotProvider) activity).getActiveChannel());
+                            }
                         }
                     } else {
-                        ((ChatActivity) activity).processServerMessage("Server", "Bot is not connected to the server.", ((ChatActivity) activity).getActiveChannel());
+                        if (activity instanceof ChatActivity) {
+                            ((ChatActivity) activity).processServerMessage("Server", "Bot is not connected to the server.", ((BotProvider) activity).getActiveChannel());
+                        }
                     }
                 } catch (Exception e) {
-                    ((ChatActivity) activity).processServerMessage("Server", "Failed to execute Zline command.", ((ChatActivity) activity).getActiveChannel());
+                    if (activity instanceof ChatActivity) {
+                        ((ChatActivity) activity).processServerMessage("Server", "Failed to execute Zline command.", ((BotProvider) activity).getActiveChannel());
+                    }
                 }
             }).start();
         } else {
-            ((ChatActivity) activity).processServerMessage("Server", "No network connection.", ((ChatActivity) activity).getActiveChannel());
+            if (activity instanceof ChatActivity) {
+                ((ChatActivity) activity).processServerMessage("Server", "No network connection.", ((BotProvider) activity).getActiveChannel());
+            }
         }
     }
 }

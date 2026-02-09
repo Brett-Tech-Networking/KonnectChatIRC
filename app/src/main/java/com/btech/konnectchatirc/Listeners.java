@@ -22,8 +22,10 @@ import org.pircbotx.hooks.events.UserListEvent;
 import org.pircbotx.hooks.events.WhoEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
 import org.pircbotx.hooks.Listener;
+import org.pircbotx.hooks.events.PrivateMessageEvent;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -469,6 +471,20 @@ public class Listeners extends ListenerAdapter {
         }
     }
 
+
+    @Override
+    public void onPrivateMessage(PrivateMessageEvent event) {
+        String sender = event.getUser().getNick();
+        String message = event.getMessage();
+        
+        // Broadcast the private message to PrivateChatActivity
+        Intent intent = new Intent("private_message");
+        intent.putExtra("sender", sender);
+        intent.putExtra("message", message);
+        chatActivity.sendBroadcast(intent);
+        
+        Log.d("Listeners", "Private message from " + sender + ": " + message);
+    }
 
     private void refreshChat() {
         new Handler(Looper.getMainLooper()).post(() -> chatActivity.getChatAdapter().notifyDataSetChanged());

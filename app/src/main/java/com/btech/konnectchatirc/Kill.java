@@ -37,7 +37,7 @@ public class Kill {
         userList.clear();
 
         // Fetch the active channel
-        String activeChannel = ((ChatActivity) activity).getActiveChannel();
+        String activeChannel = (activity instanceof BotProvider) ? ((BotProvider) activity).getActiveChannel() : null;
         org.pircbotx.Channel channel = bot.getUserChannelDao().getChannel(activeChannel);
 
         if (channel != null) {
@@ -48,7 +48,11 @@ public class Kill {
         }
 
         if (userList.isEmpty()) {
-            ((ChatActivity) activity).addChatMessage("No users found in the channel.");
+            if (activity instanceof ChatActivity) {
+                ((ChatActivity) activity).addChatMessage("No users found in the channel.");
+            } else if (activity instanceof PrivateChatActivity) {
+                ((PrivateChatActivity) activity).addChatMessage("No users found in the channel.");
+            }
             return;
         }
 
@@ -143,7 +147,9 @@ public class Kill {
             if (!reason.isEmpty()) {
                 executeKill(nick, reason);
             } else {
-                ((ChatActivity) activity).processServerMessage("Server", "Reason cannot be empty", ((ChatActivity) activity).getActiveChannel());
+                if (activity instanceof ChatActivity) {
+                    ((ChatActivity) activity).processServerMessage("Server", "Reason cannot be empty", ((BotProvider) activity).getActiveChannel());
+                }
             }
         });
 
@@ -153,14 +159,16 @@ public class Kill {
     }
 
     public void executeKill(String nick, String reason) {
-        if (((ChatActivity) activity).isNetworkAvailable()) {
+        if (activity instanceof ChatActivity && ((ChatActivity) activity).isNetworkAvailable()) {
             new Thread(() -> {
                 try {
                     if (bot.isConnected()) {
                         User user = bot.getUserChannelDao().getUser(nick);
                         if (user != null) {
                             bot.sendRaw().rawLine("KILL " + user.getNick() + " :" + reason);
-                            ((ChatActivity) activity).processServerMessage("Server", "Kill command sent for " + nick + " with reason: " + reason, ((ChatActivity) activity).getActiveChannel());
+                            if (activity instanceof ChatActivity) {
+                                ((ChatActivity) activity).processServerMessage("Server", "Kill command sent for " + nick + " with reason: " + reason, ((BotProvider) activity).getActiveChannel());
+                            }
 
                             // Set operatorPanel visibility to GONE after the kill command
                             activity.runOnUiThread(() -> {
@@ -170,17 +178,25 @@ public class Kill {
                                 }
                             });
                         } else {
-                            ((ChatActivity) activity).processServerMessage("Server", "Failed to execute kill command: User not found.", ((ChatActivity) activity).getActiveChannel());
+                            if (activity instanceof ChatActivity) {
+                                ((ChatActivity) activity).processServerMessage("Server", "Failed to execute kill command: User not found.", ((BotProvider) activity).getActiveChannel());
+                            }
                         }
                     } else {
-                        ((ChatActivity) activity).processServerMessage("Server", "Bot is not connected to the server.", ((ChatActivity) activity).getActiveChannel());
+                        if (activity instanceof ChatActivity) {
+                            ((ChatActivity) activity).processServerMessage("Server", "Bot is not connected to the server.", ((BotProvider) activity).getActiveChannel());
+                        }
                     }
                 } catch (Exception e) {
-                    ((ChatActivity) activity).processServerMessage("Server", "Failed to execute kill command.", ((ChatActivity) activity).getActiveChannel());
+                    if (activity instanceof ChatActivity) {
+                        ((ChatActivity) activity).processServerMessage("Server", "Failed to execute kill command.", ((BotProvider) activity).getActiveChannel());
+                    }
                 }
             }).start();
         } else {
-            ((ChatActivity) activity).processServerMessage("Server", "No network connection.", ((ChatActivity) activity).getActiveChannel());
+            if (activity instanceof ChatActivity) {
+                ((ChatActivity) activity).processServerMessage("Server", "No network connection.", ((BotProvider) activity).getActiveChannel());
+            }
         }
     }
 }
