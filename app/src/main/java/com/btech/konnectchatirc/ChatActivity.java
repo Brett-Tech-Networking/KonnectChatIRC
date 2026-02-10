@@ -612,6 +612,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         channelAdapter = new ChannelAdapter(channelList, this);
         channelRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         channelRecyclerView.setAdapter(channelAdapter);
+        
+        // Initial selection highlight
+        if (activeChannel != null) {
+            channelAdapter.setSelectedChannelName(activeChannel);
+        }
 
         // Initialize private messaging
         initializePrivateMessaging();
@@ -1019,6 +1024,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         }
         chatAdapter.notifyDataSetChanged();
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+        
+        // Update channel selection highlight in sidebar
+        if (channelAdapter != null) {
+            channelAdapter.setSelectedChannelName(channel);
+        }
     }
 
     private void handleCommand(String command) {
@@ -1168,7 +1178,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         setActiveChannel(channel.getChannelName());
         channel.resetUnreadCount();
         resetUnreadCount();
-        channelAdapter.notifyDataSetChanged();
+        channelAdapter.setSelectedChannelName(channel.getChannelName());
         drawerLayout.closeDrawer(GravityCompat.START);
     }
 

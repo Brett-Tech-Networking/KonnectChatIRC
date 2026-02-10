@@ -57,7 +57,6 @@ public class PrivateConversationAdapter extends ArrayAdapter<String> {
         TextView nickTextView = convertView.findViewById(R.id.convNickname);
         TextView previewTextView = convertView.findViewById(R.id.convPreview);
         TextView timeTextView = convertView.findViewById(R.id.convTime);
-        View separatorView = convertView.findViewById(R.id.separator);
         ImageButton deleteButton = convertView.findViewById(R.id.deleteConversationButton);
         TextView iconView = convertView.findViewById(R.id.convIcon);
         View contentLayout = convertView.findViewById(R.id.conversationContent);
@@ -86,14 +85,13 @@ public class PrivateConversationAdapter extends ArrayAdapter<String> {
         timeTextView.setText(timeString);
         timeTextView.setVisibility(timeString.isEmpty() ? View.GONE : View.VISIBLE);
         
-        // Show separator for selected item
-        separatorView.setVisibility(selectedPosition == position ? View.VISIBLE : View.GONE);
+
         
-        // Set background tint for selected item
+        // Set selection background (blue border)
         if (selectedPosition == position) {
-            convertView.setBackgroundColor(0xFF3F3F3F);
+            convertView.setBackgroundResource(R.drawable.selected_conversation_border);
         } else {
-            convertView.setBackgroundColor(0x002B2B2B);
+            convertView.setBackgroundColor(0x00000000); // Transparent
         }
         
         // Handle item selection - only the delete button should NOT trigger selection

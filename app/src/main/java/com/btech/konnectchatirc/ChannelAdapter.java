@@ -15,11 +15,16 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.ChannelV
 
     private List<ChannelItem> channelList;
     private OnChannelClickListener listener;
-
+    private String selectedChannelName = null;
 
     public ChannelAdapter(List<ChannelItem> channelList, OnChannelClickListener listener) {
         this.channelList = channelList;
         this.listener = listener;
+    }
+
+    public void setSelectedChannelName(String channelName) {
+        this.selectedChannelName = channelName;
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -33,6 +38,13 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.ChannelV
     public void onBindViewHolder(@NonNull ChannelViewHolder holder, int position) {
         ChannelItem channel = channelList.get(position);
         holder.channelName.setText(channel.getChannelName());
+
+        // Highlight selected channel with blue border
+        if (selectedChannelName != null && selectedChannelName.equalsIgnoreCase(channel.getChannelName())) {
+            holder.itemView.setBackgroundResource(R.drawable.selected_conversation_border);
+        } else {
+            holder.itemView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        }
 
         if (channel.getUnreadCount() > 0) {
             holder.unreadBadge.setVisibility(View.VISIBLE);

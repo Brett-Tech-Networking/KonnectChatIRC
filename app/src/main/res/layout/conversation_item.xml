@@ -79,20 +79,7 @@
         android:focusable="false"
         android:clickable="true" />
 
-    <View
-        android:id="@+id/separator"
-        android:layout_width="5dp"
-        android:layout_height="64dp"
-        android:layout_alignParentEnd="true"
-        android:layout_centerVertical="true"
-        android:background="#FDD835"
-        android:visibility="gone" />
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#333333"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@id/convIcon"
-        android:layout_marginStart="12dp" />
+
+
 </RelativeLayout>
