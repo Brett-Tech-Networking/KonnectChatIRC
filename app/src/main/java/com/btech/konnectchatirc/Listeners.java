@@ -405,6 +405,61 @@ public class Listeners extends ListenerAdapter {
         if (rawLine.contains("CAP") && rawLine.contains("ACK")) {
             return;
         }
+
+        // Parse for TAGMSG with +typing tag
+        // Format: @+typing=active :nick!user@host TAGMSG #channel
+        if (rawLine.contains("TAGMSG") && rawLine.contains("+typing=")) {
+            try {
+                String[] parts = rawLine.split(" ");
+                // Find index of TAGMSG command to properly locate other parts
+                int tagMsgIndex = -1;
+                for (int i = 0; i < parts.length; i++) {
+                    if (parts[i].equals("TAGMSG")) {
+                        tagMsgIndex = i;
+                        break;
+                    }
+                }
+
+                if (tagMsgIndex > 0) {
+                    String tags = parts[0];
+                    String source = "";
+                    
+                    // Adjust source if tags are present (which they should be)
+                    // If tags present, source is at index 1 usually: @tags :source TAGMSG
+                    if (tags.startsWith("@")) {
+                       // Find the source part which starts with :
+                       for(int i=1; i < tagMsgIndex; i++) {
+                           if(parts[i].startsWith(":")) {
+                               source = parts[i];
+                               break;
+                           }
+                       }
+                    } else {
+                        source = parts[tagMsgIndex - 1];
+                    }
+                    
+
+                    boolean isTyping = tags.contains("+typing=active");
+                    
+                    // Extract Nick from source (:nick!user@host)
+                    String nick = "";
+                    if (source.startsWith(":")) {
+                        int exclamationIndex = source.indexOf("!");
+                        if (exclamationIndex != -1) {
+                            nick = source.substring(1, exclamationIndex);
+                        } else {
+                             nick = source.substring(1); // Just :nick
+                        }
+                    }
+
+                    if (!nick.isEmpty() && !nick.equals(chatActivity.getBot().getNick())) {
+                       chatActivity.onUserTyping(nick, isTyping);
+                    }
+                }
+            } catch (Exception e) {
+                Log.e("Listeners", "Error parsing TAGMSG: " + rawLine, e);
+            }
+        }
     }
 
     @Override
@@ -515,4 +570,5 @@ public class Listeners extends ListenerAdapter {
     private void refreshChat() {
         new Handler(Looper.getMainLooper()).post(() -> chatActivity.getChatAdapter().notifyDataSetChanged());
     }
+
 }

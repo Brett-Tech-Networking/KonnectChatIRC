@@ -267,6 +267,69 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         return isViewingPrivateMessages;
     }
 
+    // Typing Indicator Fields
+    private TextView typingIndicator;
+    private Handler typingHandler = new Handler(Looper.getMainLooper());
+    private Runnable stopTypingRunnable;
+    private long lastTypingSent = 0;
+    private static final long TYPING_SEND_INTERVAL = 3000; // 3 seconds debounce for sending
+    private Set<String> typingUsers = new HashSet<>();
+
+    public void onUserTyping(String nick, boolean isTyping) {
+        runOnUiThread(() -> {
+            if (isTyping) {
+                typingUsers.add(nick);
+            } else {
+                typingUsers.remove(nick);
+            }
+            updateTypingIndicator();
+        });
+    }
+
+    private void updateTypingIndicator() {
+        if (typingUsers.isEmpty()) {
+            typingIndicator.setVisibility(View.GONE);
+            typingIndicator.setText("");
+        } else {
+            typingIndicator.setVisibility(View.VISIBLE);
+            StringBuilder sb = new StringBuilder();
+            int count = 0;
+            for (String nick : typingUsers) {
+                if (count > 0) sb.append(", ");
+                sb.append(nick);
+                count++;
+                if (count >= 3) break; // Limit to 3 names
+            }
+            if (typingUsers.size() > 3) {
+                sb.append(" and ").append(typingUsers.size() - 3).append(" others");
+            }
+            sb.append(typingUsers.size() == 1 ? " is typing..." : " are typing...");
+            typingIndicator.setText(sb.toString());
+            
+            // Auto-hide after 6 seconds if no updates
+            typingHandler.removeCallbacksAndMessages(null);
+            typingHandler.postDelayed(() -> {
+                typingUsers.clear();
+                updateTypingIndicator();
+            }, 6000);
+        }
+    }
+
+    private void sendTyping(boolean active) {
+        if (bot != null && bot.isConnected() && activeChannel != null) {
+            long now = System.currentTimeMillis();
+            if (active) {
+                if (now - lastTypingSent > TYPING_SEND_INTERVAL) {
+                    new Thread(() -> bot.sendRaw().rawLine("@+typing=active TAGMSG " + activeChannel)).start();
+                    lastTypingSent = now;
+                }
+            } else {
+                new Thread(() -> bot.sendRaw().rawLine("@+typing=done TAGMSG " + activeChannel)).start();
+                lastTypingSent = 0; // Reset to allow immediate active status next time
+            }
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -344,7 +407,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         initializeCommandPopup();
         initializeMentionPopup();
 
-// Add TextWatcher to chatEditText
+        typingIndicator = findViewById(R.id.typingIndicator);
+
+        // Add TextWatcher to chatEditText
         chatEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -357,6 +422,20 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 if (cursorPosition < 0) return;
 
                 String text = s.toString();
+                
+                // Typing Indicator Logic
+                if (!text.startsWith("/")) { // Don't send typing for commands
+                    if (text.length() > 0) {
+                        sendTyping(true);
+                        // Schedule stop typing if user pauses
+                        if (stopTypingRunnable != null) typingHandler.removeCallbacks(stopTypingRunnable);
+                        stopTypingRunnable = () -> sendTyping(false);
+                        typingHandler.postDelayed(stopTypingRunnable, 3000);
+                    } else {
+                        sendTyping(false);
+                    }
+                }
+
                 if (cursorPosition > text.length()) return;
 
                 // **Detect if the cursor is currently typing a command** (starts with `/`)
@@ -548,7 +627,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 } else {
                     addChatMessage(userNick + ": " + message);
                     chatEditText.setText("");
-
+                    sendTyping(false); // Reset typing status
+                    
                     // Dismiss mention popup if active
                     dismissMentionPopup();
 
@@ -682,6 +762,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     .addAutoJoinChannel(selectedChannel)
                     .addListener(new Listeners(this))
                     .addCapHandler(new EnableCapHandler("extended-join"))
+                    .addCapHandler(new EnableCapHandler("account-notify"))
+                    .addCapHandler(new EnableCapHandler("message-tags"))
                     .setAutoSplitMessage(true)
                     .setAutoReconnect(true)
                     .addCapHandler(new EnableCapHandler("multi-prefix"))
