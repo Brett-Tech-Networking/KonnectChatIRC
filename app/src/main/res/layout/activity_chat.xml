@@ -206,7 +206,7 @@
                 android:layout_width="0dp"
                 android:layout_height="56dp"
                 android:layout_weight="1"
-                android:text="📋 Channels"
+                android:text="#️⃣ Channels"
                 android:textColor="#FFFFFF"
                 android:background="@drawable/tab_indicator_active"
                 android:padding="12dp"
