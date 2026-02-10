@@ -55,15 +55,24 @@ public class PrivateMessageStorage {
     public List<String> getAllConversations(String userNick) {
         Map<String, ?> allPrefs = prefs.getAll();
         List<String> conversations = new ArrayList<>();
-        
+        String userNickLower = userNick.toLowerCase();
+
         for (String key : allPrefs.keySet()) {
             if (key.startsWith(KEY_PREFIX)) {
-                String[] nicks = key.substring(KEY_PREFIX.length()).split("_");
-                if (nicks.length == 2) {
-                    String otherNick = nicks[0].equalsIgnoreCase(userNick) ? nicks[1] : nicks[0];
-                    if (!conversations.contains(otherNick)) {
-                        conversations.add(otherNick);
-                    }
+                String remaining = key.substring(KEY_PREFIX.length());
+                String otherNick = null;
+
+                // Check if the key starts with the userNick followed by a separator
+                if (remaining.startsWith(userNickLower + "_")) {
+                    otherNick = remaining.substring(userNickLower.length() + 1);
+                } 
+                // Check if the key ends with the userNick preceded by a separator
+                else if (remaining.endsWith("_" + userNickLower)) {
+                    otherNick = remaining.substring(0, remaining.length() - userNickLower.length() - 1);
+                }
+
+                if (otherNick != null && !conversations.contains(otherNick)) {
+                    conversations.add(otherNick);
                 }
             }
         }
@@ -76,6 +85,16 @@ public class PrivateMessageStorage {
     public void clearConversation(String userNick, String recipientNick) {
         String conversationKey = getConversationKey(userNick, recipientNick);
         prefs.edit().remove(conversationKey).apply();
+    }
+
+    /**
+     * Create an empty conversation if it doesn't exist
+     */
+    public void createConversation(String userNick, String recipientNick) {
+        String conversationKey = getConversationKey(userNick, recipientNick);
+        if (!prefs.contains(conversationKey)) {
+            prefs.edit().putString(conversationKey, "[]").apply();
+        }
     }
 
     /**

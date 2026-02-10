@@ -3,6 +3,8 @@ package com.btech.konnectchatirc;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -70,6 +72,25 @@ public class UserOptionsDialog {
         btnSlap.setOnClickListener(v -> {
             ListUsers listUsers = new ListUsers(context, chatActivity.getBot(), chatActivity);
             listUsers.executeSlapCommand(selectedUser.getNick(), chatActivity.getActiveChannel());
+            dialog.dismiss();
+        });
+
+        Button btnPrivateMessage = dialogView.findViewById(R.id.btnPrivateMessage);
+        btnPrivateMessage.setOnClickListener(v -> {
+            // Initialize message storage
+            SharedPreferences prefs = context.getSharedPreferences("konnect_chat", Context.MODE_PRIVATE);
+            PrivateMessageStorage messageStorage = new PrivateMessageStorage(prefs);
+            
+            String userNick = chatActivity.getUserNick();
+            String recipientNick = selectedUser.getNick();
+
+            // Create an empty conversation
+            messageStorage.createConversation(userNick, recipientNick);
+
+            Intent intent = new Intent(context, PrivateChatActivity.class);
+            intent.putExtra("RECIPIENT_NICK", recipientNick);
+            intent.putExtra("USER_NICK", userNick);
+            context.startActivity(intent);
             dialog.dismiss();
         });
 

@@ -127,18 +127,22 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
 
     private void loadConversations() {
         conversations.clear();
-        
+
         // Get saved conversations from storage
         List<String> savedConversations = messageStorage.getAllConversations(userNick);
         conversations.addAll(savedConversations);
-        
+
         // Also check for recipient from intent (when coming from ListUsers)
         String intentRecipient = getIntent().getStringExtra("RECIPIENT_NICK");
-        if (intentRecipient != null && !intentRecipient.isEmpty() && !conversations.contains(intentRecipient)) {
-            conversations.add(0, intentRecipient);
-            selectedRecipient = intentRecipient;
+        if (intentRecipient != null && !intentRecipient.isEmpty()) {
+            // Create an empty conversation if it doesn't exist
+            messageStorage.createConversation(userNick, intentRecipient);
+            if (!conversations.contains(intentRecipient)) {
+                conversations.add(0, intentRecipient);
+                selectedRecipient = intentRecipient;
+            }
         }
-        
+
         if (conversationAdapter != null) {
             conversationAdapter.notifyDataSetChanged();
         }

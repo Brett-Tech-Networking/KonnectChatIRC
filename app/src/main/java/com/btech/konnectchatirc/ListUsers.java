@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -34,6 +35,7 @@ public class ListUsers {
     private List<UserItem> userList = new ArrayList<>();
     private List<UserItem> filteredUserList = new ArrayList<>();
     private ArrayAdapter<UserItem> adapter;
+    private PrivateMessageStorage messageStorage;
 
     // List of slap messages
     private List<String> slapMessages = List.of(
@@ -58,6 +60,10 @@ public class ListUsers {
         this.context = context;
         this.bot = bot;
         this.activity = activity;
+        
+        // Initialize message storage
+        SharedPreferences prefs = context.getSharedPreferences("konnect_chat", Context.MODE_PRIVATE);
+        this.messageStorage = new PrivateMessageStorage(prefs);
     }
 
     public void showUserList() {
@@ -263,6 +269,9 @@ public class ListUsers {
         });
 
         optionsView.findViewById(R.id.btnPrivateMessage).setOnClickListener(v -> {
+            // Create an empty conversation so it appears in the list
+            messageStorage.createConversation(bot.getNick(), selectedUser);
+
             Intent intent = new Intent(context, PrivateChatActivity.class);
             intent.putExtra("RECIPIENT_NICK", selectedUser);
             intent.putExtra("USER_NICK", bot.getNick());
