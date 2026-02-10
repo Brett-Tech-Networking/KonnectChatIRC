@@ -33,6 +33,8 @@ import org.pircbotx.Channel;
 import org.pircbotx.PircBotX;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class PrivateChatActivity extends AppCompatActivity implements BotProvider, ChannelAdapter.OnChannelClickListener {
@@ -101,16 +103,17 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
                     // Save message to storage
                     messageStorage.saveMessage(userNick, sender, message, false);
                     
-                    // Add to conversation list if not already there
-                    if (!privateConversations.contains(sender)) {
+                    // Move/Add to conversation list (always move to top)
+                    runOnUiThread(() -> {
+                        privateConversations.remove(sender);
                         privateConversations.add(0, sender);
                         privateConversationAdapter.notifyDataSetChanged();
-                    }
 
-                    // If this conversation is selected, update display
-                    if (sender.equalsIgnoreCase(selectedRecipient)) {
-                        displayConversation(sender);
-                    }
+                        // If this conversation is selected, update display
+                        if (sender.equalsIgnoreCase(selectedRecipient)) {
+                            displayConversation(sender);
+                        }
+                    });
                 }
             }
         };
@@ -217,7 +220,18 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
 
     private void loadPrivateConversationList() {
         privateConversations.clear();
-        privateConversations.addAll(messageStorage.getAllConversations(userNick));
+        List<String> convs = messageStorage.getAllConversations(userNick);
+        
+        // Sort conversations by last message timestamp (newest first)
+        Collections.sort(convs, (c1, c2) -> {
+            List<PrivateMessageStorage.PrivateMessage> m1 = messageStorage.getMessages(userNick, c1);
+            List<PrivateMessageStorage.PrivateMessage> m2 = messageStorage.getMessages(userNick, c2);
+            long t1 = m1.isEmpty() ? 0 : m1.get(m1.size() - 1).timestamp;
+            long t2 = m2.isEmpty() ? 0 : m2.get(m2.size() - 1).timestamp;
+            return Long.compare(t2, t1); // Newest first
+        });
+        
+        privateConversations.addAll(convs);
         privateConversationAdapter.notifyDataSetChanged();
     }
 
@@ -320,6 +334,12 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
                 
                 // Update UI
                 runOnUiThread(() -> {
+                    // Move conversation to top
+                    privateConversations.remove(selectedRecipient);
+                    privateConversations.add(0, selectedRecipient);
+                    privateConversationAdapter.notifyDataSetChanged();
+                    privateConversationAdapter.setSelectedPosition(0);
+                    
                     displayConversation(selectedRecipient);
                     chatEditText.setText("");
                 });

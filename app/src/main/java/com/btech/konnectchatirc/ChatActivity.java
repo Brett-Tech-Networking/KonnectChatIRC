@@ -87,6 +87,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -1668,16 +1670,17 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     // Save message to storage (only from other users)
                     messageStorage.saveMessage(userNick, sender, message, false);
                     
-                    // Add to conversation list if not already there
-                    if (!privateConversations.contains(sender)) {
+                    // Move/Add to conversation list (always move to top)
+                    runOnUiThread(() -> {
+                        privateConversations.remove(sender);
                         privateConversations.add(0, sender);
                         privateConversationAdapter.notifyDataSetChanged();
-                    }
-                    
-                    // If this conversation is selected, update display
-                    if (sender.equalsIgnoreCase(selectedPrivateConversation)) {
-                        loadPrivateConversation(sender);
-                    }
+                        
+                        // If this conversation is selected, update display
+                        if (sender.equalsIgnoreCase(selectedPrivateConversation)) {
+                            loadPrivateConversation(sender);
+                        }
+                    });
                 }
             }
         };
@@ -1685,7 +1688,18 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
     private void loadPrivateConversationList() {
         privateConversations.clear();
-        privateConversations.addAll(messageStorage.getAllConversations(userNick));
+        List<String> convs = messageStorage.getAllConversations(userNick);
+        
+        // Sort conversations by last message timestamp (newest first)
+        Collections.sort(convs, (c1, c2) -> {
+            List<PrivateMessageStorage.PrivateMessage> m1 = messageStorage.getMessages(userNick, c1);
+            List<PrivateMessageStorage.PrivateMessage> m2 = messageStorage.getMessages(userNick, c2);
+            long t1 = m1.isEmpty() ? 0 : m1.get(m1.size() - 1).timestamp;
+            long t2 = m2.isEmpty() ? 0 : m2.get(m2.size() - 1).timestamp;
+            return Long.compare(t2, t1); // Newest first
+        });
+        
+        privateConversations.addAll(convs);
         privateConversationAdapter.notifyDataSetChanged();
     }
 
@@ -1716,11 +1730,13 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         }
 
         if (bot != null && bot.isConnected()) {
-            // Add to conversation list if not already there
-            if (!privateConversations.contains(selectedPrivateConversation)) {
-                privateConversations.add(0, selectedPrivateConversation);
-                privateConversationAdapter.notifyDataSetChanged();
-            }
+            // Move/Add to top of conversation list
+            privateConversations.remove(selectedPrivateConversation);
+            privateConversations.add(0, selectedPrivateConversation);
+            privateConversationAdapter.notifyDataSetChanged();
+            
+            // Re-sync selection position to the top
+            privateConversationAdapter.setSelectedPosition(0);
             
             // Save message immediately to storage
             messageStorage.saveMessage(userNick, selectedPrivateConversation, message, true);
