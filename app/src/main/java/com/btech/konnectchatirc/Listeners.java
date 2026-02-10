@@ -112,7 +112,7 @@ public class Listeners extends ListenerAdapter {
                 code == 422 || code == 266 || code == 353 || code == 366 ||
                 code == 352 || code == 315 || code == 329 || code == 251 ||
                 code == 254 || code == 324 || code == 333 || code == 332 ||
-                code == 322) {
+                code == 322 || code == 372 || code == 375 || code == 376) {
             return;
         }
 

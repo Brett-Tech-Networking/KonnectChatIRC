@@ -1,83 +1,116 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/rootLayout"
+    android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#000000"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <!-- Header with recipient name -->
-    <RelativeLayout
+    <LinearLayout
+        android:id="@+id/rootLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#222222"
-        android:padding="12dp">
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/RecipientName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Select a conversation"
-            android:textColor="#FDD835"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/CurrentNick"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/RecipientName"
-            android:text="Your Nick"
-            android:textColor="#AAAAAA"
-            android:textSize="12sp"
-            android:layout_marginTop="4dp" />
-    </RelativeLayout>
-
-    <!-- Chat Messages Area -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/chatRecyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="#111111"
-        android:padding="8dp" />
-
-    <!-- Chat Input Area -->
-    <RelativeLayout
-        android:id="@+id/chatInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="12dp"
-        android:background="#222222">
-
-        <EditText
-            android:id="@+id/chatEditText"
+        <!-- Header with recipient name and hamburger menu -->
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_toStartOf="@id/sendButton"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/rounded_background"
-            android:hint="Type a message..."
-            android:textColor="#FFFFFF"
-            android:textColorHint="#666666"
-            android:padding="12dp"
-            android:minHeight="48dp"
-            android:inputType="text" />
+            android:background="#222222"
+            android:padding="12dp">
 
-        <ImageButton
-            android:id="@+id/sendButton"
-            android:layout_width="wrap_content"
+            <ImageButton
+                android:id="@+id/btnHamburgerMenu"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_switcher"
+                android:contentDescription="Open Sidebar"
+                app:tint="#FFFFFF"
+                android:scaleX="1.5"
+                android:scaleY="1.5"
+                android:padding="4dp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toEndOf="@id/btnHamburgerMenu"
+                android:layout_marginStart="16dp"
+                android:orientation="vertical"
+                android:layout_centerVertical="true">
+
+                <TextView
+                    android:id="@+id/RecipientName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Select a conversation"
+                    android:textColor="#FDD835"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/CurrentNick"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Your Nick"
+                    android:textColor="#AAAAAA"
+                    android:textSize="12sp"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+        </RelativeLayout>
+
+        <!-- Chat Messages Area -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/chatRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#111111"
+            android:padding="8dp" />
+
+        <!-- Chat Input Area -->
+        <RelativeLayout
+            android:id="@+id/chatInputLayout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_send"
-            android:contentDescription="Send Message"
             android:padding="12dp"
-            app:tint="#FDD835" />
-    </RelativeLayout>
+            android:background="#222222">
 
-</LinearLayout>
+            <EditText
+                android:id="@+id/chatEditText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_toStartOf="@id/sendButton"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/rounded_background"
+                android:hint="Type a message..."
+                android:textColor="#FFFFFF"
+                android:textColorHint="#666666"
+                android:padding="12dp"
+                android:minHeight="48dp"
+                android:inputType="text" />
+
+            <ImageButton
+                android:id="@+id/sendButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_send"
+                android:contentDescription="Send Message"
+                android:padding="12dp"
+                app:tint="#FDD835" />
+        </RelativeLayout>
+
+    </LinearLayout>
+
+    <!-- Navigation Drawer Sidebar -->
+    <include
+        layout="@layout/sidebar_layout"
+        android:id="@+id/left_drawer" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

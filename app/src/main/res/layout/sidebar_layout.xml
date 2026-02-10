@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/left_drawer"
+    android:layout_width="280dp"
+    android:layout_height="match_parent"
+    android:layout_gravity="start"
+    android:background="#222222"
+    android:padding="0dp">
+
+    <LinearLayout
+        android:id="@+id/sidebarBottomContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="#222222"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#444444"
+            android:layout_marginBottom="8dp"/>
+
+        <ImageButton
+            android:id="@+id/btnSettings"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_manage"
+            android:contentDescription="Settings"
+            app:tint="#FFFFFF"
+            android:padding="8dp" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/disconnectButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:text="Disconnect"
+        android:textColor="#FFFFFF"
+        android:padding="4dp"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:minHeight="0dp"
+        android:minWidth="0dp"
+        android:layout_marginEnd="0dp"/>
+
+    <!-- Tab buttons for Channels and Private Messages -->
+    <LinearLayout
+        android:id="@+id/tabContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_below="@id/disconnectButton"
+        android:orientation="horizontal"
+        android:background="#2B2B2B"
+        android:elevation="4dp">
+
+        <Button
+            android:id="@+id/btnChannelsTab"
+            android:layout_width="0dp"
+            android:layout_height="70dp"
+            android:layout_weight="1"
+            android:text="#️⃣ Channels"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/tab_indicator_active"
+            app:backgroundTint="@null"
+            android:padding="12dp"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.3"
+            android:fontFamily="sans-serif-medium"
+            android:stateListAnimator="@null" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#555555" />
+
+        <Button
+            android:id="@+id/btnPrivateMessagesTab"
+            android:layout_width="0dp"
+            android:layout_height="70dp"
+            android:layout_weight="1"
+            android:text="💬 Messages"
+            android:textColor="@color/tab_text_inactive"
+            android:background="@drawable/tab_indicator"
+            app:backgroundTint="@null"
+            android:padding="12dp"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.3"
+            android:fontFamily="sans-serif-medium"
+            android:stateListAnimator="@null" />
+    </LinearLayout>
+
+    <!-- Channels Section -->
+    <FrameLayout
+        android:id="@+id/channelsSection"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/tabContainer"
+        android:layout_above="@id/sidebarBottomContainer">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/channelRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingBottom="8dp"
+            android:paddingTop="8dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:background="#2B2B2B"
+            android:clipToPadding="false" />
+    </FrameLayout>
+
+    <!-- Private Messages Section -->
+    <FrameLayout
+        android:id="@+id/privateMessagesSection"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/tabContainer"
+        android:layout_above="@id/sidebarBottomContainer"
+        android:visibility="gone">
+
+        <ListView
+            android:id="@+id/privateConversationListView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#2B2B2B"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:scrollbars="vertical"
+            android:cacheColorHint="@android:color/transparent" />
+    </FrameLayout>
+</RelativeLayout>
