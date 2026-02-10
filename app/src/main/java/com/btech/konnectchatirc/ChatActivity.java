@@ -82,7 +82,6 @@ import org.pircbotx.User;
 import org.pircbotx.exception.DaoException;
 import org.pircbotx.exception.IrcException;
 import org.pircbotx.hooks.Listener;
-import org.pircbotx.hooks.events.WhoEvent;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

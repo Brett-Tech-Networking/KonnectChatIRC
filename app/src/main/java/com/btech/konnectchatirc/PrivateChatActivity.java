@@ -16,12 +16,15 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -134,13 +137,21 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         // Setup send button
         sendButton.setOnClickListener(v -> sendMessage());
 
-        // Setup hamburger menu
         btnHamburgerMenu.setOnClickListener(v -> {
             if (drawerLayout != null) {
                 drawerLayout.openDrawer(GravityCompat.START);
             }
         });
+
+        // Apply WindowInsets for Edge-to-Edge
+        LinearLayout rootLayout = findViewById(R.id.rootLayout);
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (v, insets) -> {
+            androidx.core.graphics.Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return WindowInsetsCompat.CONSUMED;
+        });
     }
+
 
     private void initializeSidebar() {
         // Initialize sidebar components
@@ -287,6 +298,7 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
 
         bot = botProvider.getBot();
         if (bot == null || !bot.isConnected()) {
+            Log.e("PrivateChat", "Bot is null or not connected! Bot: " + bot);
             Toast.makeText(this, "Not connected to IRC server", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -294,6 +306,7 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         // Send message through IRC
         new Thread(() -> {
             try {
+                Log.d("PrivateChat", "Sending message to " + selectedRecipient + ": " + message);
                 bot.sendIRC().message(selectedRecipient, message);
                 
                 // Save to local storage

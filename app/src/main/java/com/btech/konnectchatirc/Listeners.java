@@ -19,7 +19,6 @@ import org.pircbotx.hooks.events.PartEvent;
 import org.pircbotx.hooks.events.ServerResponseEvent;
 import org.pircbotx.hooks.events.UnknownEvent;
 import org.pircbotx.hooks.events.UserListEvent;
-import org.pircbotx.hooks.events.WhoEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
 import org.pircbotx.hooks.Listener;
 import org.pircbotx.hooks.events.WhoisEvent;
@@ -398,12 +397,22 @@ public class Listeners extends ListenerAdapter {
     public void onUnknown(UnknownEvent event) {
         String rawLine = event.getLine().trim();
 
+        // Debug CAP Negotiation
+        if (rawLine.contains("CAP") && rawLine.contains("ACK")) {
+             Log.d("IRC_CAP", "CAP negotiation: " + rawLine);
+        }
+
         if (rawLine.matches(".*CAP.*ACK :Multi-prefix.*") || rawLine.matches(".*CAP.*ACK :away-notify.*")) {
             return;
         }
 
         if (rawLine.contains("CAP") && rawLine.contains("ACK")) {
             return;
+        }
+
+        // Debug TAGMSG
+        if (rawLine.contains("TAGMSG")) {
+             Log.d("IRC_TAGMSG", "Received TAGMSG: " + rawLine);
         }
 
         // Parse for TAGMSG with +typing tag

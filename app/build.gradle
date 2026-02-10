@@ -52,26 +52,19 @@ dependencies {
     annotationProcessor libs.compiler
     implementation libs.slf4j.android
     implementation libs.retrofit
-    implementation libs.pircbotx.v231
-
-
-//    implementation libs.core.splashscreen
-  //  implementation libs.github.pircbotx
-
-
-  /*  implementation(libs.mxscho.pircbotx) {
+    // implementation libs.pircbotx.v231
+    implementation(libs.pircbotx) {
         // Exclude guava to avoid version conflicts
         exclude group: 'com.google.guava', module: 'guava'
     }
 
     // Include the Guava version compatible with PircBotX
-    implementation libs.guava.v210
-    implementation(libs.guava.jdk5)
+    implementation(libs.guava.v210)
 
-    // Ensure no other guava version is included
     configurations.all {
-        exclude group: 'com.google.guava', module: 'guava'
-        exclude group: 'com.google.guava', module: 'listenablefuture'
-    }*/
+         exclude group: 'com.google.guava', module: 'listenablefuture'
+    }
+
+
 }
 
