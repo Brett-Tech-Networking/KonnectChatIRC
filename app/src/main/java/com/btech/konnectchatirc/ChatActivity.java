@@ -53,6 +53,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
@@ -64,7 +65,10 @@ import org.pircbotx.hooks.Listener;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -278,6 +282,13 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         unreadBadge = findViewById(R.id.unreadBadge);
         drawerLayout = findViewById(R.id.drawerLayout);
         RelativeLayout rootLayout = findViewById(R.id.rootLayout);
+
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (v, windowInsets) -> {
+            androidx.core.graphics.Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(insets.left, insets.top, insets.right, insets.bottom);
+            return WindowInsetsCompat.CONSUMED;
+        });
+
         String desiredNick = getIntent().getStringExtra("DESIRED_NICK");
         desiredPassword = getIntent().getStringExtra("DESIRED_PASSWORD"); // Retrieve password
         // Initialize ConnectivityManager here
@@ -814,90 +825,15 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     }
 
     public void addChatMessage(String message) {
-        SpannableStringBuilder spannableMessage = new SpannableStringBuilder(message);
-
-        // Apply default white color to the entire message
-        ForegroundColorSpan defaultColorSpan = new ForegroundColorSpan(Color.WHITE);
-        spannableMessage.setSpan(defaultColorSpan, 0, spannableMessage.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
-
-        // Apply clickable red color only to @nick mentions
-        Pattern mentionPattern = Pattern.compile("@\\w+");
-        Matcher mentionMatcher = mentionPattern.matcher(message);
-
-        while (mentionMatcher.find()) {
-            final String mention = mentionMatcher.group();
-            final String nickWithoutAt = mention.substring(1); // Extract nick without the '@' character
-
-
-            // Apply the color to @nick
-            ForegroundColorSpan mentionColorSpan = new ForegroundColorSpan(Color.RED);
-            spannableMessage.setSpan(mentionColorSpan, mentionMatcher.start(), mentionMatcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-            // Make @nick clickable
-            ClickableSpan clickableSpan = new ClickableSpan() {
-                @Override
-                public void onClick(@NonNull View widget) {
-                    if (bot != null && bot.isConnected()) {
-                        // Get the active channel
-                        String activeChannelName = getActiveChannel();
-                        Channel activeChannel = bot.getUserChannelDao().getChannel(activeChannelName);
-
-                        if (activeChannel != null) {
-                            User clickedUser = null;
-
-                            // Iterate over users in the active channel to find the matching nick
-                            for (User user : activeChannel.getUsers()) {
-                                if (user.getNick().equalsIgnoreCase(nickWithoutAt)) {
-                                    clickedUser = user;
-                                    break;
-                                }
-                            }
-
-                            if (clickedUser != null) {
-                                final User finalClickedUser = clickedUser; // Declare final variable
-                                runOnUiThread(() -> {
-                                    UserOptionsDialog userOptionsDialog = new UserOptionsDialog(ChatActivity.this, finalClickedUser, ChatActivity.this);
-                                    userOptionsDialog.show();
-                                });
-                            } else {
-                                // User not in the current channel
-                                Toast.makeText(widget.getContext(), "User not found in the current channel.", Toast.LENGTH_SHORT).show();
-                            }
-
-                        } else {
-                            // Active channel is null
-                            Toast.makeText(widget.getContext(), "Active channel not found.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        // Bot not connected
-                        Toast.makeText(widget.getContext(), "Not connected to the server.", Toast.LENGTH_SHORT).show();
-                    }
-                }
-
-                @Override
-                public void updateDrawState(@NonNull TextPaint ds) {
-                    super.updateDrawState(ds);
-                    ds.setUnderlineText(false); // Remove underline
-                }
-            };
-
-            spannableMessage.setSpan(
-                    clickableSpan,
-                    mentionMatcher.start(),
-                    mentionMatcher.end(),
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            );
-        }
-
         // Add the message to the list as a ChatMessage object
-        ChatMessage chatMsg = new ChatMessage(spannableMessage, System.currentTimeMillis());
+        // We pass the raw String so the ChatAdapter can handle formatting (Rank colors, Mentions, etc.)
+        ChatMessage chatMsg = new ChatMessage(message, System.currentTimeMillis());
         chatMessages.add(chatMsg);
-
-        // Check if the current channel matches the active channel
-        if (activeChannel != null && channelMessagesMap.containsKey(activeChannel)) {
-            channelMessagesMap.get(activeChannel).add(chatMsg);
-        }
         
+        // Note: We do NOT add to channelMessagesMap here because processServerMessage() 
+        // and sendMessage() already call storeMessageForChannel() to handle history.
+        // This prevents duplicate messages.
+
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
     }
@@ -1281,8 +1217,17 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             TextView channelsView = dialogView.findViewById(R.id.whois_channels);
             TextView idleView = dialogView.findViewById(R.id.whois_idle);
             TextView awayView = dialogView.findViewById(R.id.whois_away);
+            ImageView avatarView = dialogView.findViewById(R.id.whois_avatar);
 
             nickView.setText(nick);
+            
+            // Highlight Discord Users visually
+            if (isDiscordUser(realName)) {
+                avatarView.setImageResource(android.R.drawable.ic_lock_idle_lock); // Shield/Lock icon for Discord
+                avatarView.setBackgroundResource(R.drawable.circle_badge);
+                avatarView.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#7289DA"))); // Discord Blurple
+            }
+            
             realNameView.setText("Name: " + (realName != null ? realName : "N/A"));
             identView.setText("User: " + (ident != null ? ident : "N/A"));
             hostView.setText("Host: " + (host != null ? host : "N/A"));

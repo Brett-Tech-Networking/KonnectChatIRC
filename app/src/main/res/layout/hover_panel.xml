@@ -248,8 +248,7 @@
             android:drawableStart="@android:drawable/ic_lock_idle_lock"
             android:drawablePadding="4dp"
             android:drawableTint="#FF5252"
-            android:elevation="6dp"
-            android:backgroundTint="@android:color/transparent"/>
+            android:elevation="6dp" />
 
     </LinearLayout>
 </FrameLayout>
