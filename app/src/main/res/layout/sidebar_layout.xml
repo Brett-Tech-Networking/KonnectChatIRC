@@ -27,7 +27,7 @@
             android:id="@+id/btnSettings"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
+            android:layout_gravity="right"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_manage"
             android:contentDescription="Settings"
@@ -64,7 +64,7 @@
         <Button
             android:id="@+id/btnChannelsTab"
             android:layout_width="0dp"
-            android:layout_height="70dp"
+            android:layout_height="50dp"
             android:layout_weight="1"
             android:text="#️⃣ Channels"
             android:textColor="#FFFFFF"
@@ -85,7 +85,7 @@
         <Button
             android:id="@+id/btnPrivateMessagesTab"
             android:layout_width="0dp"
-            android:layout_height="70dp"
+            android:layout_height="50dp"
             android:layout_weight="1"
             android:text="💬 Messages"
             android:textColor="@color/tab_text_inactive"
