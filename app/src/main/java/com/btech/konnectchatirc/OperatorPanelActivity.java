@@ -37,6 +37,11 @@ public class OperatorPanelActivity extends Activity {
         // Initialize the Kill button listener
         Button btnKill = findViewById(R.id.btnKill);
         btnKill.setOnClickListener(v -> startKillProcess());
+
+        // New buttons from redesign
+        findViewById(R.id.btnOperatorBack).setOnClickListener(v -> finish());
+        findViewById(R.id.btnOSLogin).setOnClickListener(v -> Toast.makeText(this, "OS Login not yet implemented", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.btnZline).setOnClickListener(v -> startKillProcess()); // Placeholder
     }
 
     // Method to handle OperLogin process

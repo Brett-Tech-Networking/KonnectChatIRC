@@ -439,6 +439,12 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         Button btnJoin = hoverPanel.findViewById(R.id.btnJoin);
         Button btnKick = hoverPanel.findViewById(R.id.btnKick);
         Button btnIdent = hoverPanel.findViewById(R.id.btnIdent);
+        Button btnNickRegister = hoverPanel.findViewById(R.id.btnNickRegister);
+        Button btnChanRegister = hoverPanel.findViewById(R.id.btnChanRegister);
+        Button btnSOP = hoverPanel.findViewById(R.id.btnSOP);
+        Button btnAOP = hoverPanel.findViewById(R.id.btnAOP);
+        Button btnBan = hoverPanel.findViewById(R.id.btnBan);
+        Button btnUnban = hoverPanel.findViewById(R.id.btnUnban);
         operatorButton = hoverPanel.findViewById(R.id.btnOperator);
 
         // Initialize buttons from operator panel
@@ -446,6 +452,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         btnOperLogin = operatorPanel.findViewById(R.id.btnOperLogin);
         btnSajoin = operatorPanel.findViewById(R.id.btnSajoin);
         Button btnSapart = operatorPanel.findViewById(R.id.btnSapart);
+        Button btnOSLogin = operatorPanel.findViewById(R.id.btnOSLogin);
+        Button btnZline = operatorPanel.findViewById(R.id.btnZline);
+        ImageButton btnOperatorBack = operatorPanel.findViewById(R.id.btnOperatorBack);
 
         // Ensure the btnShun initialization after inflating operatorPanel
         Button btnShun = operatorPanel.findViewById(R.id.btnShun);
@@ -471,12 +480,23 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         btnKick.setOnClickListener(v -> new Kick(this, bot, this).startKickProcess());
         btnIdent.setOnClickListener(v -> new Identify(this, bot, this, v).startIdentifyProcess());
 
+        btnNickRegister.setOnClickListener(v -> Toast.makeText(this, "Nick Registration: Use /msg NickServ REGISTER <pass> <email>", Toast.LENGTH_LONG).show());
+        btnChanRegister.setOnClickListener(v -> Toast.makeText(this, "Chan Registration: Use /msg ChanServ REGISTER #chan <pass> <desc>", Toast.LENGTH_LONG).show());
+        btnSOP.setOnClickListener(v -> Toast.makeText(this, "SOP: Use /msg ChanServ SOP #chan ADD <nick>", Toast.LENGTH_SHORT).show());
+        btnAOP.setOnClickListener(v -> Toast.makeText(this, "AOP: Use /msg ChanServ AOP #chan ADD <nick>", Toast.LENGTH_SHORT).show());
+
         btnKill.setOnClickListener(v -> new Kill(this, bot, this).startKillProcess());
 
         btnOperLogin.setOnClickListener(v -> new OperLogin(this, this, bot).startOperLoginProcess());
 
         btnSajoin.setOnClickListener(v -> new Sajoin(this, bot, this).startSajoinProcess());
         btnSapart.setOnClickListener(v -> new Sajoin(this, bot, this).startSapartProcess());
+
+        // Back navigation
+        View.OnClickListener backToMain = v -> {
+            fadeOutPanel(operatorPanel, () -> fadeInPanel(hoverPanel));
+        };
+        btnOperatorBack.setOnClickListener(backToMain);
 
         operatorButton.setOnClickListener(v -> {
             fadeOutPanel(hoverPanel, () -> fadeInPanel(operatorPanel));
@@ -502,6 +522,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
         // Initialize private messaging
         initializePrivateMessaging();
+
+        btnOSLogin.setOnClickListener(v -> Toast.makeText(this, "OS Login not yet implemented", Toast.LENGTH_SHORT).show());
+        btnZline.setOnClickListener(v -> new Kill(this, bot, this).startKillProcess()); // Reusing Kill for now, can be specialized later
 
         sendButton.setOnClickListener(v -> {
             String message = chatEditText.getText().toString();
@@ -548,18 +571,12 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             Log.e("ChatActivity", "btnSvsnick is null, check operatorPanel inflation.");
         }
 
-        Button btnBan = hoverPanel.findViewById(R.id.btnBan);
         if (btnBan != null) {
             btnBan.setOnClickListener(v -> new Ban(this, bot, this).startBanProcess());
-        } else {
-            Log.e("ChatActivity", "btnBan is null, check hoverPanel inflation.");
         }
 
-        Button btnUnban = hoverPanel.findViewById(R.id.btnUnban);
         if (btnUnban != null) {
             btnUnban.setOnClickListener(v -> new Unban(this, bot, this).startUnbanProcess());
-        } else {
-            Log.e("ChatActivity", "btnUnban is null, check hoverPanel inflation.");
         }
 
         disconnectButton.setOnClickListener(v -> {
