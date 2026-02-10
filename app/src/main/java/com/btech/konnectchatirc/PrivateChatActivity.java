@@ -8,7 +8,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ListView;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,11 +32,8 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
     private String selectedRecipient;
     private TextView recipientNameTextView;
     private TextView currentNickTextView;
-    private ListView conversationListView;
-    private PrivateConversationAdapter conversationAdapter;
     private PrivateMessageStorage messageStorage;
     private BroadcastReceiver privateMessageReceiver;
-    private List<String> conversations = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,12 +74,6 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
                     // Save message to storage
                     messageStorage.saveMessage(userNick, sender, message, false);
                     
-                    // Add to conversation list if not already there
-                    if (!conversations.contains(sender)) {
-                        conversations.add(0, sender);  // Add to top
-                        conversationAdapter.notifyDataSetChanged();
-                    }
-                    
                     // If this conversation is selected, update display
                     if (sender.equalsIgnoreCase(selectedRecipient)) {
                         displayConversation(sender);
@@ -95,7 +86,6 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
     private void initializationViews() {
         recipientNameTextView = findViewById(R.id.RecipientName);
         currentNickTextView = findViewById(R.id.CurrentNick);
-        conversationListView = findViewById(R.id.conversationListView);
         chatRecyclerView = findViewById(R.id.chatRecyclerView);
         chatEditText = findViewById(R.id.chatEditText);
         ImageButton sendButton = findViewById(R.id.sendButton);
@@ -109,48 +99,17 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);
 
-        // Setup conversation list adapter
-        conversationAdapter = new PrivateConversationAdapter(
-                this, conversations, messageStorage, userNick);
-        conversationListView.setAdapter(conversationAdapter);
-
-        // Handle conversation selection
-        conversationListView.setOnItemClickListener((parent, view, position, id) -> {
-            selectedRecipient = conversations.get(position);
-            conversationAdapter.setSelectedPosition(position);
-            displayConversation(selectedRecipient);
-        });
-
         // Setup send button
         sendButton.setOnClickListener(v -> sendMessage());
     }
 
     private void loadConversations() {
-        conversations.clear();
-
-        // Get saved conversations from storage
-        List<String> savedConversations = messageStorage.getAllConversations(userNick);
-        conversations.addAll(savedConversations);
-
         // Also check for recipient from intent (when coming from ListUsers)
         String intentRecipient = getIntent().getStringExtra("RECIPIENT_NICK");
         if (intentRecipient != null && !intentRecipient.isEmpty()) {
             // Create an empty conversation if it doesn't exist
             messageStorage.createConversation(userNick, intentRecipient);
-            if (!conversations.contains(intentRecipient)) {
-                conversations.add(0, intentRecipient);
-                selectedRecipient = intentRecipient;
-            }
-        }
-
-        if (conversationAdapter != null) {
-            conversationAdapter.notifyDataSetChanged();
-        }
-
-        // Auto-select first conversation if available
-        if (!conversations.isEmpty() && selectedRecipient == null) {
-            selectedRecipient = conversations.get(0);
-            conversationAdapter.setSelectedPosition(0);
+            selectedRecipient = intentRecipient;
             displayConversation(selectedRecipient);
         }
     }

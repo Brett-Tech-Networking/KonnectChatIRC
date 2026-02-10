@@ -5,122 +5,79 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000"
-    android:orientation="horizontal"
-    android:baselineAligned="false">
+    android:orientation="vertical">
 
-    <!-- Left side: List of Private Conversations -->
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1.2"
-        android:orientation="vertical"
-        android:background="#111111">
+    <!-- Header with recipient name -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#222222"
+        android:padding="12dp">
 
         <TextView
-            android:layout_width="match_parent"
+            android:id="@+id/RecipientName"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Private Messages"
+            android:text="Select a conversation"
             android:textColor="#FDD835"
-            android:textStyle="bold"
             android:textSize="14sp"
-            android:padding="12dp"
-            android:background="#222222" />
+            android:textStyle="bold" />
 
-        <ListView
-            android:id="@+id/conversationListView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#111111"
-            android:divider="#333333"
-            android:dividerHeight="1dp" />
-    </LinearLayout>
+        <TextView
+            android:id="@+id/CurrentNick"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/RecipientName"
+            android:text="Your Nick"
+            android:textColor="#AAAAAA"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp" />
+    </RelativeLayout>
 
-    <!-- Divider -->
-    <View
-        android:layout_width="1dp"
-        android:layout_height="match_parent"
-        android:background="#333333" />
+    <!-- Chat Messages Area -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/chatRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#111111"
+        android:padding="8dp" />
 
-    <!-- Right side: Chat messages and input -->
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="2.8"
-        android:orientation="vertical"
-        android:background="#111111">
+    <!-- Chat Input Area -->
+    <RelativeLayout
+        android:id="@+id/chatInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:background="#222222">
 
-        <!-- Header with recipient name -->
-        <RelativeLayout
+        <EditText
+            android:id="@+id/chatEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#222222"
-            android:padding="12dp">
-
-            <TextView
-                android:id="@+id/RecipientName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Select a conversation"
-                android:textColor="#FDD835"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/CurrentNick"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/RecipientName"
-                android:text="Your Nick"
-                android:textColor="#AAAAAA"
-                android:textSize="12sp"
-                android:layout_marginTop="4dp" />
-        </RelativeLayout>
-
-        <!-- Chat Messages Area -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/chatRecyclerView"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:background="#111111"
-            android:padding="8dp" />
-
-        <!-- Chat Input Area -->
-        <RelativeLayout
-            android:id="@+id/chatInputLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/sendButton"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/rounded_background"
+            android:hint="Type a message..."
+            android:textColor="#FFFFFF"
+            android:textColorHint="#666666"
             android:padding="12dp"
-            android:background="#222222">
+            android:minHeight="48dp"
+            android:inputType="text" />
 
-            <EditText
-                android:id="@+id/chatEditText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_toStartOf="@id/sendButton"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/rounded_background"
-                android:hint="Type a message..."
-                android:textColor="#FFFFFF"
-                android:textColorHint="#666666"
-                android:padding="12dp"
-                android:minHeight="48dp"
-                android:inputType="text" />
-
-            <ImageButton
-                android:id="@+id/sendButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_send"
-                android:contentDescription="Send Message"
-                android:padding="12dp"
-                app:tint="#FDD835" />
-        </RelativeLayout>
-    </LinearLayout>
+        <ImageButton
+            android:id="@+id/sendButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_send"
+            android:contentDescription="Send Message"
+            android:padding="12dp"
+            app:tint="#FDD835" />
+    </RelativeLayout>
 
 </LinearLayout>

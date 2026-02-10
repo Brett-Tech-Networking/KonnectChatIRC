@@ -56,6 +56,7 @@ public class PrivateConversationAdapter extends ArrayAdapter<String> {
         String recipient = conversations.get(position);
         TextView nickTextView = convertView.findViewById(R.id.convNickname);
         TextView previewTextView = convertView.findViewById(R.id.convPreview);
+        TextView timeTextView = convertView.findViewById(R.id.convTime);
         View separatorView = convertView.findViewById(R.id.separator);
         ImageButton deleteButton = convertView.findViewById(R.id.deleteConversationButton);
         TextView iconView = convertView.findViewById(R.id.convIcon);
@@ -65,9 +66,10 @@ public class PrivateConversationAdapter extends ArrayAdapter<String> {
         nickTextView.setText(recipient);
         nickTextView.setTextColor(selectedPosition == position ? 0xFFDD8835 : 0xFFFFFFFF);
         
-        // Get the last message for preview
+        // Get the last message for to preview and time
         List<PrivateMessageStorage.PrivateMessage> messages = storage.getMessages(userNick, recipient);
         String preview = "No messages yet";
+        String timeString = "";
         
         if (!messages.isEmpty()) {
             PrivateMessageStorage.PrivateMessage lastMsg = messages.get(messages.size() - 1);
@@ -75,10 +77,14 @@ public class PrivateConversationAdapter extends ArrayAdapter<String> {
             String msgPreview = lastMsg.message.length() > 35 ? 
                     lastMsg.message.substring(0, 35) + "..." : lastMsg.message;
             preview = sender + msgPreview;
+            timeString = getRelativeTime(lastMsg.timestamp);
         }
         
         previewTextView.setText(preview);
         previewTextView.setTextColor(selectedPosition == position ? 0xFFFDD835 : 0xFFAAAAAA);
+
+        timeTextView.setText(timeString);
+        timeTextView.setVisibility(timeString.isEmpty() ? View.GONE : View.VISIBLE);
         
         // Show separator for selected item
         separatorView.setVisibility(selectedPosition == position ? View.VISIBLE : View.GONE);
@@ -127,5 +133,20 @@ public class PrivateConversationAdapter extends ArrayAdapter<String> {
 
     public int getSelectedPosition() {
         return selectedPosition;
+    }
+
+    private String getRelativeTime(long timestamp) {
+        long now = System.currentTimeMillis();
+        long diff = now - timestamp;
+        
+        if (diff < 60 * 1000) {
+            return "Just now";
+        } else if (diff < 60 * 60 * 1000) {
+            return (diff / (60 * 1000)) + "m ago";
+        } else if (diff < 24 * 60 * 60 * 1000) {
+            return (diff / (60 * 60 * 1000)) + "h ago";
+        } else {
+            return (diff / (24 * 60 * 60 * 1000)) + "d ago";
+        }
     }
 }
