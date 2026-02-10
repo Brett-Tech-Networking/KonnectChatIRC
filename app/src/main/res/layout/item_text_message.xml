@@ -1,5 +1,27 @@
-<TextView android:id="@+id/messageTextView"
-    android:layout_width="wrap_content"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:text="Text message"
-    xmlns:android="http://schemas.android.com/apk/res/android" />
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/timestampTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#AAAAAA"
+        android:textSize="12sp"
+        android:paddingEnd="4dp"
+        android:layout_gravity="center_vertical"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/messageTextView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        tools:text="Text message"
+        android:textColor="@android:color/white"
+        android:textSize="16sp" />
+
+</LinearLayout>

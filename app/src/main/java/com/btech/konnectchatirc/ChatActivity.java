@@ -137,7 +137,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private DrawerLayout drawerLayout;
     private ChannelAdapter channelAdapter;
     private List<ChannelItem> channelList = new ArrayList<>(); // List to hold channel items
-    private Map<String, List<String>> channelMessagesMap = new HashMap<>(); // Stores messages for each channel
+    private Map<String, List<ChatMessage>> channelMessagesMap = new HashMap<>(); // Stores messages for each channel
     private TextView unreadBadge;
     private int totalUnreadMessages = 0;
     private String desiredPassword;
@@ -159,12 +159,13 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private List<String> userList = new ArrayList<>();
     
     // Private messaging fields
-    private PrivateMessageStorage messageStorage;
+    private boolean showTimestamps;
     private ListView privateConversationListView;
     private PrivateConversationAdapter privateConversationAdapter;
     private List<String> privateConversations = new ArrayList<>();
     private String selectedPrivateConversation = null;
     private boolean isViewingPrivateMessages = false;
+    private PrivateMessageStorage messageStorage;
     private BroadcastReceiver privateMessageReceiver;
 
 
@@ -258,6 +259,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     };
 
 
+    public boolean isViewingPrivateMessages() {
+        return isViewingPrivateMessages;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -283,6 +288,14 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         chatRecyclerView = findViewById(R.id.chatRecyclerView);
         chatMessages = new ArrayList<>();
         chatAdapter = new ChatAdapter((BotProvider) this, chatMessages);  // Pass ChatActivity instance
+        
+        SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
+        showTimestamps = prefs.getBoolean("show_timestamps", false);
+        chatAdapter.setShowTimestamps(showTimestamps);
+
+        // Initialize PrivateMessageStorage
+        messageStorage = new PrivateMessageStorage(prefs);
+        
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);  // Ensure the adapter is set here
 
@@ -479,6 +492,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             }
         });
 
+        ImageButton btnSettings = findViewById(R.id.btnSettings);
+        btnSettings.setOnClickListener(v -> showSettingsDialog());
+
         RecyclerView channelRecyclerView = findViewById(R.id.channelRecyclerView);
         channelAdapter = new ChannelAdapter(channelList, this);
         channelRecyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -584,9 +600,45 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
             String selectedServer = getIntent().getStringExtra("SELECTED_SERVER");
 
-            if (selectedChannel == null || selectedChannel.isEmpty()) {
+        if (selectedChannel == null || selectedChannel.isEmpty()) {
                 selectedChannel = "#ThePlaceToChat";
             }
+        
+        // Initialize Private Message Receiver
+        privateMessageReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if ("private_message".equals(intent.getAction())) {
+                    String sender = intent.getStringExtra("sender");
+                    String message = intent.getStringExtra("message");
+                    
+                    if (sender != null && message != null) {
+                        // Store message
+                        if (messageStorage != null) {
+                            messageStorage.saveMessage(sender, userNick, message, false);
+                        }
+                        
+                        // If viewing this conversation, add to UI
+                        if (isViewingPrivateMessages && sender.equalsIgnoreCase(selectedPrivateConversation)) {
+                            ChatMessage chatMsg = new ChatMessage(sender + ": " + message, System.currentTimeMillis());
+                            Log.d("ChatActivity", "Adding private message to list: " + sender + ": " + message);
+                            chatMessages.add(chatMsg);
+                            chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+                            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                        } else {
+                            // Optionally update unread counts or notify user
+                            // For now, we rely on the conversation list update on resume/refresh
+                        }
+                    }
+                }
+            }
+        };
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(privateMessageReceiver, new IntentFilter("private_message"), Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(privateMessageReceiver, new IntentFilter("private_message"));
+        }
             Log.d("ChatActivity", "Selected Server: " + selectedServer);
 
             if (selectedServer == null || selectedServer.isEmpty()) {
@@ -605,7 +657,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     .setAutoSplitMessage(true)
                     .setAutoReconnect(true)
                     .addCapHandler(new EnableCapHandler("multi-prefix"))
-                    .addCapHandler(new EnableCapHandler("userhost-in-names"))
+
                     .addListener((Listener) new NickChangeListener(this));
 
 
@@ -800,34 +852,96 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                             Toast.makeText(widget.getContext(), "Active channel not found.", Toast.LENGTH_SHORT).show();
                         }
                     } else {
-                        Toast.makeText(widget.getContext(), "Not connected to a server.", Toast.LENGTH_SHORT).show();
+                        // Bot not connected
+                        Toast.makeText(widget.getContext(), "Not connected to the server.", Toast.LENGTH_SHORT).show();
                     }
                 }
 
                 @Override
                 public void updateDrawState(@NonNull TextPaint ds) {
                     super.updateDrawState(ds);
-                    ds.setColor(Color.RED); // Ensure the @nick remains red
-                    ds.setUnderlineText(false); // Remove underline if needed
+                    ds.setUnderlineText(false); // Remove underline
                 }
             };
 
-
-            spannableMessage.setSpan(clickableSpan, mentionMatcher.start(), mentionMatcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            spannableMessage.setSpan(
+                    clickableSpan,
+                    mentionMatcher.start(),
+                    mentionMatcher.end(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
         }
 
-        chatMessages.add(spannableMessage);
-        chatAdapter.notifyDataSetChanged();
+        // Add the message to the list as a ChatMessage object
+        ChatMessage chatMsg = new ChatMessage(spannableMessage, System.currentTimeMillis());
+        chatMessages.add(chatMsg);
+
+        // Check if the current channel matches the active channel
+        if (activeChannel != null && channelMessagesMap.containsKey(activeChannel)) {
+            channelMessagesMap.get(activeChannel).add(chatMsg);
+        }
+        
+        chatAdapter.notifyItemInserted(chatMessages.size() - 1);
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-        markMessageAsProcessed(message);
+    }
+    
+    // Helper to store messages safely
+    void storeMessageForChannel(String channel, String message) {
+        if (channelMessagesMap.containsKey(channel)) {
+            // Create a temporary ChatMessage with current time for storage
+            // Note: This matches the one displayed in UI
+            ChatMessage chatMsg = new ChatMessage(message, System.currentTimeMillis());
+            channelMessagesMap.get(channel).add(chatMsg);
+        }
+    }
+    
+    // Overloaded method to store actual ChatMessage objects
+    void storeMessageForChannel(String channel, ChatMessage message) {
+        if (channelMessagesMap.containsKey(channel)) {
+            channelMessagesMap.get(channel).add(message);
+        }
     }
 
+    private void showSettingsDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Settings");
 
-    void storeMessageForChannel(String channel, String message) {
-        if (!channelMessagesMap.containsKey(channel)) {
-            channelMessagesMap.put(channel, new ArrayList<>());
-        }
-        channelMessagesMap.get(channel).add(message);
+        // Create a layout for the dialog
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 40, 50, 10);
+
+        // Timestamps Switch
+        final CheckBox timestampCheck = new CheckBox(this);
+        timestampCheck.setText("Show Timestamps");
+        timestampCheck.setChecked(showTimestamps);
+        timestampCheck.setTextSize(16);
+        
+        layout.addView(timestampCheck);
+
+        builder.setView(layout);
+
+        builder.setPositiveButton("Save", (dialog, which) -> {
+            boolean newShowTimestamps = timestampCheck.isChecked();
+            if (showTimestamps != newShowTimestamps) {
+                showTimestamps = newShowTimestamps;
+                
+                // Save preference
+                SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean("show_timestamps", showTimestamps);
+                editor.apply();
+                
+                // Update adapter
+                chatAdapter.setShowTimestamps(showTimestamps);
+                
+                Toast.makeText(this, "Settings saved", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+
+        builder.show();
     }
 
     public String getUserNick() {
@@ -993,6 +1107,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
 
     private void switchChannel(ChannelItem channel) {
+        isViewingPrivateMessages = false;
+        selectedPrivateConversation = null;
         setActiveChannel(channel.getChannelName());
         channel.resetUnreadCount();
         resetUnreadCount();
@@ -1289,6 +1405,14 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         disconnectFromServer();
         releaseWakeLock();
         releaseWifiLock();
+        
+        if (privateMessageReceiver != null) {
+            try {
+                unregisterReceiver(privateMessageReceiver);
+            } catch (IllegalArgumentException e) {
+                // Receiver not registered
+            }
+        }
     }
 
     private void disconnectFromServer() {
@@ -1385,6 +1509,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
     private void loadPrivateConversation(String nick) {
         selectedPrivateConversation = nick;
+        isViewingPrivateMessages = true;
         channelNameTextView.setText("Private: " + nick);
         
         chatMessages.clear();
@@ -1392,7 +1517,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         // Load ONLY messages from this private conversation, NOT from channels
         List<PrivateMessageStorage.PrivateMessage> messages = messageStorage.getMessages(userNick, nick);
         for (PrivateMessageStorage.PrivateMessage msg : messages) {
-            chatMessages.add(msg.sender + ": " + msg.message);
+            String content = msg.sender + ": " + msg.message;
+            chatMessages.add(new ChatMessage(content, msg.timestamp));
         }
         
         chatAdapter.notifyDataSetChanged();
@@ -1990,4 +2116,5 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 .setDuration(200)
                 .start();
     }
+
 }

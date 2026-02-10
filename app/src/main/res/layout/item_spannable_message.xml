@@ -1,8 +1,25 @@
-<TextView android:id="@+id/spannableMessageTextView"
-    android:layout_width="wrap_content"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:text="Spannable message"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:autoLink="web"
-    android:linksClickable="true"
-    android:textColorLink="@color/LightBlue" />
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/timestampTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#AAAAAA"
+        android:textSize="12sp"
+        android:paddingEnd="4dp"
+        android:layout_gravity="center_vertical"
+        android:visibility="gone" />
+
+    <TextView android:id="@+id/spannableMessageTextView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Spannable message"
+        android:autoLink="web"
+        android:linksClickable="true"
+        android:textColorLink="@color/LightBlue" />
+</LinearLayout>

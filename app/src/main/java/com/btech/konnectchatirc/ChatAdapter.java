@@ -53,7 +53,12 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public int getItemViewType(int position) {
-        if (messages.get(position) instanceof Spannable) {
+        Object item = messages.get(position);
+        if (item instanceof ChatMessage) {
+            item = ((ChatMessage) item).getContent();
+        }
+        
+        if (item instanceof Spannable) {
             return VIEW_TYPE_SPANNABLE;
         } else {
             return VIEW_TYPE_TEXT;
@@ -83,23 +88,40 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         Object item = messages.get(position);
 
         if (holder instanceof SpannableMessageViewHolder) {
-            ((SpannableMessageViewHolder) holder).bind((Spannable) item);
+            if (item instanceof ChatMessage) {
+                ((SpannableMessageViewHolder) holder).bind((ChatMessage) item);
+            }
         } else if (holder instanceof TextViewHolder) {
-            ((TextViewHolder) holder).bind((String) item);
+            if (item instanceof ChatMessage) {
+                ((TextViewHolder) holder).bind((ChatMessage) item);
+            }
         }
+    }
+
+    private boolean showTimestamps = false;
+
+    public void setShowTimestamps(boolean showTimestamps) {
+        this.showTimestamps = showTimestamps;
+        notifyDataSetChanged();
     }
 
     public class TextViewHolder extends RecyclerView.ViewHolder {
         TextView messageTextView;
+        TextView timestampTextView;
 
         public TextViewHolder(@NonNull View itemView) {
             super(itemView);
             messageTextView = itemView.findViewById(R.id.messageTextView);
+            timestampTextView = itemView.findViewById(R.id.timestampTextView);
         }
 
-        public void bind(String message) {
+        public void bind(ChatMessage chatMessage) {
+            try {
+                String message = (String) chatMessage.getContent();
+            Log.d("ChatAdapter", "Binding message: " + message);
             boolean isServer = isServerMessage(message);
 
+            // ... (existing Spannable logic) ...
             SpannableStringBuilder finalMessageBuilder = new SpannableStringBuilder();
 
             if (isServer) {
@@ -111,9 +133,9 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
                 );
                 finalMessageBuilder.append(serverMessage);
-            } else if (botProvider.getActiveChannel() == null) { // Private message
+            } else if ((botProvider instanceof ChatActivity && ((ChatActivity) botProvider).isViewingPrivateMessages()) || botProvider.getActiveChannel() == null) { // Private message
                 finalMessageBuilder.append(message);
-            }else {
+            } else {
                 String nick = extractNickFromMessage(message);
                 User user = getUserFromNick(nick);
                 Channel channel = getActiveChannel();
@@ -165,6 +187,13 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             messageTextView.setText(finalMessageBuilder);
             messageTextView.setMovementMethod(LinkMovementMethod.getInstance());
 
+            if (showTimestamps) {
+                timestampTextView.setVisibility(View.VISIBLE);
+                timestampTextView.setText(formatTimestamp(chatMessage.getTimestamp()));
+            } else {
+                timestampTextView.setVisibility(View.GONE);
+            }
+
             messageTextView.setOnLongClickListener(v -> {
                 ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
                 ClipData clip = ClipData.newPlainText("chat message", finalMessageBuilder);
@@ -174,20 +203,34 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 }
                 return true;
             });
+            } catch (Exception e) {
+                Log.e("ChatAdapter", "Error binding message", e);
+                messageTextView.setText("Error: " + e.getMessage());
+            }
         }
     }
 
     public class SpannableMessageViewHolder extends RecyclerView.ViewHolder {
         TextView messageTextView;
+        TextView timestampTextView;
 
         public SpannableMessageViewHolder(@NonNull View itemView) {
             super(itemView);
             messageTextView = itemView.findViewById(R.id.spannableMessageTextView);
+            timestampTextView = itemView.findViewById(R.id.timestampTextView);
         }
 
-        public void bind(Spannable message) {
+        public void bind(ChatMessage chatMessage) {
+            Spannable message = (Spannable) chatMessage.getContent();
             messageTextView.setText(message);
             messageTextView.setMovementMethod(LinkMovementMethod.getInstance());
+
+            if (showTimestamps) {
+                timestampTextView.setVisibility(View.VISIBLE);
+                timestampTextView.setText(formatTimestamp(chatMessage.getTimestamp()));
+            } else {
+                timestampTextView.setVisibility(View.GONE);
+            }
 
             messageTextView.setOnLongClickListener(v -> {
                 ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
@@ -200,6 +243,12 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             });
         }
     }
+
+    private String formatTimestamp(long timestamp) {
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
+        return "[" + sdf.format(new java.util.Date(timestamp)) + "]";
+    }
+
 
     private boolean isServerMessage(String message) {
         return message.contains("joined") || message.contains("left") || message.contains("was kicked")

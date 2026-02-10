@@ -124,7 +124,8 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         
         chatMessages.clear();
         for (PrivateMessageStorage.PrivateMessage msg : messages) {
-            chatMessages.add(msg.sender + ": " + msg.message);
+            String content = msg.sender + ": " + msg.message;
+            chatMessages.add(new ChatMessage(content, msg.timestamp));
         }
         
         chatAdapter.notifyDataSetChanged();
@@ -204,7 +205,7 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
 
     public void addChatMessage(String message) {
         runOnUiThread(() -> {
-            chatMessages.add(message);
+            chatMessages.add(new ChatMessage(message, System.currentTimeMillis()));
             chatAdapter.notifyDataSetChanged();
             chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
         });
