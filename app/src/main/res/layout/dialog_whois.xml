@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@drawable/dialog_background">
+
+    <!-- Header Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingBottom="16dp">
+
+        <ImageView
+            android:id="@+id/whois_avatar"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_users"
+            android:padding="8dp"
+            android:background="@drawable/circle_badge"
+            android:backgroundTint="@color/lightblue" />
+
+        <TextView
+            android:id="@+id/whois_nick"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nickname"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#40FFFFFF"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Details Section (Left-Aligned) -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="start"
+            android:paddingStart="8dp">
+
+            <TextView
+                android:id="@+id/whois_realname"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Name: N/A"
+                android:textSize="13sp"
+                android:textColor="@color/white"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/whois_ident"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="User: N/A"
+                android:textSize="13sp"
+                android:textColor="#AAAAAA"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/whois_host"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Host: N/A"
+                android:textSize="13sp"
+                android:textColor="#AAAAAA"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:id="@+id/whois_server"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Server: N/A"
+                android:textSize="13sp"
+                android:textColor="#AAAAAA"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/whois_channels"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Channels: N/A"
+                android:textSize="13sp"
+                android:textColor="#AAAAAA"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:id="@+id/whois_idle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Idle: N/A"
+                android:textSize="13sp"
+                android:textColor="#AAAAAA"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/whois_away"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Status: Online"
+                android:textSize="13sp"
+                android:textColor="@color/lightblue"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </ScrollView>
+
+    <Button
+        android:id="@+id/btnWhoisClose"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Close"
+        android:textAllCaps="false"
+        android:background="@drawable/button_option_bg"
+        app:backgroundTint="@null"
+        android:textColor="@color/white" />
+
+</LinearLayout>

@@ -239,6 +239,19 @@ public class ListUsers {
         String host = (user != null && user.getHostmask() != null) ? user.getHostmask() : "N/A";
         hostIpTextView.setText("Host: " + host);
 
+        // Set additional user information
+        TextView identTextView = optionsView.findViewById(R.id.options_ident);
+        String ident = (user != null && user.getLogin() != null) ? user.getLogin() : "N/A";
+        identTextView.setText("Ident: " + ident);
+
+        TextView realNameTextView = optionsView.findViewById(R.id.options_realname);
+        String realName = (user != null && user.getRealName() != null) ? user.getRealName() : "N/A";
+        realNameTextView.setText("Real Name: " + realName);
+
+        TextView accountTextView = optionsView.findViewById(R.id.options_account);
+        String awayMsg = (user != null && user.isAway()) ? user.getAwayMessage() : "Not Away";
+        accountTextView.setText("Status: " + awayMsg);
+
         AlertDialog.Builder optionsDialog = new AlertDialog.Builder(context, R.style.CustomDialogTheme_NoAnimation);
         optionsDialog.setView(optionsView);
 
@@ -279,6 +292,21 @@ public class ListUsers {
             dialog.dismiss();
         });
 
+        optionsView.findViewById(R.id.btnVoice).setOnClickListener(v -> {
+            executeModeCommand(activeChannel, "+v", selectedUser);
+            dialog.dismiss();
+        });
+
+        optionsView.findViewById(R.id.btnDevoice).setOnClickListener(v -> {
+            executeModeCommand(activeChannel, "-v", selectedUser);
+            dialog.dismiss();
+        });
+
+        optionsView.findViewById(R.id.btnWhois).setOnClickListener(v -> {
+            executeWhoisCommand(selectedUser);
+            dialog.dismiss();
+        });
+
         optionsView.findViewById(R.id.btnPrivateMessage).setOnClickListener(v -> {
             // Create an empty conversation so it appears in the list
             messageStorage.createConversation(bot.getNick(), selectedUser);
@@ -291,6 +319,17 @@ public class ListUsers {
         });
 
         dialog.setCanceledOnTouchOutside(true);
+    }
+
+    private void executeWhoisCommand(String target) {
+        new Thread(() -> {
+            if (bot != null && bot.isConnected()) {
+                bot.sendRaw().rawLine("WHOIS " + target);
+            } else {
+                activity.runOnUiThread(() ->
+                        Toast.makeText(context, "Bot is not connected to the server.", Toast.LENGTH_SHORT).show());
+            }
+        }).start();
     }
 
     private void showKickDialog(String selectedUser, String activeChannel) {

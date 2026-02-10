@@ -33,13 +33,47 @@
             android:textColor="@color/white"
             android:layout_marginTop="8dp" />
 
-        <TextView
-            android:id="@+id/options_host_ip"
-            android:layout_width="wrap_content"
+        <!-- Details Section (Left-Aligned) -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Host: N/A"
-            android:textSize="12sp"
-            android:textColor="#AAAAAA" />
+            android:orientation="vertical"
+            android:gravity="start"
+            android:layout_marginTop="12dp"
+            android:paddingStart="8dp">
+
+            <TextView
+                android:id="@+id/options_host_ip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Host: N/A"
+                android:textSize="12sp"
+                android:textColor="#AAAAAA" />
+
+            <TextView
+                android:id="@+id/options_ident"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ident: N/A"
+                android:textSize="12sp"
+                android:textColor="#AAAAAA" />
+
+            <TextView
+                android:id="@+id/options_realname"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Real Name: N/A"
+                android:textSize="12sp"
+                android:textColor="#AAAAAA" />
+
+            <TextView
+                android:id="@+id/options_account"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Status: N/A"
+                android:textSize="12sp"
+                android:textColor="#AAAAAA" />
+        </LinearLayout>
     </LinearLayout>
 
     <View
@@ -59,20 +93,38 @@
             android:orientation="vertical">
 
             <!-- Primary Actions -->
-            <Button
-                android:id="@+id/btnPrivateMessage"
+            <GridLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Message User"
-                android:textAllCaps="false"
-                android:background="@drawable/button_option_bg"
-                app:backgroundTint="@null"
-                android:drawableStart="@drawable/ic_switcher"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:drawablePadding="12dp"
-                android:textColor="@color/white"
-                android:layout_marginBottom="8dp" />
+                android:columnCount="2"
+                android:alignmentMode="alignMargins"
+                android:columnOrderPreserved="false"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btnPrivateMessage"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="Message"
+                    android:textAllCaps="false"
+                    android:background="@drawable/button_option_bg"
+                    app:backgroundTint="@null"
+                    android:textColor="@color/white" />
+
+                <Button
+                    android:id="@+id/btnWhois"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="Whois"
+                    android:textAllCaps="false"
+                    android:background="@drawable/button_option_bg"
+                    app:backgroundTint="@null"
+                    android:textColor="@color/white" />
+            </GridLayout>
 
             <Button
                 android:id="@+id/btnSlap"
@@ -126,6 +178,39 @@
                     android:background="@drawable/button_option_bg"
                     app:backgroundTint="@null"
                     android:textColor="#FF9800" />
+            </GridLayout>
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="2"
+                android:alignmentMode="alignMargins"
+                android:columnOrderPreserved="false"
+                android:layout_marginBottom="16dp">
+
+                <Button
+                    android:id="@+id/btnVoice"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="Voice"
+                    android:textAllCaps="false"
+                    android:background="@drawable/button_option_bg"
+                    app:backgroundTint="@null"
+                    android:textColor="#FDD835" />
+
+                <Button
+                    android:id="@+id/btnDevoice"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="Devoice"
+                    android:textAllCaps="false"
+                    android:background="@drawable/button_option_bg"
+                    app:backgroundTint="@null"
+                    android:textColor="#AAAAAA" />
             </GridLayout>
 
             <GridLayout

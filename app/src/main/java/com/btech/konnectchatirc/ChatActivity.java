@@ -1236,6 +1236,53 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         dialog.show();
     }
 
+    public void showWhoisDialog(String nick, String realName, String ident, String host, String server, String channels, String idleTime, String signonTime, String awayMessage) {
+        runOnUiThread(() -> {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.CustomDialogTheme_NoAnimation);
+            LayoutInflater inflater = getLayoutInflater();
+            View dialogView = inflater.inflate(R.layout.dialog_whois, null);
+            builder.setView(dialogView);
+
+            TextView nickView = dialogView.findViewById(R.id.whois_nick);
+            TextView realNameView = dialogView.findViewById(R.id.whois_realname);
+            TextView identView = dialogView.findViewById(R.id.whois_ident);
+            TextView hostView = dialogView.findViewById(R.id.whois_host);
+            TextView serverView = dialogView.findViewById(R.id.whois_server);
+            TextView channelsView = dialogView.findViewById(R.id.whois_channels);
+            TextView idleView = dialogView.findViewById(R.id.whois_idle);
+            TextView awayView = dialogView.findViewById(R.id.whois_away);
+
+            nickView.setText(nick);
+            realNameView.setText("Name: " + (realName != null ? realName : "N/A"));
+            identView.setText("User: " + (ident != null ? ident : "N/A"));
+            hostView.setText("Host: " + (host != null ? host : "N/A"));
+            serverView.setText("Server: " + (server != null ? server : "N/A"));
+            channelsView.setText("Channels: " + (channels != null ? channels : "N/A"));
+            idleView.setText("Idle: " + (idleTime != null ? idleTime : "0") + "s (Signed on: " + (signonTime != null ? signonTime : "N/A") + ")");
+            
+            if (awayMessage != null && !awayMessage.isEmpty()) {
+                awayView.setText("Away: " + awayMessage);
+                awayView.setTextColor(Color.parseColor("#FF9800")); // Orange for away
+            } else {
+                awayView.setText("Status: Online");
+            }
+
+            AlertDialog dialog = builder.create();
+            dialogView.findViewById(R.id.btnWhoisClose).setOnClickListener(v -> dialog.dismiss());
+            dialog.show();
+
+            // Adjust dialog size and center
+            if (dialog.getWindow() != null) {
+                WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
+                layoutParams.copyFrom(dialog.getWindow().getAttributes());
+                layoutParams.width = (int) (350 * getResources().getDisplayMetrics().density);
+                layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT;
+                layoutParams.gravity = Gravity.CENTER;
+                dialog.getWindow().setAttributes(layoutParams);
+            }
+        });
+    }
+
     public boolean hasMessageBeenProcessed(String message) {
         return processedMessages.contains(message);
     }

@@ -22,6 +22,7 @@ import org.pircbotx.hooks.events.UserListEvent;
 import org.pircbotx.hooks.events.WhoEvent;
 import org.pircbotx.hooks.types.GenericMessageEvent;
 import org.pircbotx.hooks.Listener;
+import org.pircbotx.hooks.events.WhoisEvent;
 import org.pircbotx.hooks.events.PrivateMessageEvent;
 
 import android.app.Activity;
@@ -459,6 +460,21 @@ public class Listeners extends ListenerAdapter {
         }
     }
 
+
+    @Override
+    public void onWhois(WhoisEvent event) {
+        String nick = event.getNick();
+        String realName = event.getRealname();
+        String ident = event.getLogin();
+        String host = event.getHostname();
+        String server = event.getServer();
+        String channels = event.getChannels().toString();
+        String idleTime = String.valueOf(event.getIdleSeconds());
+        String signonTime = String.valueOf(event.getSignOnTime());
+        String awayMessage = event.getAwayMessage();
+
+        chatActivity.showWhoisDialog(nick, realName, ident, host, server, channels, idleTime, signonTime, awayMessage);
+    }
 
     @Override
     public void onPrivateMessage(PrivateMessageEvent event) {
