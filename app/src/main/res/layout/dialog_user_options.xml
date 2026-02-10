@@ -1,4 +1,5 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -65,6 +66,7 @@
                 android:text="Message User"
                 android:textAllCaps="false"
                 android:background="@drawable/button_option_bg"
+                app:backgroundTint="@null"
                 android:drawableStart="@drawable/ic_switcher"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
@@ -79,6 +81,7 @@
                 android:text="Slap User"
                 android:textAllCaps="false"
                 android:background="@drawable/button_option_bg"
+                app:backgroundTint="@null"
                 android:textColor="@color/white"
                 android:layout_marginBottom="16dp" />
 
@@ -109,6 +112,7 @@
                     android:text="Op"
                     android:textAllCaps="false"
                     android:background="@drawable/button_option_bg"
+                    app:backgroundTint="@null"
                     android:textColor="#4CAF50" />
 
                 <Button
@@ -120,6 +124,7 @@
                     android:text="Deop"
                     android:textAllCaps="false"
                     android:background="@drawable/button_option_bg"
+                    app:backgroundTint="@null"
                     android:textColor="#FF9800" />
             </GridLayout>
 
@@ -139,6 +144,7 @@
                     android:text="Kick"
                     android:textAllCaps="false"
                     android:background="@drawable/button_option_bg"
+                    app:backgroundTint="@null"
                     android:textColor="#F44336" />
 
                 <Button
@@ -150,6 +156,7 @@
                     android:text="Ban"
                     android:textAllCaps="false"
                     android:background="@drawable/button_option_bg"
+                    app:backgroundTint="@null"
                     android:textColor="#F44336" />
             </GridLayout>
 
