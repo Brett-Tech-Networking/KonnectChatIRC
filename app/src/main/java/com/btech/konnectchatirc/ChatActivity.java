@@ -1257,7 +1257,66 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             identView.setText("User: " + (ident != null ? ident : "N/A"));
             hostView.setText("Host: " + (host != null ? host : "N/A"));
             serverView.setText("Server: " + (server != null ? server : "N/A"));
-            channelsView.setText("Channels: " + (channels != null ? channels : "N/A"));
+            
+            // Handle clickable channels
+            if (channels != null && !channels.isEmpty()) {
+                SpannableStringBuilder builderChannels = new SpannableStringBuilder("Channels: ");
+                // Channels string is usually "[#chan1, @#chan2, ...]" or "#chan1 #chan2" depending on PircBotX conversion
+                // The toString() of a list is usually [#chan, @#chan]
+                String listContent = channels;
+                if (listContent.startsWith("[") && listContent.endsWith("]")) {
+                    listContent = listContent.substring(1, listContent.length() - 1);
+                }
+                
+                String[] channelArray = listContent.split(",?\\s+");
+                for (int i = 0; i < channelArray.length; i++) {
+                    final String rawChan = channelArray[i].trim();
+                    if (rawChan.isEmpty()) continue;
+                    
+                    // Remove prefixes like @, +, %, etc. to get the pure channel name for joining
+                    String cleanChan = rawChan;
+                    while (!cleanChan.isEmpty() && !cleanChan.startsWith("#") && !cleanChan.startsWith("&")) {
+                        cleanChan = cleanChan.substring(1);
+                    }
+                    
+                    if (cleanChan.isEmpty()) {
+                        builderChannels.append(rawChan);
+                    } else {
+                        final String finalChan = cleanChan;
+                        int start = builderChannels.length();
+                        builderChannels.append(rawChan);
+                        int end = builderChannels.length();
+                        
+                        builderChannels.setSpan(new ClickableSpan() {
+                            @Override
+                            public void onClick(@NonNull View widget) {
+                                new Thread(() -> {
+                                    if (bot != null && bot.isConnected()) {
+                                        bot.sendIRC().joinChannel(finalChan);
+                                        runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Joining " + finalChan, Toast.LENGTH_SHORT).show());
+                                    }
+                                }).start();
+                            }
+
+                            @Override
+                            public void updateDrawState(@NonNull TextPaint ds) {
+                                super.updateDrawState(ds);
+                                ds.setColor(Color.parseColor("#4FC3F7")); // Light blue for links
+                                ds.setUnderlineText(true);
+                            }
+                        }, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                    
+                    if (i < channelArray.length - 1) {
+                        builderChannels.append(", ");
+                    }
+                }
+                channelsView.setText(builderChannels);
+                channelsView.setMovementMethod(LinkMovementMethod.getInstance());
+            } else {
+                channelsView.setText("Channels: N/A");
+            }
+
             idleView.setText("Idle: " + (idleTime != null ? idleTime : "0") + "s (Signed on: " + (signonTime != null ? signonTime : "N/A") + ")");
             
             if (awayMessage != null && !awayMessage.isEmpty()) {
