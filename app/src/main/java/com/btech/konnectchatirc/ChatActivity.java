@@ -1183,6 +1183,19 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         currentNickTextView.setText("Nick: " + newNick);
     }
 
+    public boolean isDiscordUser(String realName) {
+        if (realName == null || realName.isEmpty()) return false;
+        // The user specified: name#numbers followed by @ Discord/Konnect-Chat Bot name IRCRELAY
+        return realName.matches(".*#\\d{4,}.*@ Discord/Konnect-Chat.*") || realName.contains("IRCRELAY");
+    }
+
+    public void showDiscordPrivacyError() {
+        runOnUiThread(() -> {
+            Toast.makeText(this, "Discord Privacy Error: The user's settings do not permit private messaging.", Toast.LENGTH_LONG).show();
+            addChatMessage("SYSTEM: Discord delivery failed. User's privacy settings block PMs.");
+        });
+    }
+
     private void toggleHoverPanel() {
         if (operatorPanel.getVisibility() == View.VISIBLE) {
             fadeOutPanel(operatorPanel, null);

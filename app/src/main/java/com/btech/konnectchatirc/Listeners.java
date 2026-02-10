@@ -51,6 +51,13 @@ public class Listeners extends ListenerAdapter {
         String notice = event.getNotice();
 
         chatActivity.processServerMessage(event.getUser().getNick(), notice, channel);
+        
+        // Handle Discord Relay Errors
+        if (notice.toLowerCase().contains("privacy settings") || 
+            notice.toLowerCase().contains("permit private messaging") ||
+            (notice.toLowerCase().contains("cannot send") && notice.toLowerCase().contains("discord"))) {
+            chatActivity.showDiscordPrivacyError();
+        }
     }
 
 
@@ -476,6 +483,11 @@ public class Listeners extends ListenerAdapter {
         String idleTime = String.valueOf(event.getIdleSeconds());
         String signonTime = String.valueOf(event.getSignOnTime());
         String awayMessage = event.getAwayMessage();
+
+        // Flag if it's a Discord user
+        if (chatActivity.isDiscordUser(realName)) {
+            realName = "🛡️ Discord User | " + realName;
+        }
 
         chatActivity.showWhoisDialog(nick, realName, ident, host, server, channels, idleTime, signonTime, awayMessage);
     }
