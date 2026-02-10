@@ -246,8 +246,8 @@ public class ListUsers {
 
         dialog.setOnShowListener(dialogInterface -> {
             dialog.getWindow().setLayout(
-                    (int) (240 * context.getResources().getDisplayMetrics().density), // Custom width
-                    (int) (400 * context.getResources().getDisplayMetrics().density)  // Custom height
+                    (int) (280 * context.getResources().getDisplayMetrics().density), // Custom width
+                    ViewGroup.LayoutParams.WRAP_CONTENT // Auto height
             );
         });
 
@@ -266,6 +266,16 @@ public class ListUsers {
 
         optionsView.findViewById(R.id.btnSlap).setOnClickListener(v -> {
             executeSlapCommand(selectedUser, activeChannel);
+            dialog.dismiss();
+        });
+
+        optionsView.findViewById(R.id.btnOp).setOnClickListener(v -> {
+            executeModeCommand(activeChannel, "+o", selectedUser);
+            dialog.dismiss();
+        });
+
+        optionsView.findViewById(R.id.btnDeop).setOnClickListener(v -> {
+            executeModeCommand(activeChannel, "-o", selectedUser);
             dialog.dismiss();
         });
 
@@ -333,6 +343,24 @@ public class ListUsers {
                 } catch (Exception e) {
                     activity.runOnUiThread(() ->
                             Toast.makeText(context, "Failed to ban user.", Toast.LENGTH_SHORT).show());
+                }
+            } else {
+                activity.runOnUiThread(() ->
+                        Toast.makeText(context, "Bot is not connected to the server.", Toast.LENGTH_SHORT).show());
+            }
+        }).start();
+    }
+
+    private void executeModeCommand(String channel, String mode, String target) {
+        new Thread(() -> {
+            if (bot != null && bot.isConnected()) {
+                try {
+                    bot.sendRaw().rawLine("MODE " + channel + " " + mode + " " + target);
+                    activity.runOnUiThread(() ->
+                            Toast.makeText(context, "Mode " + mode + " applied to " + target, Toast.LENGTH_SHORT).show());
+                } catch (Exception e) {
+                    activity.runOnUiThread(() ->
+                            Toast.makeText(context, "Failed to apply mode.", Toast.LENGTH_SHORT).show());
                 }
             } else {
                 activity.runOnUiThread(() ->

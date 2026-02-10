@@ -2,120 +2,157 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:gravity="center_horizontal"
+    android:padding="20dp"
     android:background="@drawable/dialog_background">
 
-    <TextView
-        android:id="@+id/options_nick"
-        android:layout_width="wrap_content"
+    <!-- Header Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Hello World"
-        android:textSize="20sp"
-        android:textColor="@color/lightblue"
-        android:layout_gravity="center" />
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingBottom="16dp">
 
-    <TextView
-        android:id="@+id/options_host_ip"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Host: N/A"
-        android:textSize="14sp"
-        android:textColor="@color/white"
-        android:layout_marginTop="8dp"
-        android:layout_gravity="center" />
+        <ImageView
+            android:id="@+id/options_avatar"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_users"
+            android:padding="8dp"
+            android:background="@drawable/circle_badge"
+            android:backgroundTint="@color/lightblue" />
 
+        <TextView
+            android:id="@+id/options_nick"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nickname"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:id="@+id/options_host_ip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Host: N/A"
+            android:textSize="12sp"
+            android:textColor="#AAAAAA" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#40FFFFFF"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Actions Section -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <GridLayout
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:columnCount="2"
-            android:rowCount="3"
-            android:orientation="horizontal"
-            android:gravity="center">
+            android:orientation="vertical">
 
-            <!-- First row of buttons: Kick, Ban, Slap -->
+            <!-- Primary Actions -->
             <Button
-                android:id="@+id/btnKick"
-                android:layout_width="wrap_content"
+                android:id="@+id/btnPrivateMessage"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Kick"
-                android:background="@drawable/rounded_option_menu"
-                android:textSize="16sp"
+                android:text="Message User"
+                android:textAllCaps="false"
+                android:background="@drawable/button_option_bg"
+                android:drawableStart="@drawable/ic_switcher"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:drawablePadding="12dp"
                 android:textColor="@color/white"
-                android:padding="8dp"
-                android:layout_margin="10dp" />
-
-            <Button
-                android:id="@+id/btnBan"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Ban"
-                android:textSize="16sp"
-                android:textColor="@color/white"
-                android:background="@drawable/rounded_option_menu"
-                android:padding="8dp"
-                android:layout_margin="10dp" />
+                android:layout_marginBottom="8dp" />
 
             <Button
                 android:id="@+id/btnSlap"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Slap"
-                android:textSize="16sp"
+                android:text="Slap User"
+                android:textAllCaps="false"
+                android:background="@drawable/button_option_bg"
                 android:textColor="@color/white"
-                android:background="@drawable/rounded_option_menu"
-                android:padding="8dp"
-                android:layout_margin="10dp" />
+                android:layout_marginBottom="16dp" />
 
-            <!-- Second row of buttons: Op, Deop refresh -->
-            <Button
-                android:id="@+id/btnRefresh"
+            <!-- Section Label -->
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Refresh"
-                android:textSize="16sp"
-                android:textColor="@color/white"
-                android:background="@drawable/rounded_option_menu"
-                android:padding="8dp"
-                android:layout_margin="10dp" />
+                android:text="Channel Management"
+                android:textColor="@color/lightblue"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
 
-            <Button
-                android:id="@+id/btnDeop"
-                android:layout_width="wrap_content"
+            <GridLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Deop"
-                android:textSize="16sp"
-                android:textColor="@color/white"
-                android:background="@drawable/rounded_option_menu"
-                android:padding="8dp"
-                android:layout_margin="10dp" />
-            <Button
-                android:id="@+id/btnOp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Op"
-                android:textSize="16sp"
-                android:textColor="@color/white"
-                android:background="@drawable/rounded_option_menu"
-                android:padding="8dp"
-                android:layout_margin="10dp" />
+                android:columnCount="2"
+                android:alignmentMode="alignMargins"
+                android:columnOrderPreserved="false"
+                android:layout_marginBottom="8dp">
 
-            <Button
-                android:id="@+id/btnPrivateMessage"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Private Message"
-                android:textSize="16sp"
-                android:textColor="@color/white"
-                android:background="@drawable/rounded_option_menu"
-                android:padding="8dp"
-                android:layout_margin="10dp" />
+                <Button
+                    android:id="@+id/btnOp"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="Op"
+                    android:textAllCaps="false"
+                    android:background="@drawable/button_option_bg"
+                    android:textColor="#4CAF50" />
 
-        </GridLayout>
+                <Button
+                    android:id="@+id/btnDeop"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="Deop"
+                    android:textAllCaps="false"
+                    android:background="@drawable/button_option_bg"
+                    android:textColor="#FF9800" />
+            </GridLayout>
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="2"
+                android:alignmentMode="alignMargins"
+                android:columnOrderPreserved="false">
+
+                <Button
+                    android:id="@+id/btnKick"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="Kick"
+                    android:textAllCaps="false"
+                    android:background="@drawable/button_option_bg"
+                    android:textColor="#F44336" />
+
+                <Button
+                    android:id="@+id/btnBan"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="Ban"
+                    android:textAllCaps="false"
+                    android:background="@drawable/button_option_bg"
+                    android:textColor="#F44336" />
+            </GridLayout>
+
+        </LinearLayout>
     </ScrollView>
 </LinearLayout>

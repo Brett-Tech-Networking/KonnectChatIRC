@@ -413,18 +413,6 @@ public class Listeners extends ListenerAdapter {
             refreshChat();
         });
     }
-    // Inside Listeners.java
-    public void setRefreshButtonListener(Activity activity) {
-        Button refreshButton = activity.findViewById(R.id.btnRefresh); // Adjust ID if different
-        refreshButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (activity instanceof ChatActivity) {
-                    ((ChatActivity) activity).refreshChat(); // Calls refreshChat() method from ChatActivity
-                }
-            }
-        });
-    }
 
 
     private void runOnUiThread(Runnable runnable) {
