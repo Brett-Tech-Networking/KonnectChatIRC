@@ -364,7 +364,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         
         SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
         showTimestamps = prefs.getBoolean("show_timestamps", false);
+        boolean use24HrFormat = prefs.getBoolean("use_24hr_format", true);
         chatAdapter.setShowTimestamps(showTimestamps);
+        chatAdapter.setUse24HrFormat(use24HrFormat);
 
         // Initialize PrivateMessageStorage
         messageStorage = new PrivateMessageStorage(prefs);
@@ -951,24 +953,42 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         timestampCheck.setChecked(showTimestamps);
         timestampCheck.setTextSize(16);
         
+        // 24hr Format Switch
+        final CheckBox formatCheck = new CheckBox(this);
+        formatCheck.setText("Use 24-hour format");
+        formatCheck.setChecked(chatAdapter.isUse24HrFormat()); // Use getter
+        formatCheck.setTextSize(16);
+        
         layout.addView(timestampCheck);
+        layout.addView(formatCheck);
 
         builder.setView(layout);
 
         builder.setPositiveButton("Save", (dialog, which) -> {
             boolean newShowTimestamps = timestampCheck.isChecked();
+            boolean newUse24HrFormat = formatCheck.isChecked();
+            
+            SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+            boolean changesMade = false;
+
             if (showTimestamps != newShowTimestamps) {
                 showTimestamps = newShowTimestamps;
-                
-                // Save preference
-                SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
-                SharedPreferences.Editor editor = prefs.edit();
                 editor.putBoolean("show_timestamps", showTimestamps);
-                editor.apply();
-                
-                // Update adapter
                 chatAdapter.setShowTimestamps(showTimestamps);
-                
+                changesMade = true;
+            }
+            
+            // We don't have a local member for use24HrFormat in Activity, so we check against value in adapter or prefs would be needed
+            // But simplify: always save if checked state matches what we want
+            if (chatAdapter.isUse24HrFormat() != newUse24HrFormat) {
+                editor.putBoolean("use_24hr_format", newUse24HrFormat);
+                chatAdapter.setUse24HrFormat(newUse24HrFormat);
+                changesMade = true;
+            }
+
+            if (changesMade) {
+                editor.apply();
                 Toast.makeText(this, "Settings saved", Toast.LENGTH_SHORT).show();
             }
         });

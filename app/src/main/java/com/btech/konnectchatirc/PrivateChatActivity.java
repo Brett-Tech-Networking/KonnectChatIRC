@@ -131,6 +131,12 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         // Setup chat display
         chatMessages = new ArrayList<>();
         chatAdapter = new ChatAdapter((BotProvider) this, chatMessages);
+        
+        SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
+        boolean showTimestamps = prefs.getBoolean("show_timestamps", false);
+        boolean use24HrFormat = prefs.getBoolean("use_24hr_format", true);
+        chatAdapter.setShowTimestamps(showTimestamps);
+        chatAdapter.setUse24HrFormat(use24HrFormat);
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);
 
