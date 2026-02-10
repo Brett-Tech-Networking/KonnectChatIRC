@@ -190,23 +190,24 @@ public class ListUsers {
     }
 
     private void filterUserList(String query) {
-        filteredUserList.clear();
+        List<UserItem> results = new ArrayList<>();
         if (query.isEmpty()) {
-            filteredUserList.addAll(userList);
+            results.addAll(userList);
         } else {
             String lowerCaseQuery = query.toLowerCase();
             for (UserItem userItem : userList) {
-                String nick = userItem.getNick();
-                if (nick.toLowerCase().contains(lowerCaseQuery)) {
-                    filteredUserList.add(userItem);
+                if (userItem.getNick().toLowerCase().contains(lowerCaseQuery)) {
+                    results.add(userItem);
                 }
             }
         }
 
-        // Update the adapter data
+        // Update the adapter on the UI thread. 
+        // ArrayAdapter.clear() also clears the underlying list (filteredUserList).
+        final List<UserItem> finalResults = results;
         activity.runOnUiThread(() -> {
             adapter.clear();
-            adapter.addAll(filteredUserList);
+            adapter.addAll(finalResults);
             adapter.notifyDataSetChanged();
         });
     }
