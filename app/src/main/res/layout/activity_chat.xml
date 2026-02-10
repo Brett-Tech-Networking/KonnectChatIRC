@@ -185,31 +185,43 @@
             android:layout_alignParentTop="true"
             android:layout_below="@id/disconnectButton"
             android:orientation="horizontal"
-            android:background="#333333">
+            android:background="#2B2B2B"
+            android:elevation="4dp">
 
             <Button
                 android:id="@+id/btnChannelsTab"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:layout_weight="1"
-                android:text="Channels"
+                android:text="📋 Channels"
                 android:textColor="#FFFFFF"
-                android:background="#444444"
+                android:background="@drawable/tab_indicator_active"
                 android:padding="12dp"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.5"
+                android:fontFamily="sans-serif-medium"
+                android:stateListAnimator="@null" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="#555555" />
 
             <Button
                 android:id="@+id/btnPrivateMessagesTab"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:layout_weight="1"
-                android:text="Private Messages"
-                android:textColor="#AAAAAA"
-                android:background="#222222"
+                android:text="💬 Messages"
+                android:textColor="@color/tab_text_inactive"
+                android:background="@drawable/tab_indicator"
                 android:padding="12dp"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.5"
+                android:fontFamily="sans-serif-medium"
+                android:stateListAnimator="@null" />
         </LinearLayout>
 
         <!-- Channels Section -->
@@ -224,7 +236,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:paddingBottom="8dp"
-                android:background="#333333" />
+                android:paddingTop="8dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:background="#2B2B2B"
+                android:clipToPadding="false" />
         </FrameLayout>
 
         <!-- Private Messages Section -->
@@ -239,16 +255,21 @@
                 android:id="@+id/privateConversationListView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="#333333"
-                android:divider="#444444"
-                android:dividerHeight="1dp" />
+                android:background="#2B2B2B"
+                android:divider="#3F3F3F"
+                android:dividerHeight="1dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:scrollbars="vertical"
+                android:cacheColorHint="@android:color/transparent" />
         </FrameLayout>
     </RelativeLayout>
+
     <ListView
         android:id="@+id/userListView"
         android:layout_width="200dp"
         android:layout_height="match_parent"
-        android:layout_alignParentEnd="true"
+        android:layout_gravity="end"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="10dp"
         android:divider="@android:color/darker_gray"

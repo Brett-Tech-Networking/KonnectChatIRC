@@ -16,8 +16,13 @@
     <color name="trans">#0003DAC5</color>
     <color name="dialogBackgroundColor">#2C2C2C</color>
     <color name="LightBlue">#00E3FF</color>
-
-
-
+    <color name="tab_background_active">#444444</color>
+    <color name="tab_background_inactive">#333333</color>
+    <color name="tab_indicator_color">#FDD835</color>
+    <color name="tab_text_active">#FFFFFF</color>
+    <color name="tab_text_inactive">#AAAAAA</color>
+    <color name="ripple_light">#FF6200EE</color>
+    <color name="ripple_dark">#FF3700B3</color>
+    <color name="transparent">#00000000</color>
 
 </resources>

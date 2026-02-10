@@ -161,7 +161,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     // Private messaging fields
     private PrivateMessageStorage messageStorage;
     private ListView privateConversationListView;
-    private ArrayAdapter<String> privateConversationAdapter;
+    private PrivateConversationAdapter privateConversationAdapter;
     private List<String> privateConversations = new ArrayList<>();
     private String selectedPrivateConversation = null;
     private boolean isViewingPrivateMessages = false;
@@ -1142,6 +1142,13 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     }
 
     public void processServerMessage(String sender, String message, String channel) {
+        // Never add channel messages while viewing private messages
+        if (isViewingPrivateMessages) {
+            // Still store the message for the channel, but don't add to current display
+            storeMessageForChannel(channel, sender + ": " + message);
+            return;
+        }
+
         if (channel == null) {
             // Handle null case if necessary, e.g., skip or set to a default channel
             channel = getActiveChannel(); // Set to active channel as fallback
@@ -1178,7 +1185,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
         boolean isActiveChannel = channel.equalsIgnoreCase(getActiveChannel());
 
-        if (isActiveChannel) {
+        if (isActiveChannel && !isViewingPrivateMessages) {
             runOnUiThread(() -> addChatMessage(formattedMessage));
         } else {
             final String finalChannel = channel;
@@ -1254,6 +1261,13 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        // Always refresh private conversations when resuming, in case PrivateChatActivity added new ones
+        loadPrivateConversationList();
+    }
+
+    @Override
     protected void onStop() {
         super.onStop();
         if (privateMessageReceiver != null) {
@@ -1304,37 +1318,37 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         FrameLayout channelsSection = findViewById(R.id.channelsSection);
         FrameLayout privateMessagesSection = findViewById(R.id.privateMessagesSection);
 
-        // Set up adapter for conversations
-        privateConversationAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, privateConversations);
+        // Set up adapter for conversations using custom adapter with delete button
+        privateConversationAdapter = new PrivateConversationAdapter(this, privateConversations, messageStorage, userNick);
         privateConversationListView.setAdapter(privateConversationAdapter);
+
+        // Set delete listener for conversations
+        privateConversationAdapter.setOnConversationDeleteListener(nick -> {
+            // Delete all messages for this conversation
+            messageStorage.clearConversation(userNick, nick);
+        });
+
+        // Set selection listener for conversations
+        privateConversationAdapter.setOnConversationSelectListener((nick, position) -> {
+            selectedPrivateConversation = nick;
+            privateConversationAdapter.setSelectedPosition(position);
+            loadPrivateConversation(selectedPrivateConversation);
+            // Close sidebar when selecting a conversation
+            drawerLayout.closeDrawer(GravityCompat.START);
+        });
 
         // Handle conversation selection
         privateConversationListView.setOnItemClickListener((parent, view, position, id) -> {
             selectedPrivateConversation = privateConversations.get(position);
             loadPrivateConversation(selectedPrivateConversation);
+            // Close sidebar when selecting a conversation
+            drawerLayout.closeDrawer(GravityCompat.START);
         });
 
-        // Set up tab switching
-        btnChannelsTab.setOnClickListener(v -> {
-            isViewingPrivateMessages = false;
-            channelsSection.setVisibility(View.VISIBLE);
-            privateMessagesSection.setVisibility(View.GONE);
-            btnChannelsTab.setBackgroundColor(getResources().getColor(android.R.color.darker_gray));
-            btnChannelsTab.setTextColor(Color.WHITE);
-            btnPrivateMessagesTab.setBackgroundColor(Color.parseColor("#222222"));
-            btnPrivateMessagesTab.setTextColor(Color.parseColor("#AAAAAA"));
-        });
+        // Set up tab switching with smooth animations
+        btnChannelsTab.setOnClickListener(v -> switchToChannelsTab(btnChannelsTab, btnPrivateMessagesTab, channelsSection, privateMessagesSection));
 
-        btnPrivateMessagesTab.setOnClickListener(v -> {
-            isViewingPrivateMessages = true;
-            channelsSection.setVisibility(View.GONE);
-            privateMessagesSection.setVisibility(View.VISIBLE);
-            btnChannelsTab.setBackgroundColor(Color.parseColor("#222222"));
-            btnChannelsTab.setTextColor(Color.parseColor("#AAAAAA"));
-            btnPrivateMessagesTab.setBackgroundColor(getResources().getColor(android.R.color.darker_gray));
-            btnPrivateMessagesTab.setTextColor(Color.WHITE);
-            loadPrivateConversationList();
-        });
+        btnPrivateMessagesTab.setOnClickListener(v -> switchToPrivateMessagesTab(btnChannelsTab, btnPrivateMessagesTab, channelsSection, privateMessagesSection));
 
         // Set up broadcast receiver for private messages
         privateMessageReceiver = new BroadcastReceiver() {
@@ -1343,8 +1357,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 String sender = intent.getStringExtra("sender");
                 String message = intent.getStringExtra("message");
                 
-                if (sender != null && !message.isEmpty()) {
-                    // Save message to storage
+                // Don't process messages from ourselves
+                if (sender != null && !sender.equalsIgnoreCase(userNick) && !message.isEmpty()) {
+                    // Save message to storage (only from other users)
                     messageStorage.saveMessage(userNick, sender, message, false);
                     
                     // Add to conversation list if not already there
@@ -1374,7 +1389,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         
         chatMessages.clear();
         
-        // Load messages from storage
+        // Load ONLY messages from this private conversation, NOT from channels
         List<PrivateMessageStorage.PrivateMessage> messages = messageStorage.getMessages(userNick, nick);
         for (PrivateMessageStorage.PrivateMessage msg : messages) {
             chatMessages.add(msg.sender + ": " + msg.message);
@@ -1393,19 +1408,23 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         }
 
         if (bot != null && bot.isConnected()) {
-            // Send via IRC
+            // Add to conversation list if not already there
+            if (!privateConversations.contains(selectedPrivateConversation)) {
+                privateConversations.add(0, selectedPrivateConversation);
+                privateConversationAdapter.notifyDataSetChanged();
+            }
+            
+            // Save message immediately to storage
+            messageStorage.saveMessage(userNick, selectedPrivateConversation, message, true);
+            
+            // Update UI immediately to show sent message
+            loadPrivateConversation(selectedPrivateConversation);
+            chatEditText.setText("");
+            
+            // Send via IRC in background
             new Thread(() -> {
                 try {
                     bot.sendIRC().message(selectedPrivateConversation, message);
-                    
-                    // Save message
-                    messageStorage.saveMessage(userNick, selectedPrivateConversation, message, true);
-                    
-                    // Update UI
-                    runOnUiThread(() -> {
-                        loadPrivateConversation(selectedPrivateConversation);
-                        chatEditText.setText("");
-                    });
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -1897,5 +1916,78 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 runOnUiThread(() -> userListAdapter.notifyDataSetChanged());
             }
         }
+    }
+
+    /**
+     * Switch to Channels tab with smooth animation
+     */
+    private void switchToChannelsTab(Button btnChannelsTab, Button btnPrivateMessagesTab, 
+                                     FrameLayout channelsSection, FrameLayout privateMessagesSection) {
+        isViewingPrivateMessages = false;
+        selectedPrivateConversation = null;
+        chatMessages.clear();
+        if (activeChannel != null && channelMessagesMap.containsKey(activeChannel)) {
+            chatMessages.addAll(channelMessagesMap.get(activeChannel));
+        }
+        chatAdapter.notifyDataSetChanged();
+        animateSectionTransition(channelsSection, privateMessagesSection);
+        
+        // Animate selected tab
+        btnChannelsTab.clearAnimation();
+        btnChannelsTab.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, R.anim.tab_select));
+        btnChannelsTab.setBackgroundResource(R.drawable.tab_indicator_active);
+        btnChannelsTab.setTextColor(Color.WHITE);
+        btnChannelsTab.setAlpha(1.0f);
+        
+        // Animate deselected tab
+        btnPrivateMessagesTab.clearAnimation();
+        btnPrivateMessagesTab.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, R.anim.tab_deselect));
+        btnPrivateMessagesTab.setBackgroundResource(R.drawable.tab_indicator);
+        btnPrivateMessagesTab.setTextColor(getResources().getColor(R.color.tab_text_inactive));
+        btnPrivateMessagesTab.setAlpha(0.8f);
+    }
+
+    /**
+     * Switch to Private Messages tab with smooth animation
+     */
+    private void switchToPrivateMessagesTab(Button btnChannelsTab, Button btnPrivateMessagesTab,
+                                            FrameLayout channelsSection, FrameLayout privateMessagesSection) {
+        isViewingPrivateMessages = true;
+        chatMessages.clear();
+        chatAdapter.notifyDataSetChanged();
+        // Reload conversations from storage to pick up any new ones from other activities
+        loadPrivateConversationList();
+        animateSectionTransition(privateMessagesSection, channelsSection);
+        
+        // Animate selected tab
+        btnPrivateMessagesTab.clearAnimation();
+        btnPrivateMessagesTab.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, R.anim.tab_select));
+        btnPrivateMessagesTab.setBackgroundResource(R.drawable.tab_indicator_active);
+        btnPrivateMessagesTab.setTextColor(Color.WHITE);
+        btnPrivateMessagesTab.setAlpha(1.0f);
+        
+        // Animate deselected tab
+        btnChannelsTab.clearAnimation();
+        btnChannelsTab.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, R.anim.tab_deselect));
+        btnChannelsTab.setBackgroundResource(R.drawable.tab_indicator);
+        btnChannelsTab.setTextColor(getResources().getColor(R.color.tab_text_inactive));
+        btnChannelsTab.setAlpha(0.8f);
+    }
+
+    /**
+     * Animate section transitions with fade effect
+     */
+    private void animateSectionTransition(FrameLayout showSection, FrameLayout hideSection) {
+        hideSection.animate()
+                .alpha(0.0f)
+                .setDuration(150)
+                .withEndAction(() -> hideSection.setVisibility(View.GONE))
+                .start();
+        showSection.setAlpha(0.0f);
+        showSection.setVisibility(View.VISIBLE);
+        showSection.animate()
+                .alpha(1.0f)
+                .setDuration(200)
+                .start();
     }
 }

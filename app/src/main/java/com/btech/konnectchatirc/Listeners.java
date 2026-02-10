@@ -477,7 +477,12 @@ public class Listeners extends ListenerAdapter {
         String sender = event.getUser().getNick();
         String message = event.getMessage();
         
-        // Broadcast the private message to PrivateChatActivity
+        // Don't broadcast messages from ourselves (server echo)
+        if (sender.equalsIgnoreCase(chatActivity.getUserNick())) {
+            return;
+        }
+        
+        // Broadcast the private message to ChatActivity
         Intent intent = new Intent("private_message");
         intent.putExtra("sender", sender);
         intent.putExtra("message", message);

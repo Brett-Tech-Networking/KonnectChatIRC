@@ -3,7 +3,7 @@ package com.btech.konnectchatirc;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -67,7 +67,7 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.ChannelV
 
         TextView channelName;
         TextView unreadBadge;
-        Button leaveChannelButton;
+        ImageButton leaveChannelButton;
 
         public ChannelViewHolder(@NonNull View itemView) {
             super(itemView);
