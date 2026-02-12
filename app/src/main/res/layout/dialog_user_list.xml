@@ -3,42 +3,79 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@drawable/rounded_background_grey"
-    android:padding="16dp">
+    android:background="@drawable/dialog_background"
+    android:padding="20dp">
 
-    <TextView
-        android:id="@+id/dialogTitle"
-        android:layout_width="wrap_content"
+    <!-- Header Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Select a User"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="@color/white"
-        android:layout_gravity="center_horizontal"
-        android:paddingBottom="8dp" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="16dp">
 
-    <!-- Search EditText remains unchanged -->
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_users"
+            android:tint="#FDD835"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:id="@+id/dialogTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Channel Users"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#FDD835"
+            android:letterSpacing="0.02" />
+
+        <TextView
+            android:id="@+id/userCountText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textSize="14sp"
+            android:textColor="#AAAAAA"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:background="@drawable/rounded_background"
+            android:backgroundTint="#30FFFFFF" />
+    </LinearLayout>
+
+    <!-- Search Box -->
     <EditText
         android:id="@+id/searchUserEditText"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Search user..."
-        android:padding="8dp"
-        android:background="@drawable/edit_text_background"
-        android:textColor="@android:color/black"
-        android:textColorHint="@android:color/darker_gray"
-        android:drawableLeft="@android:drawable/ic_menu_search"
-        android:drawablePadding="8dp"
-        android:inputType="text" />
+        android:layout_height="48dp"
+        android:hint="Search users..."
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:background="@drawable/rounded_background"
+        android:backgroundTint="#1A1A1A"
+        android:textColor="#FFFFFF"
+        android:textColorHint="#666666"
+        android:textSize="15sp"
+        android:drawableStart="@android:drawable/ic_menu_search"
+        android:drawableTint="#888888"
+        android:drawablePadding="12dp"
+        android:inputType="text"
+        android:layout_marginBottom="12dp" />
 
-    <!-- Existing ListView -->
+    <!-- User List -->
     <ListView
         android:id="@+id/userListView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:divider="@android:color/darker_gray"
+        android:maxHeight="400dp"
+        android:divider="#20FFFFFF"
         android:dividerHeight="1dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp" />
+        android:scrollbars="vertical"
+        android:fadingEdge="vertical"
+        android:fadingEdgeLength="20dp" />
 
 </LinearLayout>

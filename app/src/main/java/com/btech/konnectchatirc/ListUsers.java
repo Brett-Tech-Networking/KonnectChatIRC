@@ -102,6 +102,10 @@ public class ListUsers {
         LayoutInflater inflater = LayoutInflater.from(context);
         View userListViewDialog = inflater.inflate(R.layout.dialog_user_list, null);
 
+        // Set user count in header
+        TextView userCountText = userListViewDialog.findViewById(R.id.userCountText);
+        userCountText.setText(String.valueOf(userList.size()));
+
         // Find the ListView and set the adapter
         ListView userListView = userListViewDialog.findViewById(R.id.userListView);
         adapter = new ArrayAdapter<UserItem>(context, R.layout.dialog_user_list_item, filteredUserList) {
