@@ -269,8 +269,9 @@ public class ListUsers {
         AlertDialog dialog = optionsDialog.create();
 
         dialog.setOnShowListener(dialogInterface -> {
+            int width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.95);
             dialog.getWindow().setLayout(
-                    (int) (280 * context.getResources().getDisplayMetrics().density), // Custom width
+                    width, // 95% of screen width
                     ViewGroup.LayoutParams.WRAP_CONTENT // Auto height
             );
         });

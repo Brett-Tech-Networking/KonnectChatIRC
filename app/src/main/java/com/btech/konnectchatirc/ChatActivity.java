@@ -1101,6 +1101,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     public void setActiveChannel(String channel) {
         this.activeChannel = channel;
         updateChannelName(channel);
+        updateUserCount(); // Update user count for new channel
         
         // Reset unread count for this channel
         if (channelStorage != null) {
@@ -1335,7 +1336,34 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
     public void updateCurrentNick(String newNick) {
         TextView currentNickTextView = findViewById(R.id.CurrentNick);
-        currentNickTextView.setText("Nick: " + newNick);
+        currentNickTextView.setText(newNick);
+        updateUserCount(); // Update user count when nick changes
+    }
+
+    public void updateUserCount() {
+        runOnUiThread(() -> {
+            TextView userCountBadge = findViewById(R.id.userCountBadge);
+            if (bot != null && bot.isConnected() && activeChannel != null && !isViewingPrivateMessages) {
+                try {
+                    Channel activeChannelObj = bot.getUserChannelDao().getChannel(activeChannel);
+                    if (activeChannelObj != null) {
+                        int userCount = activeChannelObj.getUsers().size();
+                        if (userCount > 0) {
+                            userCountBadge.setText("👥 " + userCount);
+                            userCountBadge.setVisibility(View.VISIBLE);
+                        } else {
+                            userCountBadge.setVisibility(View.GONE);
+                        }
+                    } else {
+                        userCountBadge.setVisibility(View.GONE);
+                    }
+                } catch (Exception e) {
+                    userCountBadge.setVisibility(View.GONE);
+                }
+            } else {
+                userCountBadge.setVisibility(View.GONE);
+            }
+        });
     }
 
     public boolean isDiscordUser(String realName) {

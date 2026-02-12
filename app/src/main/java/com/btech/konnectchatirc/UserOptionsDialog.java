@@ -96,5 +96,11 @@ public class UserOptionsDialog {
 
         // Show the dialog
         dialog.show();
+        
+        // Make the dialog wider to use more screen space
+        int width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.95);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(width, -2); // -2 is WRAP_CONTENT
+        }
     }
 }
