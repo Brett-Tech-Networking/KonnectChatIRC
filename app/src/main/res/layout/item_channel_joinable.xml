@@ -13,7 +13,7 @@
         android:text="#"
         android:textSize="28sp"
         android:textStyle="bold"
-        android:textColor="@color/white"
+        android:textColor="#FFFFFF"
         android:gravity="center"
         android:background="@drawable/circle_badge"
         android:backgroundTint="@color/lightblue"
@@ -50,7 +50,7 @@
             android:text="#general"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="@color/white" />
+            android:textColor="#FFFFFF" />
 
         <!-- User Count -->
         <LinearLayout

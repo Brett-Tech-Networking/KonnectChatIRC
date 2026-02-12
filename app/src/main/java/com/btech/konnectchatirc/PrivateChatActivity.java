@@ -190,6 +190,12 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         // Setup send button
         sendButton.setOnClickListener(v -> sendMessage());
 
+        // Setup upload button (placeholder for future implementation)
+        ImageButton uploadButton = findViewById(R.id.uploadButton);
+        uploadButton.setOnClickListener(v -> {
+            // TODO: Implement file upload for private messages
+        });
+
         btnHamburgerMenu.setOnClickListener(v -> {
             if (drawerLayout != null) {
                 drawerLayout.openDrawer(GravityCompat.START);

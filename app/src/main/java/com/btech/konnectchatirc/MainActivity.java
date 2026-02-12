@@ -132,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public View getDropDownView(int position, View convertView, ViewGroup parent) {
                 View view = super.getDropDownView(position, convertView, parent);
+                view.setBackgroundColor(0xFF000000); // Black background
                 TextView textView = (TextView) view.findViewById(android.R.id.text1);
                 if (textView != null) {
                     textView.setTextColor(getResources().getColor(R.color.white)); // Set the text color to white in the dropdown list
