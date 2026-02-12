@@ -59,6 +59,10 @@ public class PrivateMessageStorage {
 
         for (String key : allPrefs.keySet()) {
             if (key.startsWith(KEY_PREFIX)) {
+                if (key.endsWith("_unread")) {
+                    continue;
+                }
+                
                 String remaining = key.substring(KEY_PREFIX.length());
                 String otherNick = null;
 
@@ -165,4 +169,43 @@ public class PrivateMessageStorage {
             this.isSent = isSent;
         }
     }
+
+    /**
+     * Get unread count for a conversation
+     */
+    public int getUnreadCount(String userNick, String recipientNick) {
+        String conversationKey = getConversationKey(userNick, recipientNick) + "_unread";
+        return prefs.getInt(conversationKey, 0);
+    }
+
+    /**
+     * Increment unread count for a conversation
+     */
+    public void incrementUnreadCount(String userNick, String recipientNick) {
+        String conversationKey = getConversationKey(userNick, recipientNick) + "_unread";
+        int currentCount = prefs.getInt(conversationKey, 0);
+        prefs.edit().putInt(conversationKey, currentCount + 1).apply();
+    }
+
+    /**
+     * Reset unread count for a conversation
+     */
+    public void resetUnreadCount(String userNick, String recipientNick) {
+        String conversationKey = getConversationKey(userNick, recipientNick) + "_unread";
+        prefs.edit().remove(conversationKey).apply();
+    }
+
+    /**
+     * Get total unread count for all private messages
+     */
+    public int getTotalUnreadCount(String userNick) {
+        int total = 0;
+        List<String> conversations = getAllConversations(userNick);
+        for (String recipient : conversations) {
+            total += getUnreadCount(userNick, recipient);
+        }
+        return total;
+    }
+
+
 }

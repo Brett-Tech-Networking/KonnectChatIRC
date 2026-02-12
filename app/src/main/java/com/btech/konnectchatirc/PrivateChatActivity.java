@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 public class PrivateChatActivity extends AppCompatActivity implements BotProvider, ChannelAdapter.OnChannelClickListener {
 
@@ -49,7 +50,9 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
     private TextView recipientNameTextView;
     private TextView currentNickTextView;
     private PrivateMessageStorage messageStorage;
+    private ChannelStorage channelStorage;
     private BroadcastReceiver privateMessageReceiver;
+    private BroadcastReceiver channelMessageReceiver;
 
     // Sidebar fields
     private DrawerLayout drawerLayout;
@@ -59,6 +62,7 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
     private PrivateConversationAdapter privateConversationAdapter;
     private ListView privateConversationListView;
     private boolean isViewingPrivateMessages = true;
+    private TextView unreadBadge;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +72,7 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         // Initialize message storage
         SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
         messageStorage = new PrivateMessageStorage(prefs);
+        channelStorage = new ChannelStorage(prefs);
 
         // Get user info from intent (optional, can be updated when selecting conversation)
         userNick = getIntent().getStringExtra("USER_NICK");
@@ -111,9 +116,39 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
 
                         // If this conversation is selected, update display
                         if (sender.equalsIgnoreCase(selectedRecipient)) {
-                            displayConversation(sender);
+                            displayConversation(sender, false);
                         }
+                        
+                        updateGlobalUnreadCount();
                     });
+                }
+            }
+        };
+        
+        // Set up broadcast receiver for channel messages
+        channelMessageReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.d("NotificationDebug", "PrivateChatActivity: Broadcast received: " + intent.getAction());
+                if ("com.btech.konnectchatirc.CHANNEL_MESSAGE".equals(intent.getAction())) {
+                    String channelName = intent.getStringExtra("channel");
+                    Log.d("NotificationDebug", "PrivateChatActivity: Channel message for: " + channelName);
+                    if (channelName != null) {
+                        // Update channel list item
+                        for (ChannelItem item : channelList) {
+                            if (item.getChannelName().equalsIgnoreCase(channelName)) {
+                                if (channelStorage != null) {
+                                     item.setUnreadCount(channelStorage.getUnreadCount(channelName));
+                                } else {
+                                     item.incrementUnreadCount(); 
+                                }
+                                break;
+                            }
+                        }
+                        channelAdapter.notifyDataSetChanged();
+                        
+                        updateGlobalUnreadCount();
+                    }
                 }
             }
         };
@@ -126,6 +161,7 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         chatEditText = findViewById(R.id.chatEditText);
         ImageButton sendButton = findViewById(R.id.sendButton);
         ImageButton btnHamburgerMenu = findViewById(R.id.btnHamburgerMenu);
+        unreadBadge = findViewById(R.id.unreadBadge);
         drawerLayout = findViewById(R.id.drawerLayout);
 
         // Set user nick in header
@@ -142,6 +178,14 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         chatAdapter.setUse24HrFormat(use24HrFormat);
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);
+
+        // Add layout change listener for keyboard handling
+        chatRecyclerView.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (bottom < oldBottom) {
+                // Keyboard likely opened (height decreased)
+                chatRecyclerView.post(() -> scrollToBottom(true));
+            }
+        });
 
         // Setup send button
         sendButton.setOnClickListener(v -> sendMessage());
@@ -179,7 +223,7 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         privateConversationAdapter.setOnConversationSelectListener((nick, position) -> {
             selectedRecipient = nick;
             privateConversationAdapter.setSelectedPosition(position);
-            displayConversation(selectedRecipient);
+            displayConversation(selectedRecipient, true);
             drawerLayout.closeDrawer(GravityCompat.START);
         });
 
@@ -211,7 +255,12 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
             if (activeBot != null && activeBot.isConnected()) {
                 channelList.clear();
                 for (Channel channel : activeBot.getUserChannelDao().getAllChannels()) {
-                    channelList.add(new ChannelItem(channel.getName()));
+                    ChannelItem newItem = new ChannelItem(channel.getName());
+                    // Sync with storage if available
+                    if (channelStorage != null) {
+                        newItem.setUnreadCount(channelStorage.getUnreadCount(channel.getName()));
+                    }
+                    channelList.add(newItem);
                 }
                 channelAdapter.notifyDataSetChanged();
             }
@@ -273,13 +322,17 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
             // Create an empty conversation if it doesn't exist
             messageStorage.createConversation(userNick, intentRecipient);
             selectedRecipient = intentRecipient;
-            displayConversation(selectedRecipient);
+            displayConversation(selectedRecipient, true);
         }
     }
 
-    private void displayConversation(String recipient) {
+    private void displayConversation(String recipient, boolean forceScroll) {
         selectedRecipient = recipient;
         recipientNameTextView.setText("Chat with " + recipient);
+
+        // Reset unread count for this conversation
+        messageStorage.resetUnreadCount(userNick, recipient);
+        updateGlobalUnreadCount();
 
         // Load messages for this conversation
         List<PrivateMessageStorage.PrivateMessage> messages = 
@@ -292,8 +345,27 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         }
         
         chatAdapter.notifyDataSetChanged();
-        if (!chatMessages.isEmpty()) {
-            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+        scrollToBottom(forceScroll);
+    }
+
+    private void scrollToBottom(boolean force) {
+        if (chatMessages.isEmpty()) return;
+        if (force) {
+             chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+             return;
+        }
+
+        LinearLayoutManager layoutManager = (LinearLayoutManager) chatRecyclerView.getLayoutManager();
+        if (layoutManager != null) {
+            int lastVisibleItemPosition = layoutManager.findLastVisibleItemPosition();
+            int itemCount = layoutManager.getItemCount();
+            
+            // Allow scrolling if we are near the bottom (within last 3 items) or if it's the very first load
+            boolean isAtBottom = (lastVisibleItemPosition >= itemCount - 3) || lastVisibleItemPosition == -1;
+
+            if (isAtBottom) {
+                chatRecyclerView.post(() -> chatRecyclerView.smoothScrollToPosition(chatMessages.size() - 1));
+            }
         }
     }
 
@@ -340,7 +412,7 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
                     privateConversationAdapter.notifyDataSetChanged();
                     privateConversationAdapter.setSelectedPosition(0);
                     
-                    displayConversation(selectedRecipient);
+                    displayConversation(selectedRecipient, true);
                     chatEditText.setText("");
                 });
             } catch (Exception e) {
@@ -366,6 +438,18 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         } catch (Exception e) {
             // Already registered
         }
+        
+        // Register channel message receiver
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(channelMessageReceiver, new IntentFilter("com.btech.konnectchatirc.CHANNEL_MESSAGE"), 
+                        Context.RECEIVER_EXPORTED);
+            } else {
+                registerReceiver(channelMessageReceiver, new IntentFilter("com.btech.konnectchatirc.CHANNEL_MESSAGE"));
+            }
+        } catch (Exception e) {
+            // Already registered
+        }
     }
 
     @Override
@@ -376,6 +460,12 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         } catch (IllegalArgumentException e) {
             // Receiver was not registered
         }
+        
+        try {
+            unregisterReceiver(channelMessageReceiver);
+        } catch (IllegalArgumentException e) {
+            // Receiver was not registered
+        }
     }
 
     @Override
@@ -383,19 +473,46 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         super.onResume();
         loadPrivateConversationList();
         updateSidebarChannels();
+        updateGlobalUnreadCount();
     }
 
     public void addChatMessage(String message) {
         runOnUiThread(() -> {
             chatMessages.add(new ChatMessage(message, System.currentTimeMillis()));
             chatAdapter.notifyDataSetChanged();
-            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+            scrollToBottom(false);
         });
     }
 
     @Override
     public PircBotX getBot() {
         return bot;
+    }
+
+    private void updateGlobalUnreadCount() {
+        int totalUnread = 0;
+        
+        // Count unread private messages
+        for (String recipient : privateConversations) {
+            totalUnread += messageStorage.getUnreadCount(userNick, recipient);
+        }
+        
+        // Count unread channel messages
+        if (channelStorage != null) {
+            for (ChannelItem item : channelList) {
+                totalUnread += channelStorage.getUnreadCount(item.getChannelName());
+            }
+        }
+        
+        if (totalUnread > 0) {
+            Log.d("NotificationDebug", "PrivateChatActivity: Updating badge to " + totalUnread);
+            unreadBadge.setText(String.valueOf(totalUnread));
+            unreadBadge.setVisibility(View.VISIBLE);
+            unreadBadge.bringToFront(); // Ensure it's on top
+        } else {
+            Log.d("NotificationDebug", "PrivateChatActivity: Hiding badge");
+            unreadBadge.setVisibility(View.GONE);
+        }
     }
 
     @Override

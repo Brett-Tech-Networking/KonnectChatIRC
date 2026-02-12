@@ -86,11 +86,15 @@ public class Listeners extends ListenerAdapter {
             chatActivity.processServerMessage("Server", "Failed to become an IRC Operator: " + rawMessage, chatActivity.getActiveChannel());
         }
 
-        if (rawMessage.matches(".*CAP.*ACK :Multi-prefix.*") || rawMessage.matches(".*CAP.*ACK :away-notify.*")) {
-            return;
-        }
-        if (rawMessage.contains("CAP") && rawMessage.contains("ACK")) {
-            return;
+        try {
+            if (rawMessage.matches(".*CAP.*ACK :Multi-prefix.*") || rawMessage.matches(".*CAP.*ACK :away-notify.*")) {
+                return;
+            }
+            if (rawMessage.contains("CAP") && rawMessage.contains("ACK")) {
+                return;
+            }
+        } catch (Exception e) {
+             Log.e("Listeners", "Error handler CAP message in onServerResponse: " + e.getMessage());
         }
         if (event.getCode() == 353) { // RPL_NAMREPLY
             String rawLine = event.getRawLine();
@@ -262,50 +266,24 @@ public class Listeners extends ListenerAdapter {
             // Log the joined channel
             System.out.println("Bot joined channel: " + channel);
 
-            // Send identification command to NickServ if needed
-            event.getBot().sendIRC().message("NickServ", "IDENTIFY " + chatActivity.getDesiredPassword());
-
-            // Send WHO command for the channel after joining
-            try {
-                event.getBot().sendRaw().rawLine("WHO " + channel);
-            } catch (Exception e) {
-                Log.e("Listeners", "Error sending WHO command: " + e.getMessage());
-            }
-
-            // Send MODE command for own nick to get user modes
-            try {
-                event.getBot().sendRaw().rawLine("MODE " + event.getBot().getNick());
-            } catch (Exception e) {
-                Log.e("Listeners", "Error sending MODE command: " + e.getMessage());
-            }
-
-        } else {
-            // Handle when another user joins the channel
-            chatActivity.runOnUiThread(() -> {
-                String joinMessage = userNick + " has joined the channel.";
-                chatActivity.processServerMessage("SERVER", joinMessage, channel);
-                chatActivity.markMessageAsProcessed(joinMessage);  // Mark as processed to prevent duplicates
-            });
-        }
-
-
-    // Only handle join messages for the bot itself
-        if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
             runOnUiThread(() -> {
                 chatActivity.setActiveChannel(channel);
                 chatActivity.addChatMessage("You have joined the channel: " + channel);
                 chatActivity.checkAndAddActiveChannel();
             });
 
-            // Send identification command to NickServ
+            // Send identification command to NickServ if needed
             new Thread(() -> {
                 try {
-                    String identifyCommand = "PRIVMSG NickServ :IDENTIFY " + chatActivity.getUserNick() + " " + chatActivity.getDesiredPassword();
-                    event.getBot().sendRaw().rawLine(identifyCommand);
+                     // Using sendIRC().message() or sendRaw().rawLine() are both valid, using rawLine for consistency with existing code
+                     String identifyCommand = "PRIVMSG NickServ :IDENTIFY " + chatActivity.getUserNick() + " " + chatActivity.getDesiredPassword();
+                     event.getBot().sendRaw().rawLine(identifyCommand);
                 } catch (Exception e) {
                     Log.e("Listeners", "Error sending IDENTIFY command: " + e.getMessage());
                 }
             }).start();
+
+            // Send WHO command for the channel after joining
             new Thread(() -> {
                 try {
                     event.getBot().sendRaw().rawLine("WHO " + channel);
@@ -313,6 +291,16 @@ public class Listeners extends ListenerAdapter {
                     Log.e("Listeners", "Error sending WHO command: " + e.getMessage());
                 }
             }).start();
+            
+            // Send MODE command for own nick to get user modes
+            new Thread(() -> {
+                 try {
+                    event.getBot().sendRaw().rawLine("MODE " + event.getBot().getNick());
+                } catch (Exception e) {
+                    Log.e("Listeners", "Error sending MODE command: " + e.getMessage());
+                }
+            }).start();
+
         } else {
             // Handle when another user joins the channel
             chatActivity.runOnUiThread(() -> {
@@ -321,30 +309,7 @@ public class Listeners extends ListenerAdapter {
                 chatActivity.markMessageAsProcessed(joinMessage);  // Mark as processed to prevent duplicates
             });
         }
-
-        // Do not handle join messages for other users to prevent duplication
-
-    // Handle bot join
-        if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
-            runOnUiThread(() -> {
-                chatActivity.setActiveChannel(channel);
-                chatActivity.addChatMessage("You have joined the channel: " + channel);
-                chatActivity.checkAndAddActiveChannel();
-            });
-        }
-
-        // Send IDENTIFY command to NickServ if the bot joins
-        new Thread(() -> {
-            try {
-                if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
-                    String identifyCommand = "PRIVMSG NickServ :IDENTIFY " + chatActivity.getUserNick() + " " + chatActivity.getDesiredPassword();
-                    event.getBot().sendRaw().rawLine(identifyCommand);
-                }
-            } catch (Exception e) {
-                Log.e("Listeners", "Error sending IDENTIFY command: " + e.getMessage());
-            }
-        }).start();
-
+        
         refreshChat();
     }
 
@@ -397,17 +362,20 @@ public class Listeners extends ListenerAdapter {
     public void onUnknown(UnknownEvent event) {
         String rawLine = event.getLine().trim();
 
-        // Debug CAP Negotiation
-        if (rawLine.contains("CAP") && rawLine.contains("ACK")) {
-             Log.d("IRC_CAP", "CAP negotiation: " + rawLine);
-        }
+        try {
+            // Debug CAP Negotiation
+            if (rawLine.contains("CAP") && rawLine.contains("ACK")) {
+                 Log.d("IRC_CAP", "CAP negotiation: " + rawLine);
+                 return; // Use return here to skip further processing for CAP ACK
+            }
 
-        if (rawLine.matches(".*CAP.*ACK :Multi-prefix.*") || rawLine.matches(".*CAP.*ACK :away-notify.*")) {
-            return;
-        }
-
-        if (rawLine.contains("CAP") && rawLine.contains("ACK")) {
-            return;
+            if (rawLine.matches(".*CAP.*ACK :Multi-prefix.*") || rawLine.matches(".*CAP.*ACK :away-notify.*")) {
+                return;
+            }
+        } catch (UnsupportedOperationException e) {
+            Log.e("Listeners", "UnsupportedOperationException during CAP handling in onUnknown: " + e.getMessage());
+        } catch (Exception e) {
+            Log.e("Listeners", "Error during CAP handling in onUnknown: " + e.getMessage());
         }
 
         // Debug TAGMSG
@@ -506,7 +474,8 @@ public class Listeners extends ListenerAdapter {
             // Message is from an inactive channel
             runOnUiThread(() -> {
                 chatActivity.storeMessageForChannel(channel, sender + ": " + message);
-                chatActivity.incrementUnreadCount(); // Increment unread count and show badge
+                chatActivity
+                        .updateGlobalUnreadCount(); // Increment unread count and show badge
             });
                 if (sender.equalsIgnoreCase("NickServ")) {
                     Log.d("NickServMessage", "NickServ message: " + message);

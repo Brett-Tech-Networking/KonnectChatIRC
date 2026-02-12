@@ -29,9 +29,26 @@
                 android:src="@drawable/ic_switcher"
                 android:contentDescription="Open Sidebar"
                 app:tint="#FFFFFF"
-                android:scaleX="1.5"
                 android:scaleY="1.5"
                 android:padding="4dp" />
+
+            <TextView
+                android:id="@+id/unreadBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignEnd="@id/btnHamburgerMenu"
+                android:layout_alignTop="@id/btnHamburgerMenu"
+                android:layout_marginEnd="-5dp"
+                android:layout_marginTop="-5dp"
+                android:background="@drawable/circle_badge"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="10sp"
+                android:visibility="gone"
+                android:gravity="center"
+                android:padding="2dp"
+                android:minWidth="16dp"
+                android:minHeight="16dp" />
 
             <LinearLayout
                 android:layout_width="wrap_content"

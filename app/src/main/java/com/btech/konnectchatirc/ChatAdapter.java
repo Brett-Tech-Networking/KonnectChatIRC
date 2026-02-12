@@ -382,7 +382,12 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private User getUserFromNick(String nick) {
         PircBotX bot = botProvider.getBot();
         if (bot != null) {
-            return bot.getUserChannelDao().getUser(nick);
+            try {
+                return bot.getUserChannelDao().getUser(nick);
+            } catch (Exception e) {
+                // User not found or other error, return null to fall back to basic display
+                return null;
+            }
         }
         return null;
     }

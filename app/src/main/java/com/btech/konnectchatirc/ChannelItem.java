@@ -30,6 +30,10 @@ public class ChannelItem {
         return unreadCount;
     }
 
+    public void setUnreadCount(int unreadCount) {
+        this.unreadCount = unreadCount;
+    }
+
     public void incrementUnreadCount() {
         unreadCount++;
     }

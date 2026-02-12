@@ -144,7 +144,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private List<ChannelItem> channelList = new ArrayList<>(); // List to hold channel items
     private Map<String, List<ChatMessage>> channelMessagesMap = new HashMap<>(); // Stores messages for each channel
     private TextView unreadBadge;
-    private int totalUnreadMessages = 0;
+    private int totalUnreadMessages = 0; // Tracks channel unread messages
     private String desiredPassword;
     private ProgressDialog progressDialog; // Declare ProgressDialog
     private String desiredNick;  // Declare desiredNick as a class-level variable
@@ -170,6 +170,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private List<String> privateConversations = new ArrayList<>();
     private String selectedPrivateConversation = null;
     private boolean isViewingPrivateMessages = false;
+    private boolean isActivityResumed = false;
     private PrivateMessageStorage messageStorage;
     private BroadcastReceiver privateMessageReceiver;
 
@@ -275,6 +276,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private long lastTypingSent = 0;
     private static final long TYPING_SEND_INTERVAL = 3000; // 3 seconds debounce for sending
     private Set<String> typingUsers = new HashSet<>();
+    private ChannelStorage channelStorage;
 
     public void onUserTyping(String nick, boolean isTyping) {
         runOnUiThread(() -> {
@@ -372,9 +374,23 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
         // Initialize PrivateMessageStorage
         messageStorage = new PrivateMessageStorage(prefs);
+        channelStorage = new ChannelStorage(prefs);
         
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);  // Ensure the adapter is set here
+
+        // Add layout change listener for keyboard handling
+        chatRecyclerView.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (bottom < oldBottom) {
+                // Keyboard likely opened (height decreased)
+                // In this case, we almost always want to ensure the last message is visible
+                chatRecyclerView.post(() -> {
+                    if (chatMessages.size() > 0) {
+                        chatRecyclerView.smoothScrollToPosition(chatMessages.size() - 1);
+                    }
+                });
+            }
+        });
 
         Intent serviceIntent = new Intent(this, IrcForegroundService.class);
         serviceIntent.putExtra("#ThePlaceToChat", activeChannel);
@@ -742,8 +758,15 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                             chatAdapter.notifyItemInserted(chatMessages.size() - 1);
                             chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
                         } else {
-                            // Optionally update unread counts or notify user
-                            // For now, we rely on the conversation list update on resume/refresh
+                            // Increment unread count if not viewing this conversation
+                            if (messageStorage != null) {
+                                messageStorage.incrementUnreadCount(userNick, sender);
+                            }
+                            // Refresh conversation list if visible
+                            if (privateConversationAdapter != null) {
+                                privateConversationAdapter.notifyDataSetChanged();
+                            }
+                            updateGlobalUnreadCount();
                         }
                     }
                 }
@@ -891,7 +914,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             if (bot != null && bot.isConnected()) {
                 for (Channel channel : bot.getUserChannelDao().getAllChannels()) {
                     if (!isChannelInList(channel.getName())) {
-                        channelList.add(new ChannelItem(channel.getName()));
+                        ChannelItem newItem = new ChannelItem(channel.getName());
+                        if (channelStorage != null) {
+                            newItem.setUnreadCount(channelStorage.getUnreadCount(channel.getName()));
+                        }
+                        channelList.add(newItem);
                         channelMessagesMap.put(channel.getName(), new ArrayList<>());
                     }
                 }
@@ -925,7 +952,25 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         // This prevents duplicate messages.
 
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
-        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+        chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+        scrollToBottom();
+    }
+
+    private void scrollToBottom() {
+        if (chatMessages.isEmpty()) return;
+
+        LinearLayoutManager layoutManager = (LinearLayoutManager) chatRecyclerView.getLayoutManager();
+        if (layoutManager != null) {
+            int lastVisibleItemPosition = layoutManager.findLastVisibleItemPosition();
+            int itemCount = layoutManager.getItemCount();
+            
+            // Allow scrolling if we are near the bottom (within last 3 items) or if it's the very first load
+            boolean isAtBottom = (lastVisibleItemPosition >= itemCount - 3) || lastVisibleItemPosition == -1;
+
+            if (isAtBottom) {
+                chatRecyclerView.post(() -> chatRecyclerView.smoothScrollToPosition(chatMessages.size() - 1));
+            }
+        }
     }
     
     // Helper to store messages safely
@@ -1016,6 +1061,22 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     public void setActiveChannel(String channel) {
         this.activeChannel = channel;
         updateChannelName(channel);
+        
+        // Reset unread count for this channel
+        if (channelStorage != null) {
+            channelStorage.resetUnreadCount(channel);
+        }
+        // Also update the item in the list immediately to reflect the change visually
+        for (ChannelItem item : channelList) {
+            if (item.getChannelName().equalsIgnoreCase(channel)) {
+                item.setUnreadCount(0);
+                break;
+            }
+        }
+        if (channelAdapter != null) {
+             channelAdapter.notifyDataSetChanged();
+        }
+
         chatMessages.clear();
         if (channelMessagesMap.containsKey(channel)) {
             chatMessages.addAll(channelMessagesMap.get(channel));
@@ -1176,7 +1237,12 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         isViewingPrivateMessages = false;
         selectedPrivateConversation = null;
         setActiveChannel(channel.getChannelName());
+        selectedPrivateConversation = null;
+        setActiveChannel(channel.getChannelName());
         channel.resetUnreadCount();
+        if (channelStorage != null) {
+            channelStorage.resetUnreadCount(channel.getChannelName());
+        }
         resetUnreadCount();
         channelAdapter.setSelectedChannelName(channel.getChannelName());
         drawerLayout.closeDrawer(GravityCompat.START);
@@ -1438,82 +1504,134 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         processedMessages.add(message);
     }
 
-    void incrementUnreadCount() {
-        totalUnreadMessages++;
+    void updateGlobalUnreadCount() {
+        int pmUnreadCount = 0;
+        if (messageStorage != null && userNick != null) {
+            pmUnreadCount = messageStorage.getTotalUnreadCount(userNick);
+        }
+        
+        // Recalculate channel unread counts
+        totalUnreadMessages = 0;
+        // Recalculate channel unread counts from storage + active list (sync if needed)
+        totalUnreadMessages = 0;
+        
+        // If we have storage, use it as source of truth for unread counts, but only for active channels
+        if (channelStorage != null) {
+             // Only count unread messages for channels we are actually in
+             for (ChannelItem item : channelList) {
+                 String key = item.getChannelName(); // Use channel name as key
+                 int count = channelStorage.getUnreadCount(key);
+                 item.setUnreadCount(count); // Sync memory object with storage
+                 totalUnreadMessages += count;
+             }
+        } else {
+            for (ChannelItem item : channelList) {
+                totalUnreadMessages += item.getUnreadCount();
+            }
+        }
+        
+        int total = totalUnreadMessages + pmUnreadCount;
+        
         runOnUiThread(() -> {
-            unreadBadge.setText(String.valueOf(totalUnreadMessages));
-            unreadBadge.setVisibility(View.VISIBLE);
+            if (total > 0) {
+                unreadBadge.setVisibility(View.VISIBLE);
+                unreadBadge.setText(String.valueOf(total));
+            } else {
+                unreadBadge.setVisibility(View.GONE);
+            }
         });
     }
 
+
     private void resetUnreadCount() {
-        totalUnreadMessages = 0;
-        runOnUiThread(() -> unreadBadge.setVisibility(View.GONE));
+        // Only resets the badge visibility if there are no unread messages total
+        updateGlobalUnreadCount();
     }
 
-    public void processServerMessage(String sender, String message, String channel) {
-        // Never add channel messages while viewing private messages
-        if (isViewingPrivateMessages) {
-            // Still store the message for the channel, but don't add to current display
-            storeMessageForChannel(channel, sender + ": " + message);
-            return;
-        }
+    public void processServerMessage(String sender, String message, String requestChannel) {
+        runOnUiThread(() -> {
+            // Never add channel messages while viewing private messages
+            if (isViewingPrivateMessages) {
+                // Still store the message for the channel, but don't add to current display
+                storeMessageForChannel(requestChannel, sender + ": " + message);
+                return;
+            }
 
-        if (channel == null) {
-            // Handle null case if necessary, e.g., skip or set to a default channel
-            channel = getActiveChannel(); // Set to active channel as fallback
-        }
+            String channel = requestChannel;
+            if (channel == null) {
+                // Handle null case if necessary, e.g., skip or set to a default channel
+                channel = getActiveChannel(); // Set to active channel as fallback
+            }
 
-        String prefix = "";
-        User senderUser = null;
+            String prefix = "";
+            User senderUser = null;
 
-        if (bot != null && bot.isConnected()) {
-            Channel channelObj = bot.getUserChannelDao().getChannel(channel);
-            if (channelObj != null) {
-                // Retrieve the senderUser from the channel's user list
-                senderUser = channelObj.getUsers().stream()
-                    .filter(user -> user.getNick().equals(sender))
-                    .findFirst()
-                    .orElse(null);
+            if (bot != null && bot.isConnected()) {
+                Channel channelObj = null;
+                try {
+                    channelObj = bot.getUserChannelDao().getChannel(channel);
+                } catch (Exception e) {
+                    // Channel might not be tracked yet or invalid
+                    Log.w("processServerMessage", "Channel not found in DAO: " + channel);
+                }
 
-                if (senderUser != null) {
-                    prefix = getUserPrefix(senderUser, channelObj);
+                if (channelObj != null) {
+                    // Retrieve the senderUser from the channel's user list
+                    senderUser = channelObj.getUsers().stream()
+                        .filter(user -> user.getNick().equals(sender))
+                        .findFirst()
+                        .orElse(null);
 
-                    System.out.println("User: " + senderUser.getNick() + ", Prefix: " + prefix);
+                    if (senderUser != null) {
+                        prefix = getUserPrefix(senderUser, channelObj);
+                        System.out.println("User: " + senderUser.getNick() + ", Prefix: " + prefix);
+                    } else {
+                        System.out.println("Sender user not found in channel user list.");
+                    }
                 } else {
-                    System.out.println("Sender user not found in channel user list.");
+                    System.out.println("Channel object is null or not found for channel: " + channel);
                 }
             } else {
-                System.out.println("Channel object is null for channel: " + channel);
+                System.out.println("Bot is null or not connected.");
             }
-        } else {
-            System.out.println("Bot is null or not connected.");
-        }
 
-        String formattedMessage = prefix + " " +  sender + ": " + message;
-        storeMessageForChannel(channel, formattedMessage);
+            String formattedMessage = prefix + " " +  sender + ": " + message;
+            storeMessageForChannel(channel, formattedMessage);
 
-        boolean isActiveChannel = channel.equalsIgnoreCase(getActiveChannel());
+            boolean isActiveChannel = channel.equalsIgnoreCase(getActiveChannel());
 
-        if (isActiveChannel && !isViewingPrivateMessages) {
-            runOnUiThread(() -> addChatMessage(formattedMessage));
-        } else {
-            final String finalChannel = channel;
-            runOnUiThread(() -> {
-                incrementUnreadCount();  // Increments the unread message badge
-                updateUnreadCountForChannel(finalChannel); // Update unread count for the specific channel
-            });
-        }
+            // Since we are now on the UI thread, isActivityResumed reading is safe and accurate
+            if (isActiveChannel && !isViewingPrivateMessages && isActivityResumed) {
+                addChatMessage(formattedMessage);
+            } else {
+                updateGlobalUnreadCount();  // Updates the global unread message badge
+                updateUnreadCountForChannel(channel); // Update unread count for the specific channel
+            }
+        });
     }
 
     private void updateUnreadCountForChannel(String channel) {
+        Log.d("NotificationDebug", "ChatActivity: Updating unread count for channel: " + channel);
+        // Always update storage first to ensure it's persisted, using case-insensitive key internally
+        if (channelStorage != null) {
+            channelStorage.incrementUnreadCount(channel);
+            Log.d("NotificationDebug", "ChatActivity: Storage updated. New count: " + channelStorage.getUnreadCount(channel));
+        }
+
         for (ChannelItem channelItem : channelList) {
-            if (channelItem.getChannelName().equals(channel)) {
+            if (channelItem.getChannelName().equalsIgnoreCase(channel)) {
                 channelItem.incrementUnreadCount();
                 break;
             }
         }
         channelAdapter.notifyDataSetChanged();
+        
+        // Broadcast the new message event for other activities (like PrivateChatActivity)
+        Intent intent = new Intent("com.btech.konnectchatirc.CHANNEL_MESSAGE");
+        intent.putExtra("channel", channel);
+        intent.setPackage(getPackageName()); // Explicitly target our own app
+        sendBroadcast(intent);
+        Log.d("NotificationDebug", "ChatActivity: Broadcast sent for channel: " + channel);
     }
 
     private void acquireWakeLock() {
@@ -1573,8 +1691,12 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     @Override
     protected void onResume() {
         super.onResume();
+        isActivityResumed = true;
+        // Resume updates and refresh UI
+        refreshChat();
         // Always refresh private conversations when resuming, in case PrivateChatActivity added new ones
         loadPrivateConversationList();
+        updateGlobalUnreadCount();
     }
 
     @Override
@@ -1684,12 +1806,16 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     runOnUiThread(() -> {
                         privateConversations.remove(sender);
                         privateConversations.add(0, sender);
-                        privateConversationAdapter.notifyDataSetChanged();
                         
-                        // If this conversation is selected, update display
-                        if (sender.equalsIgnoreCase(selectedPrivateConversation)) {
+                        // If this conversation is selected and we are viewing it, update display
+                        if (sender.equalsIgnoreCase(selectedPrivateConversation) && isViewingPrivateMessages) {
                             loadPrivateConversation(sender);
+                        } else {
+                            // Otherwise, increment unread count
+                            messageStorage.incrementUnreadCount(userNick, sender);
+                            updateGlobalUnreadCount();
                         }
+                        privateConversationAdapter.notifyDataSetChanged();
                     });
                 }
             }
@@ -1727,6 +1853,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             chatMessages.add(new ChatMessage(content, msg.timestamp));
         }
         
+
+        
+        // Reset unread count for this conversation
+        messageStorage.resetUnreadCount(userNick, nick);
+        updateGlobalUnreadCount();
         chatAdapter.notifyDataSetChanged();
         if (chatMessages.size() > 0) {
             chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
@@ -1919,12 +2050,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             channelMessagesMap.put(activeChannel, new ArrayList<>());
             channelAdapter.notifyDataSetChanged();
         }
-        // Inside onCreate or a similar initialization method
-        Button btnZline = findViewById(R.id.btnZline);
-        btnZline.setOnClickListener(v -> {
-            Zline zline = new Zline(this, bot, this);
-            zline.startZlineProcess();
-        });
     }
     public ChatAdapter getChatAdapter() {
         return chatAdapter;
@@ -1932,7 +2057,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     @Override
     protected void onPause() {
         super.onPause();
-        // Do not disconnect from the server on pause
+        isActivityResumed = false;
+        if (bot != null && bot.isConnected()) {
+            // Unregister listeners if needed, or simple pause UI updates
+        }
         // You may want to release locks here if needed but maintain the connection
     }
 

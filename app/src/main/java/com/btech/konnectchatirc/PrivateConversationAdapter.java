@@ -60,6 +60,16 @@ public class PrivateConversationAdapter extends ArrayAdapter<String> {
         ImageButton deleteButton = convertView.findViewById(R.id.deleteConversationButton);
         TextView iconView = convertView.findViewById(R.id.convIcon);
         View contentLayout = convertView.findViewById(R.id.conversationContent);
+        TextView unreadBadge = convertView.findViewById(R.id.unreadBadge);
+        
+        // Unread badge logic
+        int unreadCount = storage.getUnreadCount(userNick, recipient);
+        if (unreadCount > 0) {
+            unreadBadge.setVisibility(View.VISIBLE);
+            unreadBadge.setText(String.valueOf(unreadCount));
+        } else {
+            unreadBadge.setVisibility(View.GONE);
+        }
         
         // Set nickname
         nickTextView.setText(recipient);
