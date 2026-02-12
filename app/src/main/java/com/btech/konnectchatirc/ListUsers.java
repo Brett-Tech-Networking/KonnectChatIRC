@@ -116,9 +116,10 @@ public class ListUsers {
                     convertView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_user_list_item, parent, false);
                 }
 
-                // Get references to the ImageView and TextView in the custom layout
+                // Get references to the ImageView, TextView, and status dot in the custom layout
                 ImageView userIcon = convertView.findViewById(R.id.userIcon);
                 TextView userNick = convertView.findViewById(R.id.userNick);
+                View statusDot = convertView.findViewById(R.id.statusDot);
 
                 // Set the prefix and nickname of the user
                 userNick.setText(currentUser.getPrefix() + " " + currentUser.getNick());
@@ -129,6 +130,16 @@ public class ListUsers {
                     userIcon.setVisibility(View.VISIBLE);  // Ensure the icon is visible if it exists
                 } else {
                     userIcon.setVisibility(View.GONE);  // Hide the icon if there is no drawable
+                }
+
+                // Set status dot color based on away status
+                User user = bot.getUserChannelDao().getUser(currentUser.getNick());
+                if (user != null && user.isAway()) {
+                    // Red for away/offline
+                    statusDot.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFFE53935));
+                } else {
+                    // Green for online
+                    statusDot.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF4CAF50));
                 }
 
                 return convertView;
