@@ -277,6 +277,19 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private static final long TYPING_SEND_INTERVAL = 3000; // 3 seconds debounce for sending
     private Set<String> typingUsers = new HashSet<>();
     private ChannelStorage channelStorage;
+    private boolean rainbowNicks = false; // Rainbow Nicks setting
+    
+    private final Handler rainbowHandler = new Handler(Looper.getMainLooper());
+    private final Runnable rainbowRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (rainbowNicks && chatAdapter != null) {
+                // Notify adapter to rebind views, which triggers RainbowSpan.updateDrawState
+                chatAdapter.notifyDataSetChanged();
+                rainbowHandler.postDelayed(this, 20); // 50 FPS for smooth color animation
+            }
+        }
+    };
 
     public void onUserTyping(String nick, boolean isTyping) {
         runOnUiThread(() -> {
@@ -344,6 +357,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 // Inside onCreate() in ChatActivity
         acquireWakeLock();
         acquireWifiLock();
+        
+        // Start rainbow animation if enabled
+        if (rainbowNicks) {
+             rainbowHandler.post(rainbowRunnable);
+        }
 
         unreadBadge = findViewById(R.id.unreadBadge);
         drawerLayout = findViewById(R.id.drawerLayout);
@@ -369,8 +387,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
         showTimestamps = prefs.getBoolean("show_timestamps", false);
         boolean use24HrFormat = prefs.getBoolean("use_24hr_format", true);
+        rainbowNicks = prefs.getBoolean("rainbow_nicks", false); // Load setting
         chatAdapter.setShowTimestamps(showTimestamps);
         chatAdapter.setUse24HrFormat(use24HrFormat);
+        chatAdapter.setRainbowEnabled(rainbowNicks);
 
         // Initialize PrivateMessageStorage
         messageStorage = new PrivateMessageStorage(prefs);
@@ -1011,14 +1031,22 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         formatCheck.setChecked(chatAdapter.isUse24HrFormat()); // Use getter
         formatCheck.setTextSize(16);
         
+        final CheckBox rainbowCheck = new CheckBox(this);
+        rainbowCheck.setText("Rainbow Nicks");
+        rainbowCheck.setChecked(rainbowNicks);
+        rainbowCheck.setTextSize(16);
+        rainbowCheck.setTextColor(Color.MAGENTA); // Formatting flair for the option itself
+
         layout.addView(timestampCheck);
         layout.addView(formatCheck);
+        layout.addView(rainbowCheck);
 
         builder.setView(layout);
 
         builder.setPositiveButton("Save", (dialog, which) -> {
             boolean newShowTimestamps = timestampCheck.isChecked();
             boolean newUse24HrFormat = formatCheck.isChecked();
+            boolean newRainbowNicks = rainbowCheck.isChecked();
             
             SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
@@ -1036,6 +1064,18 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             if (chatAdapter.isUse24HrFormat() != newUse24HrFormat) {
                 editor.putBoolean("use_24hr_format", newUse24HrFormat);
                 chatAdapter.setUse24HrFormat(newUse24HrFormat);
+                changesMade = true;
+            }
+
+            if (rainbowNicks != newRainbowNicks) {
+                rainbowNicks = newRainbowNicks;
+                editor.putBoolean("rainbow_nicks", rainbowNicks);
+                chatAdapter.setRainbowEnabled(rainbowNicks);
+                if (rainbowNicks) {
+                    rainbowHandler.post(rainbowRunnable); // Start animation
+                } else {
+                    rainbowHandler.removeCallbacks(rainbowRunnable); // Stop animation
+                }
                 changesMade = true;
             }
 
@@ -1691,12 +1731,22 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     @Override
     protected void onResume() {
         super.onResume();
+        if (rainbowNicks) {
+            rainbowHandler.post(rainbowRunnable); // Start animation
+        }
         isActivityResumed = true;
         // Resume updates and refresh UI
         refreshChat();
         // Always refresh private conversations when resuming, in case PrivateChatActivity added new ones
         loadPrivateConversationList();
         updateGlobalUnreadCount();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        rainbowHandler.removeCallbacks(rainbowRunnable); // Stop animation to save battery
+        isActivityResumed = false;
     }
 
     @Override
@@ -2054,15 +2104,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     public ChatAdapter getChatAdapter() {
         return chatAdapter;
     }
-    @Override
-    protected void onPause() {
-        super.onPause();
-        isActivityResumed = false;
-        if (bot != null && bot.isConnected()) {
-            // Unregister listeners if needed, or simple pause UI updates
-        }
-        // You may want to release locks here if needed but maintain the connection
-    }
+
 
     private void initializeMentionPopup() {
         // Inflate the suggestion list layout

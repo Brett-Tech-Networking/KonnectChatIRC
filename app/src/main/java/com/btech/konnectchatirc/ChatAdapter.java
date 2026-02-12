@@ -120,6 +120,13 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return use24HrFormat;
     }
 
+    private boolean isRainbowEnabled = false;
+
+    public void setRainbowEnabled(boolean enabled) {
+        this.isRainbowEnabled = enabled;
+        notifyDataSetChanged();
+    }
+
     public class TextViewHolder extends RecyclerView.ViewHolder {
         TextView messageTextView;
         TextView timestampTextView;
@@ -177,24 +184,28 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 String nickDisplay = prefix.isEmpty() ? nickOnly : prefix + " " + nickOnly;
                 SpannableStringBuilder nickBuilder = new SpannableStringBuilder(nickDisplay + ": ");
 
-                // Apply Colors based on rank string (fallback-safe)
-                int rankColor = Color.WHITE;
-                if (prefix.contains("~")) {
-                    rankColor = Color.RED; // Standard Red
-                } else if (prefix.contains("&")) {
-                    rankColor = Color.parseColor("#FF9800"); // Orange
-                } else if (prefix.contains("@")) {
-                    rankColor = Color.parseColor("#2196F3"); // Blue
-                } else if (prefix.contains("%")) {
-                    rankColor = Color.parseColor("#FF9800"); // Orange
-                } else if (prefix.contains("+")) {
-                    rankColor = Color.parseColor("#4CAF50"); // Green
-                } else if (user != null && user.isIrcop()) {
-                    rankColor = Color.RED; // Red for IRCOp
+                if (isRainbowEnabled) {
+                     nickBuilder.setSpan(new RainbowSpan(), 0, nickBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                } else {
+                    // Apply Colors based on rank string (fallback-safe)
+                    int rankColor = Color.WHITE;
+                    if (prefix.contains("~")) {
+                        rankColor = Color.RED; // Standard Red
+                    } else if (prefix.contains("&")) {
+                        rankColor = Color.parseColor("#FF9800"); // Orange
+                    } else if (prefix.contains("@")) {
+                        rankColor = Color.parseColor("#2196F3"); // Blue
+                    } else if (prefix.contains("%")) {
+                        rankColor = Color.parseColor("#FF9800"); // Orange
+                    } else if (prefix.contains("+")) {
+                        rankColor = Color.parseColor("#4CAF50"); // Green
+                    } else if (user != null && user.isIrcop()) {
+                        rankColor = Color.RED; // Red for IRCOp
+                    }
+                    
+                    ForegroundColorSpan rankSpan = new ForegroundColorSpan(rankColor);
+                    nickBuilder.setSpan(rankSpan, 0, nickBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
-                
-                ForegroundColorSpan rankSpan = new ForegroundColorSpan(rankColor);
-                nickBuilder.setSpan(rankSpan, 0, nickBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 finalMessageBuilder.append(nickBuilder);
 
                 int colonIndex = message.indexOf(":");
@@ -430,5 +441,45 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public interface OnChannelClickListener {
         void onChannelClick(ChannelItem item);
         void onLeaveChannelClick(ChannelItem item);
+    }
+    
+    public static class RainbowSpan extends android.text.style.CharacterStyle implements android.text.style.UpdateAppearance {
+        private final int[] colors = {
+            Color.RED,           // Red
+            Color.rgb(255, 127, 0),  // Orange
+            Color.YELLOW,        // Yellow
+            Color.GREEN,         // Green
+            Color.CYAN,          // Cyan
+            Color.BLUE,          // Blue
+            Color.rgb(148, 0, 211),  // Purple
+            Color.MAGENTA,       // Magenta
+            Color.RED            // Back to Red for smooth loop
+        };
+
+        @Override
+        public void updateDrawState(TextPaint tp) {
+            // Measure the text width for dynamic gradient sizing
+            float textWidth = tp.measureText(tp.toString());
+            if (textWidth == 0) textWidth = 300; // Fallback if measurement fails
+            
+            // Create a gradient that spans wider than the text
+            float gradientWidth = textWidth * 2;
+            android.graphics.Shader shader = new android.graphics.LinearGradient(
+                    0, 0, gradientWidth, 0,
+                    colors,
+                    null,
+                    android.graphics.Shader.TileMode.MIRROR
+            );
+
+            // Animate the gradient moving left to right
+            android.graphics.Matrix matrix = new android.graphics.Matrix();
+            long time = System.currentTimeMillis();
+            // Complete cycle every 3 seconds, moving left to right
+            float translate = (time % 3000) / 3000f * gradientWidth;
+            matrix.setTranslate(translate, 0);
+            shader.setLocalMatrix(matrix);
+
+            tp.setShader(shader);
+        }
     }
 }
