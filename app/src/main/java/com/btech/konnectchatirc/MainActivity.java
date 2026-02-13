@@ -143,11 +143,40 @@ public class MainActivity extends AppCompatActivity {
         channelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         channelSpinner.setAdapter(channelAdapter);
 
+        // Initialize Remember Me checkbox
+        CheckBox rememberMeCheckBox = findViewById(R.id.rememberMeCheckBox);
+        
+        // Load saved "Remember Me" state and credentials
+        boolean rememberMe = sharedPreferences.getBoolean("remember_me", false);
+        if (rememberMe) {
+            rememberMeCheckBox.setChecked(true);
+            nickCheckBox.setChecked(true); // Reveal fields
+            String savedNick = sharedPreferences.getString("saved_nick", "");
+            String savedPass = sharedPreferences.getString("saved_pass", "");
+            nickEditText.setText(savedNick);
+            passwordEditText.setText(savedPass);
+            nickPasswordLayout.setVisibility(View.VISIBLE);
+        }
+
         Button joinButton = findViewById(R.id.joinButton);
         joinButton.setOnClickListener(view -> {
             String selectedChannel = channelSpinner.getSelectedItem().toString();
             String selectedServer = serverSpinner.getSelectedItem().toString();
             ServerItem selectedServerItem = (ServerItem) serverSpinner.getSelectedItem();
+            
+            // Handle Remember Me Logic
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            if (rememberMeCheckBox.isChecked()) {
+                editor.putBoolean("remember_me", true);
+                editor.putString("saved_nick", nickEditText.getText().toString());
+                editor.putString("saved_pass", passwordEditText.getText().toString());
+            } else {
+                editor.putBoolean("remember_me", false);
+                editor.remove("saved_nick");
+                editor.remove("saved_pass");
+            }
+            editor.apply();
+
             Intent intent = new Intent(MainActivity.this, ChatActivity.class);
 
             // Pass the desired nick if the checkbox is checked, regardless of the password
@@ -159,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
                     intent.putExtra("DESIRED_PASSWORD", passwordEditText.getText().toString().trim());
                 }
             }
-
+            
             intent.putExtra("SELECTED_CHANNEL", selectedChannel);
             intent.putExtra("SELECTED_SERVER", selectedServer);
             startActivity(intent);

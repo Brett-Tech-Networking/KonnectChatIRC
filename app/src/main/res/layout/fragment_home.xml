@@ -1,117 +1,175 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="@color/black"
-    android:padding="16dp">
+    android:fillViewport="true"
+    android:background="@drawable/bg_main_gradient">
 
-    <ImageView
-        android:id="@+id/konnectchattrans"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/konnectchattrans"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="8dp"
-        android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
-        android:scaleX=".7"
-        android:scaleY=".7"/>
-
-    <TextView
-        android:id="@+id/titleTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Konnect Chat IRC"
-        android:textColor="@color/white"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="330dp"/>
-
-    <!-- Checkbox for desired nick -->
-    <CheckBox
-        android:id="@+id/nickCheckBox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="I have a desired nick"
-        android:textColor="@color/white"
-        android:layout_below="@id/titleTextView"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"/>
-
-    <!-- LinearLayout to arrange nick and password fields side by side -->
-    <LinearLayout
-        android:id="@+id/nickPasswordLayout"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/nickCheckBox"
-        android:layout_centerHorizontal="true"
-        android:visibility="gone"
-        android:orientation="horizontal"
-        android:layout_marginTop="10dp">
+        android:padding="24dp">
 
-        <!-- Textbox for desired nick -->
-        <EditText
-            android:id="@+id/nickEditText"
-            android:layout_width="0dp"
+        <!-- Logo and Title centered at the top area -->
+        <LinearLayout
+            android:id="@+id/headerLayout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Enter desired nick"
-            android:textColor="@color/white"
-            android:background="@drawable/edit_text_border"
-            android:textColorHint="#808080" />
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginBottom="24dp">
 
-        <!-- Password EditText -->
-        <EditText
-            android:id="@+id/passwordEditText"
-            android:layout_width="0dp"
+            <ImageView
+                android:id="@+id/konnectchattrans"
+                android:layout_width="160dp"
+                android:layout_height="160dp"
+                android:src="@drawable/konnectchattrans"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter" />
+
+            <TextView
+                android:id="@+id/titleTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Konnect Chat IRC"
+                android:textColor="@android:color/white"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:layout_marginTop="8dp"
+                android:shadowColor="#000000"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="4"/>
+        </LinearLayout>
+
+        <!-- Login Card -->
+        <LinearLayout
+            android:id="@+id/loginCard"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Password"
-            android:inputType="textPassword"
-            android:background="@drawable/edit_text_border"
-            android:textColor="@android:color/white"
-            android:layout_marginStart="8dp" />
-    </LinearLayout>
+            android:layout_below="@id/headerLayout"
+            android:background="@drawable/bg_login_card"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:layout_centerHorizontal="true">
 
-    <!-- Spinner for server selection -->
-    <Spinner
-        android:id="@+id/serverSpinner"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/edit_text_border"
-        android:layout_below="@id/nickPasswordLayout"
-        android:layout_centerHorizontal="true"
-        android:padding="4dp"
-        android:layout_marginTop="20dp"/>
+            <!-- Checkbox for desired nick -->
+            <CheckBox
+                android:id="@+id/nickCheckBox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="I have a desired nick"
+                android:textColor="@android:color/white"
+                android:buttonTint="@android:color/white"
+                android:layout_marginBottom="12dp"/>
 
-    <!-- Dropdown for channel selection -->
-    <Spinner
-        android:id="@+id/channelSpinner"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/serverSpinner"
-        android:background="@drawable/edit_text_border"
-        android:layout_centerHorizontal="true"
-        android:padding="4dp"
-        android:layout_marginTop="20dp"/>
+            <!-- Nick/Pass Layout -->
+            <LinearLayout
+                android:id="@+id/nickPasswordLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:layout_marginBottom="16dp">
 
-    <Button
-        android:id="@+id/joinButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Join"
-        android:layout_below="@id/channelSpinner"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"/>
+                <EditText
+                    android:id="@+id/nickEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:hint="Nickname"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="#B0B0B0"
+                    android:background="@drawable/bg_edit_text"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:singleLine="true"
+                    android:layout_marginBottom="12dp"/>
 
-    <TextView
-        android:id="@+id/Credits"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Developed by Brett @ ThePlaceToChat"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="0dp"/>
-</RelativeLayout>
+                <EditText
+                    android:id="@+id/passwordEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:hint="Password (Optional)"
+                    android:inputType="textPassword"
+                    android:textColor="@android:color/white"
+                    android:textColorHint="#B0B0B0"
+                    android:background="@drawable/bg_edit_text"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:singleLine="true"/>
+            </LinearLayout>
+
+            <!-- Server Spinner -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Select Server"
+                android:textColor="#B0B0B0"
+                android:textSize="12sp"
+                android:layout_marginStart="4dp"
+                android:layout_marginBottom="4dp"/>
+
+            <Spinner
+                android:id="@+id/serverSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@drawable/bg_edit_text"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Channel Spinner -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Select Channel"
+                android:textColor="#B0B0B0"
+                android:textSize="12sp"
+                android:layout_marginStart="4dp"
+                android:layout_marginBottom="4dp"/>
+
+            <Spinner
+                android:id="@+id/channelSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@drawable/bg_edit_text"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Remember Me Checkbox -->
+            <CheckBox
+                android:id="@+id/rememberMeCheckBox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Remember me"
+                android:textColor="@android:color/white"
+                android:buttonTint="@android:color/white"
+                android:layout_marginBottom="16dp"
+                android:checked="false"/>
+
+            <!-- Join Button -->
+            <Button
+                android:id="@+id/joinButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="JOIN CHAT"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#0F2027"
+                android:background="@drawable/bg_button_gradient"
+                app:backgroundTint="@null"/>
+
+        </LinearLayout>
+
+        <!-- Credits -->
+        <TextView
+            android:id="@+id/Credits"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Developed by Brett @ ThePlaceToChat"
+            android:textColor="#80FFFFFF"
+            android:textSize="12sp"
+            android:layout_below="@id/loginCard"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="16dp"/>
+
+    </RelativeLayout>
+</ScrollView>
