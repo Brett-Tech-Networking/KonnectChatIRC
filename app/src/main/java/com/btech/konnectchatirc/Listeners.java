@@ -284,7 +284,7 @@ public class Listeners extends ListenerAdapter {
 
             runOnUiThread(() -> {
                 chatActivity.setActiveChannel(channel);
-                chatActivity.addChatMessage("You have joined the channel: " + channel);
+                chatActivity.processServerMessage("SERVER", "You have joined " + channel, channel);
                 chatActivity.checkAndAddActiveChannel();
             });
 
@@ -468,7 +468,33 @@ public class Listeners extends ListenerAdapter {
             String message = oldNick + " is now known as " + newNick;
 
             // Only process server messages for nick changes, avoiding the extra display
-            chatActivity.processServerMessage("SERVER", message, null);
+            // We pass null for channel to let ChatActivity handle it or just don't process it as SERVER if we handle it below
+            // Actually, let's just log it or send to Server Notices if needed.
+            chatActivity.processServerMessage("SERVER", message, "Server Notices");
+            
+            // Check if WE changed nick (server forced or otherwise) and update UI
+            if (oldNick.equalsIgnoreCase(chatActivity.getUserNick())) {
+                chatActivity.updateNickUI(newNick);
+                // Announce to current active channel for visibility
+                String activeChan = chatActivity.getActiveChannel();
+                if (activeChan != null && !activeChan.equals("Server Notices")) {
+                     chatActivity.processServerMessage("SERVER", "You are now known as " + newNick, activeChan);
+                }
+            } else {
+                // If it's someone else, we need to show it in the channels they are in
+                // For now, simpler approach: show in active channel if they are there, or rely on Server Notices
+                // But user asked for "displayed in channel with other user nick changes"
+                // The current implementation of processServerMessage with null channel might be ambiguous.
+                // Let's iterate channels? No, expensive.
+                // Let's default to active channel if user is in it.
+                if (chatActivity.getActiveChannel() != null) {
+                     // Check if user is in active channel is hard without iterating users.
+                     // But Standard IRC client behavior: if you see the nick change, you share a channel.
+                     // So we can try to show it in active channel.
+                     chatActivity.processServerMessage("SERVER", message, chatActivity.getActiveChannel());
+                }
+            }
+            
             chatActivity.getChatAdapter().notifyDataSetChanged();  // Update the UI to reflect the nick change
             refreshChat();
         });

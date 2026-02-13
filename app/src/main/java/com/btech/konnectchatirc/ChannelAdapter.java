@@ -55,15 +55,20 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.ChannelV
 
         holder.itemView.setOnClickListener(v -> listener.onChannelClick(channel));
 
-        holder.leaveChannelButton.setOnClickListener(v -> {
-            listener.onLeaveChannelClick(channel);
+        if (channel.getChannelName().equalsIgnoreCase("Server Notices")) {
+            holder.leaveChannelButton.setVisibility(View.GONE);
+        } else {
+            holder.leaveChannelButton.setVisibility(View.VISIBLE);
+            holder.leaveChannelButton.setOnClickListener(v -> {
+                listener.onLeaveChannelClick(channel);
 
-            if (position >= 0 && position < channelList.size()) {
-                channelList.remove(position);
-                notifyItemRemoved(position);
-                notifyItemRangeChanged(position, channelList.size());
-            }
-        });
+                if (position >= 0 && position < channelList.size()) {
+                    channelList.remove(position);
+                    notifyItemRemoved(position);
+                    notifyItemRangeChanged(position, channelList.size());
+                }
+            });
+        }
     }
         @Override
     public int getItemCount() {

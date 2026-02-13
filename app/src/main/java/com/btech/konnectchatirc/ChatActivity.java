@@ -1220,9 +1220,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 if (isNetworkAvailable()) {
                     if (bot.isConnected()) {
                         bot.sendRaw().rawLine("NICK " + newNick);
+                        bot.sendRaw().rawLine("NICK " + newNick);
                         runOnUiThread(() -> {
-                            updateLocalNick(newNick);
-                            updateCurrentNick(newNick);
                             chatEditText.setText("");
                         });
                     } else {
@@ -1240,6 +1239,17 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
     public void updateLocalNick(String newNick) {
         userNick = newNick;
+    }
+
+    public void updateNickUI(String newNick) {
+        userNick = newNick;
+        if (hoverPanel != null) {
+            Button btnNick = hoverPanel.findViewById(R.id.btnNick);
+            if (btnNick != null) {
+                 btnNick.setText(newNick);
+            }
+        }
+        updateCurrentNick(newNick);
     }
 
     public void joinChannel(String channelName) {
