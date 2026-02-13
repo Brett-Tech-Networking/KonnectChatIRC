@@ -382,9 +382,15 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         // Initialize the RecyclerView for chat messages
         chatRecyclerView = findViewById(R.id.chatRecyclerView);
         chatMessages = new ArrayList<>();
+        // Initialize Server Notices channel
+        ChannelItem serverNotices = new ChannelItem("Server Notices");
+        channelList.add(serverNotices);
+        channelMessagesMap.put("Server Notices", new ArrayList<>());
+        
         chatAdapter = new ChatAdapter((BotProvider) this, chatMessages);  // Pass ChatActivity instance
         
         SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
+
         showTimestamps = prefs.getBoolean("show_timestamps", false);
         boolean use24HrFormat = prefs.getBoolean("use_24hr_format", true);
         rainbowNicks = prefs.getBoolean("rainbow_nicks", false); // Load setting
@@ -1131,6 +1137,15 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         if (channelAdapter != null) {
             channelAdapter.setSelectedChannelName(channel);
         }
+        
+        // Disable input for Server Notices
+        if (channel.equalsIgnoreCase("Server Notices")) {
+            chatEditText.setEnabled(false);
+            chatEditText.setHint("Server Notices (Read-Only)");
+        } else {
+            chatEditText.setEnabled(true);
+            chatEditText.setHint("Message " + channel);
+        }
     }
 
     private void handleCommand(String command) {
@@ -1740,8 +1755,15 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         }
     }
     public void refreshChat() {
-        // this is in listeners
-        Toast.makeText(this, "Refreshing Data", Toast.LENGTH_SHORT).show();
+        runOnUiThread(() -> {
+            if (isViewingPrivateMessages) {
+                if (selectedPrivateConversation != null) {
+                    loadPrivateConversation(selectedPrivateConversation);
+                }
+            } else if (activeChannel != null) {
+                setActiveChannel(activeChannel);
+            }
+        });
     }
 
     @Override

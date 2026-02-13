@@ -46,10 +46,15 @@ public class Listeners extends ListenerAdapter {
 
     @Override
     public void onNotice(NoticeEvent event) {
-        String channel = event.getChannel() != null ? event.getChannel().getName() : "";
+        String channel = event.getChannel() != null ? event.getChannel().getName() : "Server Notices";
         String notice = event.getNotice();
 
-        chatActivity.processServerMessage(event.getUser().getNick(), notice, channel);
+        // Redirect general notices to Server Notices channel
+        if (channel.equals("Server Notices") || event.getChannel() == null) {
+             chatActivity.processServerMessage("SERVER", notice, "Server Notices");
+        } else {
+             chatActivity.processServerMessage(event.getUser() != null ? event.getUser().getNick() : "SERVER", notice, channel);
+        }
         
         // Handle Discord Relay Errors
         if (notice.toLowerCase().contains("privacy settings") || 
@@ -76,14 +81,25 @@ public class Listeners extends ListenerAdapter {
         if (rawMessage.startsWith(":") && rawMessage.contains(" 005 ")) {
             return;
         }
+        
+        // Route Mode changes to the relevant channel if possible, or Server Notices
         if (rawMessage.contains("MODE")) {
-            chatActivity.processServerMessage("SERVER", rawMessage, chatActivity.getActiveChannel());
+             String[] parts = rawMessage.split(" ");
+             if (parts.length > 2 && parts[2].startsWith("#")) {
+                 chatActivity.processServerMessage("SERVER", rawMessage, parts[2]);
+             } else {
+                 chatActivity.processServerMessage("SERVER", rawMessage, "Server Notices");
+             }
+             return; // Stop further processing for MODE
         }
-
+        
+        // Handle Operator status messages
         if (event.getCode() == 381) {
-            chatActivity.processServerMessage("Server", "You are now an IRC Operator", chatActivity.getActiveChannel());
+            chatActivity.processServerMessage("Server", "You are now an IRC Operator", "Server Notices");
+            return;
         } else if (event.getCode() == 491) {
-            chatActivity.processServerMessage("Server", "Failed to become an IRC Operator: " + rawMessage, chatActivity.getActiveChannel());
+            chatActivity.processServerMessage("Server", "Failed to become an IRC Operator: " + rawMessage, "Server Notices");
+            return;
         }
 
         try {
@@ -131,13 +147,13 @@ public class Listeners extends ListenerAdapter {
             return;
         }
 
-        chatActivity.processServerMessage("SERVER", code + ": " + rawMessage, chatActivity.getActiveChannel());
+        chatActivity.processServerMessage("SERVER", code + ": " + rawMessage, "Server Notices");
     }
 
     @Override
     public void onConnect(ConnectEvent event) {
         String serverAddress = event.getBot().getServerHostname();
-        runOnUiThread(() -> chatActivity.addChatMessage("Connected to: " + serverAddress + " a TPTC Client"));
+        runOnUiThread(() -> chatActivity.processServerMessage("SERVER", "Connected to: " + serverAddress + " a TPTC Client", "Server Notices"));
     }
 
     @Override
@@ -441,7 +457,7 @@ public class Listeners extends ListenerAdapter {
 
     @Override
     public void onDisconnect(DisconnectEvent event) {
-        runOnUiThread(() -> chatActivity.addChatMessage("Disconnected from IRC server."));
+        runOnUiThread(() -> chatActivity.processServerMessage("SERVER", "Disconnected from IRC server.", "Server Notices"));
     }
 
     @Override
@@ -487,20 +503,20 @@ public class Listeners extends ListenerAdapter {
     private void handleNickServResponse(String message) {
         Log.d("NickServResponse", "Processing NickServ message: " + message);
 
-        chatActivity.addChatMessage("NickServ: " + message);
+        String targetChannel = "Server Notices";
+
+        chatActivity.processServerMessage("NickServ", message, targetChannel);
 
         if (message.contains("Password accepted")) {
-            chatActivity.addChatMessage("Identification successful.");
+            chatActivity.processServerMessage("NickServ", "Identification successful.", targetChannel);
         } else if (message.contains("Password incorrect")) {
-            chatActivity.addChatMessage("Identification failed: Incorrect password.");
+            chatActivity.processServerMessage("NickServ", "Identification failed: Incorrect password.", targetChannel);
         } else if (message.contains("isn't registered")) {
-            chatActivity.addChatMessage("Identification failed: Nickname isn't registered.");
+            chatActivity.processServerMessage("NickServ", "Identification failed: Nickname isn't registered.", targetChannel);
         } else if (message.contains("You are now logged in as")) {
-            chatActivity.addChatMessage(message);
+             chatActivity.processServerMessage("NickServ", message, targetChannel);
         } else if (message.contains("sets mode: +r")) {
-            chatActivity.addChatMessage("NickServ: Mode +r set, you are now recognized.");
-        } else {
-            chatActivity.addChatMessage("NickServ: " + message);
+            chatActivity.processServerMessage("NickServ", "Mode +r set, you are now recognized.", targetChannel);
         }
     }
 

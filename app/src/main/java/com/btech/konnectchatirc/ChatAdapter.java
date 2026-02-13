@@ -148,7 +148,25 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             // ... (existing Spannable logic) ...
             SpannableStringBuilder finalMessageBuilder = new SpannableStringBuilder();
 
-            if (isServer) {
+            if (isChannelEvent(message)) {
+                // Subtle Grey for Channel Events (Joins, Parts, etc)
+                SpannableStringBuilder eventMessage = new SpannableStringBuilder(message);
+                eventMessage.setSpan(
+                        new ForegroundColorSpan(Color.GRAY),
+                        0,
+                        message.length(),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+                // Make it slightly smaller
+                eventMessage.setSpan(
+                        new android.text.style.RelativeSizeSpan(0.85f),
+                        0,
+                        message.length(),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+                finalMessageBuilder.append(eventMessage);
+            } else if (isServerMessage(message)) {
+                // Keep Green for actual Server Notices (if any remain in channel)
                 SpannableStringBuilder serverMessage = new SpannableStringBuilder(message);
                 serverMessage.setSpan(
                         new ForegroundColorSpan(Color.parseColor("#00FF00")), // Lime color
@@ -365,13 +383,28 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
 
+    private boolean isChannelEvent(String message) {
+        return message.contains("joined the channel") || 
+               message.contains("left the channel") || 
+               message.contains("was kicked") ||
+               message.contains("was banned") ||
+               message.contains("is now known as") ||
+               message.contains("sets mode") ||
+               message.contains("has been voiced") ||
+               message.contains("has been opped") ||
+               message.contains("has been de-voiced") ||
+               message.contains("has been de-opped");
+    }
+
     private boolean isServerMessage(String message) {
-        return message.contains("joined") || message.contains("left") || message.contains("was kicked")
-                || message.contains("was banned") || message.contains("was killed")
-                || message.contains("SERVER") || message.contains("Connected to")
-                || message.contains("was opped") || message.contains("was deopped")
-                || message.contains("was half-operator") || message.contains("connected")
-                || message.contains("owner status");
+        // Only consider it a "Server Message" (Green) if it's NOT a channel event
+        // and has specific server keywords
+        if (isChannelEvent(message)) return false;
+        
+        return message.contains("SERVER") || 
+               message.contains("Connected to") || 
+               message.contains("NickServ") ||
+               message.contains("Topic is");
     }
 
     private String extractNickFromMessage(String message) {
