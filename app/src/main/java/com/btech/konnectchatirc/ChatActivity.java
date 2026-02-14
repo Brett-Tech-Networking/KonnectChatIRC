@@ -349,6 +349,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
     private void sendTyping(boolean active) {
         if (bot != null && bot.isConnected() && activeChannel != null) {
+            // NEVER send typing notifications to Server Notices
+            if (activeChannel.equalsIgnoreCase("Server Notices")) {
+                return;
+            }
+            
             long now = System.currentTimeMillis();
             if (active) {
                 if (now - lastTypingSent > TYPING_SEND_INTERVAL) {
@@ -1490,7 +1495,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 if (bot.isConnected()) {
                     bot.sendIRC().message(channel, message);
                     storeMessageForChannel(channel, message);
-                    runOnUiThread(() -> addChatMessage(message));
+                    runOnUiThread(() -> {
+                         addChatMessage(message);
+                         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                    });
                 } else {
                     runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Not connected to IRC server.", Toast.LENGTH_SHORT).show());
                 }
