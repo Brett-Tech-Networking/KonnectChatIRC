@@ -598,6 +598,9 @@ public class Listeners extends ListenerAdapter {
         Log.d("Listeners", "Sending private_message broadcast: " + sender + ": " + message);
         chatActivity.sendBroadcast(intent);
         
+        // Trigger system notification (this handles background/foreground logic internally)
+        chatActivity.runOnUiThread(() -> chatActivity.showPrivateMessageNotification(sender, message));
+        
         Log.d("Listeners", "Private message from " + sender + ": " + message);
     }
 

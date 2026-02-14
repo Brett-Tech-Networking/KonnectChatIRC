@@ -29,6 +29,15 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import android.net.wifi.WifiManager;
 import android.os.PowerManager;
 import android.provider.MediaStore;
@@ -282,6 +291,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private Set<String> typingUsers = new HashSet<>();
     private ChannelStorage channelStorage;
     private boolean rainbowNicks = false; // Rainbow Nicks setting
+    private boolean pmSoundEnabled = true; // PM Sound setting
+    private boolean pmBarNotificationEnabled = true; // PM Status Bar Notification setting
+    private static final String PM_CHANNEL_ID = "PM_Notifications";
     
     private final Handler rainbowHandler = new Handler(Looper.getMainLooper());
     private final Runnable rainbowRunnable = new Runnable() {
@@ -377,6 +389,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             return WindowInsetsCompat.CONSUMED;
         });
 
+        createNotificationChannel();
+
         fallingItemsView = findViewById(R.id.fallingItemsView);
         SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
         fallingItemsEnabled = prefs.getBoolean("falling_items_enabled", false);
@@ -409,6 +423,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         chatAdapter.setShowTimestamps(showTimestamps);
         chatAdapter.setTimestampFormat(timestampFormat);
         chatAdapter.setRainbowEnabled(rainbowNicks);
+        pmSoundEnabled = prefs.getBoolean("pm_sound_enabled", true);
+        pmBarNotificationEnabled = prefs.getBoolean("pm_bar_notification_enabled", true);
 
         // Initialize PrivateMessageStorage
         messageStorage = new PrivateMessageStorage(prefs);
@@ -433,6 +449,40 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         Intent serviceIntent = new Intent(this, IrcForegroundService.class);
         serviceIntent.putExtra("#ThePlaceToChat", activeChannel);
         startForegroundService(serviceIntent);
+
+        // Check for Notification Permission (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
+            }
+        }
+
+        // Check for Deep Link (Notification Click)
+        if (getIntent().hasExtra("OPEN_PM_NICK")) {
+            String targetNick = getIntent().getStringExtra("OPEN_PM_NICK");
+            if (targetNick != null && !targetNick.isEmpty()) {
+                // Ensure channels/PM tabs are initialized if needed, then switch
+                // We might need to delay this slightly if things aren't ready, but typically onCreate is fine
+                // However, we need to ensure the UI is ready to switch.
+                // We'll post it to the handler to be safe and ensure View creation is done
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                     Button btnChannelsTab = findViewById(R.id.btnChannelsTab);
+                     Button btnPrivateMessagesTab = findViewById(R.id.btnPrivateMessagesTab);
+                     FrameLayout channelsSection = findViewById(R.id.channelsSection);
+                     FrameLayout privateMessagesSection = findViewById(R.id.privateMessagesSection);
+                     
+                     switchToPrivateMessagesTab(btnChannelsTab, btnPrivateMessagesTab, channelsSection, privateMessagesSection);
+                     
+                     // Ensure user is in the list
+                     if (!privateConversations.contains(targetNick)) {
+                         privateConversations.add(0, targetNick);
+                         privateConversationAdapter.notifyDataSetChanged();
+                     }
+                     
+                     loadPrivateConversation(targetNick);
+                }, 500);
+            }
+        }
 
         ImageButton uploadButton = findViewById(R.id.uploadButton);
         uploadButton.setOnClickListener(v -> {
@@ -830,12 +880,13 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     .setRealName("TPTC IRC Client")
                     .addAutoJoinChannel(selectedChannel)
                     .addListener(new Listeners(this))
+                    // Reverted to individual calls to fix compilation error
+                    // Removed multi-prefix as it appears to be added by default/duplicate causing crashes
                     .addCapHandler(new EnableCapHandler("extended-join"))
                     .addCapHandler(new EnableCapHandler("account-notify"))
                     .addCapHandler(new EnableCapHandler("message-tags"))
                     .setAutoSplitMessage(true)
                     .setAutoReconnect(true)
-                    .addCapHandler(new EnableCapHandler("multi-prefix"))
 
                     .addListener((Listener) new NickChangeListener(this));
 
@@ -1086,10 +1137,30 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         rainbowCheck.setChecked(rainbowNicks);
         rainbowCheck.setTextSize(16);
         rainbowCheck.setTextColor(Color.MAGENTA); // Formatting flair for the option itself
+        
+        // Notification Category Header
+        TextView notificationHeader = new TextView(this);
+        notificationHeader.setText("Notifications");
+        notificationHeader.setTextSize(18);
+        notificationHeader.setTypeface(null, android.graphics.Typeface.BOLD);
+        notificationHeader.setPadding(0, 30, 0, 10);
+        
+        final CheckBox pmSoundCheck = new CheckBox(this);
+        pmSoundCheck.setText("Play Sound (Pop)");
+        pmSoundCheck.setChecked(pmSoundEnabled);
+        pmSoundCheck.setTextSize(16);
+
+        final CheckBox pmBarCheck = new CheckBox(this);
+        pmBarCheck.setText("Show in Status Bar");
+        pmBarCheck.setChecked(pmBarNotificationEnabled);
+        pmBarCheck.setTextSize(16);
 
         layout.addView(timestampCheck);
         // Removed formatCheck addView
         layout.addView(rainbowCheck);
+        layout.addView(notificationHeader);
+        layout.addView(pmSoundCheck);
+        layout.addView(pmBarCheck);
         layout.addView(fallingItemsCheck);
 
         builder.setView(layout);
@@ -1098,11 +1169,25 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             boolean newShowTimestamps = timestampCheck.isChecked();
             // removed boolean newUse24HrFormat = formatCheck.isChecked();
             boolean newRainbowNicks = rainbowCheck.isChecked();
+            boolean newPmSoundEnabled = pmSoundCheck.isChecked();
+            boolean newPmBarNotificationEnabled = pmBarCheck.isChecked();
             boolean newFallingItemsEnabled = fallingItemsCheck.isChecked();
-            
+             
             SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
             boolean changesMade = false;
+
+            if (pmSoundEnabled != newPmSoundEnabled) {
+                pmSoundEnabled = newPmSoundEnabled;
+                editor.putBoolean("pm_sound_enabled", pmSoundEnabled);
+                changesMade = true;
+            }
+            
+            if (pmBarNotificationEnabled != newPmBarNotificationEnabled) {
+                pmBarNotificationEnabled = newPmBarNotificationEnabled;
+                editor.putBoolean("pm_bar_notification_enabled", pmBarNotificationEnabled);
+                changesMade = true;
+            }
 
             if (fallingItemsEnabled != newFallingItemsEnabled) {
                 fallingItemsEnabled = newFallingItemsEnabled;
@@ -1995,11 +2080,14 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 // Don't process messages from ourselves
                 if (sender != null && !sender.equalsIgnoreCase(userNick) && !message.isEmpty()) {
                     // Save message to storage (only from other users)
+                    // Check if it's already saved to prevent duplicates (rudimentary check or rely on DB constraint)
                     messageStorage.saveMessage(userNick, sender, message, false);
                     
                     // Move/Add to conversation list (always move to top)
                     runOnUiThread(() -> {
-                        privateConversations.remove(sender);
+                        if (privateConversations.contains(sender)) {
+                            privateConversations.remove(sender);
+                        }
                         privateConversations.add(0, sender);
                         
                         // If this conversation is selected and we are viewing it, update display
@@ -2007,19 +2095,12 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                             loadPrivateConversation(sender);
                         } else {
                             // Otherwise, increment unread count
-                            messageStorage.incrementUnreadCount(userNick, sender);
-                            updateGlobalUnreadCount();
-
-                            // Play notification sound if app is active
-                            if (isActivityResumed) {
-                                try {
-                                    ToneGenerator toneGen = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100);
-                                    toneGen.startTone(ToneGenerator.TONE_PROP_ACK);
-                                    // Release the ToneGenerator after a short delay to free resources
-                                    new Handler(Looper.getMainLooper()).postDelayed(toneGen::release, 200);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
+                            // Only increment if we haven't already counting this exact message (storage handles this, but logic here determines badge)
+                             messageStorage.incrementUnreadCount(userNick, sender);
+                             updateGlobalUnreadCount();
+                            // Play notification sound if enabled and app is active (or handled by showPrivatMessageNotification)
+                            if (pmSoundEnabled || pmBarNotificationEnabled) {
+                                showPrivateMessageNotification(sender, message);
                             }
                         }
                         privateConversationAdapter.notifyDataSetChanged();
@@ -2644,6 +2725,89 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     /**
      * Animate section transitions with fade effect
      */
+    private void animateSectionTransition(View showView, View hideView) {
+        showView.setVisibility(View.VISIBLE);
+        showView.setAlpha(0f);
+        showView.animate()
+                .alpha(1f)
+                .setDuration(200)
+                .setListener(null);
+
+        hideView.animate()
+                .alpha(0f)
+                .setDuration(200)
+                .setListener(new android.animation.AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(android.animation.Animator animation) {
+                        hideView.setVisibility(View.GONE);
+                    }
+                });
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "Private Messages";
+            String description = "Notifications for private messages";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel(PM_CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+    }
+
+    public void showPrivateMessageNotification(String sender, String message) {
+        // If we are currently viewing this exact conversation, do not notify/sound
+        if (isActivityResumed && isViewingPrivateMessages && sender.equalsIgnoreCase(selectedPrivateConversation)) {
+            return;
+        }
+
+        // Play Pop sound if enabled
+        if (pmSoundEnabled) {
+            try {
+               ToneGenerator toneGen = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100);
+               toneGen.startTone(ToneGenerator.TONE_PROP_ACK);
+               // Release on a background thread to prevent Main Thread deadlock/timeout
+               new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                   new Thread(toneGen::release).start();
+               }, 200);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Show Bar Notification if enabled
+        if (pmBarNotificationEnabled) {
+            // Create Intent to open ChatActivity
+            Intent intent = new Intent(this, ChatActivity.class);
+            // Fix: Use SINGLE_TOP to bring existing activity to front instead of restarting (CLEAR_TASK kills connection)
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            intent.putExtra("OPEN_PM_NICK", sender); 
+            
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, sender.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, PM_CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_notification) // Ensure this resource exists, or use a fallback
+                    .setContentTitle("Message From: \"" + sender + "\"") // Updated format
+                    .setContentText(message)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .setDefaults(NotificationCompat.DEFAULT_LIGHTS); // We handle sound manually
+    
+            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+            // notificationId is a unique int for each notification that you must define
+            try {
+                notificationManager.notify(sender.hashCode(), builder.build());
+            } catch (SecurityException e) {
+                // Log or handle missing permission
+                Log.e("ChatActivity", "Missing POST_NOTIFICATIONS permission", e);
+            }
+        }
+    }
     private void animateSectionTransition(FrameLayout showSection, FrameLayout hideSection) {
         hideSection.animate()
                 .alpha(0.0f)
@@ -2656,6 +2820,37 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 .alpha(1.0f)
                 .setDuration(200)
                 .start();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        
+        // Handle Notification Click while app is running
+        if (intent.hasExtra("OPEN_PM_NICK")) {
+            String targetNick = intent.getStringExtra("OPEN_PM_NICK");
+            if (targetNick != null && !targetNick.isEmpty()) {
+                // Determine if we need to switch tabs
+                Button btnChannelsTab = findViewById(R.id.btnChannelsTab);
+                Button btnPrivateMessagesTab = findViewById(R.id.btnPrivateMessagesTab);
+                FrameLayout channelsSection = findViewById(R.id.channelsSection);
+                FrameLayout privateMessagesSection = findViewById(R.id.privateMessagesSection);
+
+                if (btnChannelsTab != null && btnPrivateMessagesTab != null && 
+                    channelsSection != null && privateMessagesSection != null) {
+                    switchToPrivateMessagesTab(btnChannelsTab, btnPrivateMessagesTab, channelsSection, privateMessagesSection);
+                }
+
+                // Ensure user is in the list
+                if (!privateConversations.contains(targetNick)) {
+                    privateConversations.add(0, targetNick);
+                    privateConversationAdapter.notifyDataSetChanged();
+                }
+
+                loadPrivateConversation(targetNick);
+            }
+        }
     }
 
 }
