@@ -135,12 +135,14 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         TextView messageTextView;
         TextView timestampTextView;
         ImageView messageImageView;
+        View messageDivider;
 
         public TextViewHolder(@NonNull View itemView) {
             super(itemView);
             messageTextView = itemView.findViewById(R.id.messageTextView);
             timestampTextView = itemView.findViewById(R.id.timestampTextView);
             messageImageView = itemView.findViewById(R.id.messageImageView);
+            messageDivider = itemView.findViewById(R.id.messageDivider);
         }
 
         public void bind(ChatMessage chatMessage) {
@@ -169,11 +171,21 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
                 );
                 finalMessageBuilder.append(eventMessage);
-            } else if (isServerMessage(message)) {
-                // Keep Green for actual Server Notices (if any remain in channel)
+            } else if (isServerNoticeChannel()) {
+                // Server Notices Channel: Gray Text, no special green coloring
                 SpannableStringBuilder serverMessage = new SpannableStringBuilder(message);
                 serverMessage.setSpan(
-                        new ForegroundColorSpan(Color.parseColor("#00FF00")), // Lime color
+                        new ForegroundColorSpan(Color.LTGRAY),
+                        0,
+                        message.length(),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+                finalMessageBuilder.append(serverMessage);
+            } else if (isServerMessage(message)) {
+                // User requested all server notices in channel to be Gray
+                SpannableStringBuilder serverMessage = new SpannableStringBuilder(message);
+                serverMessage.setSpan(
+                        new ForegroundColorSpan(Color.GRAY), 
                         0,
                         message.length(),
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
@@ -328,6 +340,13 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 Log.e("ChatAdapter", "Error binding message", e);
                 messageTextView.setText("Error: " + e.getMessage());
             }
+
+            // Divider Logic for Server Notices Channel
+            if (isServerNoticeChannel()) {
+                messageDivider.setVisibility(View.VISIBLE);
+            } else {
+                messageDivider.setVisibility(View.GONE);
+            }
         }
     }
 
@@ -335,12 +354,14 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         TextView messageTextView;
         TextView timestampTextView;
         ImageView messageImageView;
+        View messageDivider;
 
         public SpannableMessageViewHolder(@NonNull View itemView) {
             super(itemView);
             messageTextView = itemView.findViewById(R.id.spannableMessageTextView);
             timestampTextView = itemView.findViewById(R.id.timestampTextView);
             messageImageView = itemView.findViewById(R.id.messageImageView);
+            messageDivider = itemView.findViewById(R.id.messageDivider);
         }
 
         public void bind(ChatMessage chatMessage) {
@@ -377,6 +398,13 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     messageImageView.setVisibility(View.GONE);
                 }
             }
+            
+            // Divider Logic for Server Notices Channel
+            if (isServerNoticeChannel()) {
+                messageDivider.setVisibility(View.VISIBLE);
+            } else {
+                messageDivider.setVisibility(View.GONE);
+            }
         }
     }
 
@@ -397,7 +425,8 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                message.contains("has been opped") ||
                message.contains("has been de-voiced") ||
                message.contains("has been de-opped") ||
-               message.contains("had mode");
+               message.contains("had mode") ||
+               message.contains("You have joined");
     }
 
     private boolean isServerMessage(String message) {
@@ -446,6 +475,10 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             return bot.getUserChannelDao().getChannel(botProvider.getActiveChannel());
         }
         return null;
+    }
+    
+    private boolean isServerNoticeChannel() {
+        return botProvider.getActiveChannel() != null && botProvider.getActiveChannel().equalsIgnoreCase("Server Notices");
     }
 
     private String getUserPrefix(User user, Channel channel) {

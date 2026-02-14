@@ -39,4 +39,12 @@
         android:visibility="gone"
         android:scaleType="fitStart" />
 
+    <View
+        android:id="@+id/messageDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#33AAAAAA"
+        android:visibility="gone"
+        android:layout_marginTop="4dp" />
+
 </LinearLayout>
