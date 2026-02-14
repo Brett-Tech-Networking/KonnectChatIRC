@@ -1,5 +1,6 @@
 <!-- operator_panel.xml -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/operatorPanel"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -28,7 +29,7 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:layout_centerInParent="true"
-                android:letterSpacing="0.1"/>
+                android:letterSpacing="0.1" />
 
             <ImageButton
                 android:id="@+id/btnOperatorBack"
@@ -36,10 +37,10 @@
                 android:layout_height="32dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@android:drawable/ic_menu_revert"
-                android:tint="@color/white"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
-                android:contentDescription="Back"/>
+                android:contentDescription="Back"
+                app:tint="@color/white" />
         </RelativeLayout>
 
         <ScrollView
@@ -70,7 +71,7 @@
 
                     <Button
                         android:id="@+id/btnOperLogin"
-                        style="@style/CustomButtonStyle"
+                        style="@style/OperatorPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -79,7 +80,7 @@
 
                     <Button
                         android:id="@+id/btnOSLogin"
-                        style="@style/CustomButtonStyle"
+                        style="@style/OperatorPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -112,7 +113,7 @@
 
                     <Button
                         android:id="@+id/btnKill"
-                        style="@style/CustomButtonStyle"
+                        style="@style/OperatorPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -121,7 +122,7 @@
 
                     <Button
                         android:id="@+id/btnZline"
-                        style="@style/CustomButtonStyle"
+                        style="@style/OperatorPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -137,7 +138,7 @@
 
                     <Button
                         android:id="@+id/btnShun"
-                        style="@style/CustomButtonStyle"
+                        style="@style/OperatorPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -146,7 +147,7 @@
 
                     <Button
                         android:id="@+id/btnDefcon"
-                        style="@style/CustomButtonStyle"
+                        style="@style/OperatorPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -179,7 +180,7 @@
 
                     <Button
                         android:id="@+id/btnSajoin"
-                        style="@style/CustomButtonStyle"
+                        style="@style/OperatorPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -188,7 +189,7 @@
 
                     <Button
                         android:id="@+id/btnSapart"
-                        style="@style/CustomButtonStyle"
+                        style="@style/OperatorPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -204,7 +205,7 @@
 
                     <Button
                         android:id="@+id/btnSvsnick"
-                        style="@style/CustomButtonStyle"
+                        style="@style/OperatorPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"

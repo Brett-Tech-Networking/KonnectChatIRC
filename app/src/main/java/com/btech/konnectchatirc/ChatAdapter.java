@@ -195,14 +195,14 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 finalMessageBuilder.append(message);
             } else {
                 String nickLine = extractNickFromMessage(message); 
-                String nickOnly = nickLine;
+                String nickOnly = nickLine.trim();
                 // Detect prefix and get clean nick (more robustly)
                 String prefixChar = "";
-                if (!nickLine.isEmpty()) {
-                    char firstChar = nickLine.charAt(0);
+                if (!nickOnly.isEmpty()) {
+                    char firstChar = nickOnly.charAt(0);
                     if (firstChar == '~' || firstChar == '&' || firstChar == '@' || firstChar == '%' || firstChar == '+') {
                         prefixChar = String.valueOf(firstChar);
-                        nickOnly = nickLine.substring(1).trim();
+                        nickOnly = nickOnly.substring(1).trim();
                     }
                 }
 
@@ -415,6 +415,9 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
 
     private boolean isChannelEvent(String message) {
+        String nick = extractNickFromMessage(message);
+        if (!nick.equalsIgnoreCase("SERVER")) return false;
+
         return message.contains("joined the channel") || 
                message.contains("left the channel") || 
                message.contains("was kicked") ||
@@ -433,11 +436,13 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         // Only consider it a "Server Message" (Green) if it's NOT a channel event
         // and has specific server keywords
         if (isChannelEvent(message)) return false;
-        
-        return message.contains("SERVER") || 
-               message.contains("Connected to") || 
-               message.contains("NickServ") ||
-               message.contains("Topic is");
+
+        String nick = extractNickFromMessage(message);
+        // Strict check: Sender must be SERVER or NickServ
+        return nick.equalsIgnoreCase("SERVER") || 
+               nick.equalsIgnoreCase("NickServ") ||
+               message.startsWith("Connected to") || 
+               message.startsWith("Topic is");
     }
 
     private String extractNickFromMessage(String message) {
@@ -453,7 +458,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (message.contains(":")) {
             return message.substring(0, message.indexOf(":")).trim();
         }
-        return message;
+        return message.trim();
     }
 
     private User getUserFromNick(String nick) {

@@ -218,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadPresetChannels() {
-        String[] presetChannels = {"#ThePlaceToChat", "#konnect-chat", "#robz", "#trivia"};
+        String[] presetChannels = {"#konnect-chat", "#ThePlaceToChat", "#robz", "#trivia"};
         for (String channel : presetChannels) {
             channels.add(channel);
         }

@@ -59,7 +59,7 @@
 
                     <Button
                         android:id="@+id/btnNick"
-                        style="@style/CustomButtonStyle"
+                        style="@style/HoverPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -68,7 +68,7 @@
 
                     <Button
                         android:id="@+id/btnIdent"
-                        style="@style/CustomButtonStyle"
+                        style="@style/HoverPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -78,7 +78,7 @@
 
                 <Button
                     android:id="@+id/btnNickRegister"
-                    style="@style/CustomButtonStyle"
+                    style="@style/HoverPanelButtonStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="REGISTER NICKNAME"/>
@@ -108,7 +108,7 @@
 
                     <Button
                         android:id="@+id/btnJoin"
-                        style="@style/CustomButtonStyle"
+                        style="@style/HoverPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -117,11 +117,11 @@
 
                     <Button
                         android:id="@+id/btnChanRegister"
-                        style="@style/CustomButtonStyle"
+                        style="@style/HoverPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="REGISTER CHAN"
+                        android:text="REGISTER CHANNEL"
                         android:layout_marginStart="4dp"/>
                 </LinearLayout>
 
@@ -134,7 +134,7 @@
 
                     <Button
                         android:id="@+id/btnOP"
-                        style="@style/CustomButtonStyle"
+                        style="@style/HoverPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -143,7 +143,7 @@
 
                     <Button
                         android:id="@+id/btnDEOP"
-                        style="@style/CustomButtonStyle"
+                        style="@style/HoverPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -159,7 +159,7 @@
 
                     <Button
                         android:id="@+id/btnSOP"
-                        style="@style/CustomButtonStyle"
+                        style="@style/HoverPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -169,7 +169,7 @@
 
                     <Button
                         android:id="@+id/btnAOP"
-                        style="@style/CustomButtonStyle"
+                        style="@style/HoverPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -203,7 +203,7 @@
 
                     <Button
                         android:id="@+id/btnKick"
-                        style="@style/CustomButtonStyle"
+                        style="@style/HoverPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -212,7 +212,7 @@
 
                     <Button
                         android:id="@+id/btnBan"
-                        style="@style/CustomButtonStyle"
+                        style="@style/HoverPanelButtonStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -222,7 +222,7 @@
 
                 <Button
                     android:id="@+id/btnUnban"
-                    style="@style/CustomButtonStyle"
+                    style="@style/HoverPanelButtonStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="UNBAN HOST/NICK"

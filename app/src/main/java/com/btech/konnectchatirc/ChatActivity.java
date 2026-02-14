@@ -536,7 +536,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         Button disconnectButton = findViewById(R.id.disconnectButton);
 
         if (desiredNick != null && !desiredNick.isEmpty()) {
-            userNick = desiredNick;  // Use the custom nickname if provided
+            userNick = desiredNick.trim();  // Use the custom nickname if provided
         } else {
             userNick = "Guest" + (1000 + (int) (Math.random() * 9000));  // Fallback to Guest nick if no custom nick is provided
         }
@@ -667,7 +667,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         btnZline.setOnClickListener(v -> new Kill(this, bot, this).startKillProcess()); // Reusing Kill for now, can be specialized later
 
         sendButton.setOnClickListener(v -> {
-            String message = chatEditText.getText().toString();
+            String message = chatEditText.getText().toString().trim();
             if (!message.isEmpty()) {
                 if (isViewingPrivateMessages && selectedPrivateConversation != null) {
                     // Send private message

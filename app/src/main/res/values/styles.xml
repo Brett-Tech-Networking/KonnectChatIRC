@@ -38,6 +38,18 @@
     <style name="CustomButtonStyle" parent="Widget.MaterialComponents.Button">
         <item name="android:background">@drawable/button_black_bg</item>
         <item name="backgroundTint">@null</item>
+        <item name="android:textColor">#FFFF00</item>
+    </style>
+
+    <style name="HoverPanelButtonStyle" parent="Widget.MaterialComponents.Button">
+        <item name="android:background">@drawable/button_black_bg</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">#FFFF00</item>
+    </style>
+
+    <style name="OperatorPanelButtonStyle" parent="Widget.MaterialComponents.Button">
+        <item name="android:background">@drawable/button_black_bg</item>
+        <item name="backgroundTint">@null</item>
         <item name="android:textColor">#FF5252</item>
     </style>
 
