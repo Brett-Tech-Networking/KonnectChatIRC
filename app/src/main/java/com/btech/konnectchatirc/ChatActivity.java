@@ -392,10 +392,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
 
         showTimestamps = prefs.getBoolean("show_timestamps", false);
-        boolean use24HrFormat = prefs.getBoolean("use_24hr_format", true);
+        String timestampFormat = prefs.getString("timestamp_format", "HH:mm");
         rainbowNicks = prefs.getBoolean("rainbow_nicks", false); // Load setting
         chatAdapter.setShowTimestamps(showTimestamps);
-        chatAdapter.setUse24HrFormat(use24HrFormat);
+        chatAdapter.setTimestampFormat(timestampFormat);
         chatAdapter.setRainbowEnabled(rainbowNicks);
 
         // Initialize PrivateMessageStorage
@@ -1031,11 +1031,31 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         timestampCheck.setChecked(showTimestamps);
         timestampCheck.setTextSize(16);
         
-        // 24hr Format Switch
-        final CheckBox formatCheck = new CheckBox(this);
-        formatCheck.setText("Use 24-hour format");
-        formatCheck.setChecked(chatAdapter.isUse24HrFormat()); // Use getter
-        formatCheck.setTextSize(16);
+        // Timestamp Format Spinner
+        TextView formatLabel = new TextView(this);
+        formatLabel.setText("Timestamp Format");
+        formatLabel.setTextSize(16);
+        formatLabel.setPadding(0, 20, 0, 5);
+        layout.addView(formatLabel);
+
+        final android.widget.Spinner formatSpinner = new android.widget.Spinner(this);
+        String[] formats = {"24-hour (HH:mm)", "24-hour w/ seconds (HH:mm:ss)", "12-hour (h:mm a)", "12-hour w/ seconds (h:mm:ss a)"};
+        final String[] formatValues = {"HH:mm", "HH:mm:ss", "h:mm a", "h:mm:ss a"};
+        
+        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, formats);
+        formatSpinner.setAdapter(adapter);
+
+        // Set current selection
+        String currentFormat = chatAdapter.getTimestampFormat();
+        int selectionIndex = 0;
+        for (int i = 0; i < formatValues.length; i++) {
+            if (formatValues[i].equals(currentFormat)) {
+                selectionIndex = i;
+                break;
+            }
+        }
+        formatSpinner.setSelection(selectionIndex);
+        layout.addView(formatSpinner);
         
         final CheckBox rainbowCheck = new CheckBox(this);
         rainbowCheck.setText("Rainbow Nicks");
@@ -1044,14 +1064,14 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         rainbowCheck.setTextColor(Color.MAGENTA); // Formatting flair for the option itself
 
         layout.addView(timestampCheck);
-        layout.addView(formatCheck);
+        // Removed formatCheck addView
         layout.addView(rainbowCheck);
 
         builder.setView(layout);
 
         builder.setPositiveButton("Save", (dialog, which) -> {
             boolean newShowTimestamps = timestampCheck.isChecked();
-            boolean newUse24HrFormat = formatCheck.isChecked();
+            // removed boolean newUse24HrFormat = formatCheck.isChecked();
             boolean newRainbowNicks = rainbowCheck.isChecked();
             
             SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
@@ -1065,11 +1085,12 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 changesMade = true;
             }
             
-            // We don't have a local member for use24HrFormat in Activity, so we check against value in adapter or prefs would be needed
-            // But simplify: always save if checked state matches what we want
-            if (chatAdapter.isUse24HrFormat() != newUse24HrFormat) {
-                editor.putBoolean("use_24hr_format", newUse24HrFormat);
-                chatAdapter.setUse24HrFormat(newUse24HrFormat);
+            int selectedFormatIndex = formatSpinner.getSelectedItemPosition();
+            String newTimestampFormat = formatValues[selectedFormatIndex];
+            
+            if (!chatAdapter.getTimestampFormat().equals(newTimestampFormat)) {
+                editor.putString("timestamp_format", newTimestampFormat);
+                chatAdapter.setTimestampFormat(newTimestampFormat);
                 changesMade = true;
             }
 

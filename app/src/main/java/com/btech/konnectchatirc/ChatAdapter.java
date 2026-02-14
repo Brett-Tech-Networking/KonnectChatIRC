@@ -104,21 +104,25 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private boolean showTimestamps = false;
-    private boolean use24HrFormat = true;
+
 
     public void setShowTimestamps(boolean showTimestamps) {
         this.showTimestamps = showTimestamps;
         notifyDataSetChanged();
     }
 
-    public void setUse24HrFormat(boolean use24HrFormat) {
-        this.use24HrFormat = use24HrFormat;
+    private String timestampFormat = "HH:mm"; // Default
+
+    public void setTimestampFormat(String format) {
+        this.timestampFormat = format;
         notifyDataSetChanged();
     }
 
-    public boolean isUse24HrFormat() {
-        return use24HrFormat;
+    public String getTimestampFormat() {
+        return timestampFormat;
     }
+
+
 
     private boolean isRainbowEnabled = false;
 
@@ -377,8 +381,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private String formatTimestamp(long timestamp) {
-        String formatString = use24HrFormat ? "HH:mm" : "h:mm a";
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(formatString, java.util.Locale.getDefault());
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(timestampFormat, java.util.Locale.getDefault());
         return "[" + sdf.format(new java.util.Date(timestamp)) + "]";
     }
 
