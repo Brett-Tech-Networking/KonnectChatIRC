@@ -246,8 +246,14 @@ public class Listeners extends ListenerAdapter {
                 }
 
                 if (!modeAction.isEmpty()) {
-                    String action = (modeSign == '+') ? "has been " + modeAction + " by " + performingUser
-                            : "has been de-" + modeAction + " by " + performingUser;
+                    String action;
+                    if (modeAction.startsWith("had mode")) {
+                        action = (modeSign == '+') ? modeAction + " by " + performingUser
+                                : "had mode " + modeChar + " removed by " + performingUser;
+                    } else {
+                        action = (modeSign == '+') ? "has been " + modeAction + " by " + performingUser
+                                : "has been de-" + modeAction + " by " + performingUser;
+                    }
                     String message = targetNick + " " + action + " in " + channel;
                     runOnUiThread(() -> chatActivity.processServerMessage("SERVER", message, channel));
                 }

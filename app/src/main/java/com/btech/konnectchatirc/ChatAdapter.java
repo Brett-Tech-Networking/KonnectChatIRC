@@ -396,7 +396,8 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                message.contains("has been voiced") ||
                message.contains("has been opped") ||
                message.contains("has been de-voiced") ||
-               message.contains("has been de-opped");
+               message.contains("has been de-opped") ||
+               message.contains("had mode");
     }
 
     private boolean isServerMessage(String message) {
