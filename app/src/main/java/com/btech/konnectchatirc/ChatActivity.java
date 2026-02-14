@@ -385,7 +385,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         // Initialize Server Notices channel
         ChannelItem serverNotices = new ChannelItem("Server Notices");
         channelList.add(serverNotices);
-        channelMessagesMap.put("Server Notices", new ArrayList<>());
+        channelMessagesMap.put("server notices", new ArrayList<>());
         
         chatAdapter = new ChatAdapter((BotProvider) this, chatMessages);  // Pass ChatActivity instance
         
@@ -945,7 +945,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                             newItem.setUnreadCount(channelStorage.getUnreadCount(channel.getName()));
                         }
                         channelList.add(newItem);
-                        channelMessagesMap.put(channel.getName(), new ArrayList<>());
+                        if (!channelMessagesMap.containsKey(channel.getName().toLowerCase())) {
+                            channelMessagesMap.put(channel.getName().toLowerCase(), new ArrayList<>());
+                        }
                     }
                 }
                 channelAdapter.notifyDataSetChanged();
@@ -1001,19 +1003,22 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     
     // Helper to store messages safely
     void storeMessageForChannel(String channel, String message) {
-        if (channelMessagesMap.containsKey(channel)) {
+        String lowerCaseChannel = channel.toLowerCase();
+        if (channelMessagesMap.containsKey(lowerCaseChannel)) {
             // Create a temporary ChatMessage with current time for storage
             // Note: This matches the one displayed in UI
             ChatMessage chatMsg = new ChatMessage(message, System.currentTimeMillis());
-            channelMessagesMap.get(channel).add(chatMsg);
+            channelMessagesMap.get(lowerCaseChannel).add(chatMsg);
         }
     }
     
     // Overloaded method to store actual ChatMessage objects
     void storeMessageForChannel(String channel, ChatMessage message) {
-        if (channelMessagesMap.containsKey(channel)) {
-            channelMessagesMap.get(channel).add(message);
+        String lowerCaseChannel = channel.toLowerCase();
+        if (!channelMessagesMap.containsKey(lowerCaseChannel)) {
+             channelMessagesMap.put(lowerCaseChannel, new ArrayList<>());
         }
+        channelMessagesMap.get(lowerCaseChannel).add(message);
     }
 
     private void showSettingsDialog() {
@@ -1146,10 +1151,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         }
 
         chatMessages.clear();
-        if (channelMessagesMap.containsKey(channel)) {
-            chatMessages.addAll(channelMessagesMap.get(channel));
+        String lowerCaseChannel = channel.toLowerCase();
+        if (channelMessagesMap.containsKey(lowerCaseChannel)) {
+            chatMessages.addAll(channelMessagesMap.get(lowerCaseChannel));
         } else {
-            channelMessagesMap.put(channel, new ArrayList<>());
+            channelMessagesMap.put(lowerCaseChannel, new ArrayList<>());
         }
         chatAdapter.notifyDataSetChanged();
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
@@ -1167,6 +1173,23 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             chatEditText.setEnabled(true);
             chatEditText.setHint("Message " + channel);
         }
+
+        // Hide Bottom Bar in Server Notices
+        View chatInputLayout = findViewById(R.id.chatInputLayout);
+        RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) chatRecyclerView.getLayoutParams();
+
+        if (channel.equalsIgnoreCase("Server Notices")) {
+            chatInputLayout.setVisibility(View.GONE);
+            params.removeRule(RelativeLayout.ABOVE);
+            params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        } else {
+            chatInputLayout.setVisibility(View.VISIBLE);
+            params.addRule(RelativeLayout.ABOVE, R.id.chatInputLayout);
+            params.removeRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        }
+        params.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+        chatRecyclerView.setLayoutParams(params);
+        chatRecyclerView.requestLayout();
     }
 
     private void handleCommand(String command) {
@@ -1211,7 +1234,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 if (isNetworkAvailable()) {
                     if (bot.isConnected()) {
                         bot.sendIRC().action(activeChannel, action);
-                        runOnUiThread(() -> addChatMessage("* " + userNick + " " + action));
+                        String actionMsg = "* " + userNick + " " + action;
+                        storeMessageForChannel(activeChannel, actionMsg);
+                        runOnUiThread(() -> addChatMessage(actionMsg));
                         chatEditText.setText("");
                     } else {
                         runOnUiThread(() -> addChatMessage("Bot is not connected to the server."));
@@ -1292,7 +1317,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                             // Check if the channel is already in the list before adding
                             if (!isChannelInList(lowerCaseChannelName)) {
                                 channelList.add(new ChannelItem(lowerCaseChannelName));
-                                channelMessagesMap.put(lowerCaseChannelName, new ArrayList<>());
+                                if (!channelMessagesMap.containsKey(lowerCaseChannelName)) {
+                                    channelMessagesMap.put(lowerCaseChannelName, new ArrayList<>());
+                                }
                                 channelAdapter.notifyDataSetChanged();
                             }
                             setActiveChannel(lowerCaseChannelName);
@@ -1356,7 +1383,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             if (channelList.get(i).getChannelName().equals(channelName)) {
                 channelList.remove(i);
                 channelAdapter.notifyItemRemoved(i);
-                channelMessagesMap.remove(channelName);
+                channelMessagesMap.remove(channelName.toLowerCase());
                 break;
             }
         }
@@ -2109,7 +2136,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                                     bot.sendIRC().message(activeChannel, imageUrl);
                                     runOnUiThread(() -> {
                                         chatEditText.setText("");  // Clear the text box
-                                        addChatMessage(userNick + ": " + imageUrl);  // Display the sent message in the chat
+                                        String msg = userNick + ": " + imageUrl;
+                                        storeMessageForChannel(activeChannel, msg);
+                                        addChatMessage(msg);  // Display the sent message in the chat
                                     });
                                 } else {
                                     runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Not connected to IRC server.", Toast.LENGTH_SHORT).show());
@@ -2169,7 +2198,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         if (!bannedUsers.contains(banEntry)) {
             bannedUsers.add(banEntry);
             Log.d("ChatActivity", "Banned user added: " + banEntry);
-            addChatMessage("Banned user added: " + banEntry);
+            String msg = "Banned user added: " + banEntry;
+            storeMessageForChannel("Server Notices", msg);
+            addChatMessage(msg);
         } else {
             Log.d("ChatActivity", "Banned user already in list: " + banEntry);
         }
@@ -2178,7 +2209,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     public void checkAndAddActiveChannel() {
         if (activeChannel != null && !isChannelInList(activeChannel)) {
             channelList.add(new ChannelItem(activeChannel));
-            channelMessagesMap.put(activeChannel, new ArrayList<>());
+            if (!channelMessagesMap.containsKey(activeChannel.toLowerCase())) {
+                channelMessagesMap.put(activeChannel.toLowerCase(), new ArrayList<>());
+            }
             channelAdapter.notifyDataSetChanged();
         }
     }
@@ -2511,8 +2544,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         isViewingPrivateMessages = false;
         selectedPrivateConversation = null;
         chatMessages.clear();
-        if (activeChannel != null && channelMessagesMap.containsKey(activeChannel)) {
-            chatMessages.addAll(channelMessagesMap.get(activeChannel));
+        if (activeChannel != null && channelMessagesMap.containsKey(activeChannel.toLowerCase())) {
+            chatMessages.addAll(channelMessagesMap.get(activeChannel.toLowerCase()));
         }
         chatAdapter.notifyDataSetChanged();
         animateSectionTransition(channelsSection, privateMessagesSection);

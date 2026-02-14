@@ -184,15 +184,21 @@ public class Listeners extends ListenerAdapter {
         if (sender.equalsIgnoreCase("NickServ")) {
             if (message.contains("Password accepted")) {
                 // Identification successful
-                chatActivity.addChatMessage("Successfully identified with NickServ.");
+                String msg = "Successfully identified with NickServ.";
+                chatActivity.storeMessageForChannel("Server Notices", "NickServ: " + msg);
+                chatActivity.addChatMessage("NickServ: " + msg);
                 Log.d("IRC", "Identification successful.");
             } else if (message.contains("Incorrect password")) {
                 // Identification failed
-                chatActivity.addChatMessage("Failed to identify with NickServ. Incorrect password.");
+                String msg = "Failed to identify with NickServ. Incorrect password.";
+                 chatActivity.storeMessageForChannel("Server Notices", "NickServ: " + msg);
+                 chatActivity.addChatMessage("NickServ: " + msg);
                 Log.e("IRC", "Identification failed: Incorrect password.");
             } else {
                 // Other NickServ messages
-                chatActivity.addChatMessage("NickServ: " + message);
+                String msg = "NickServ: " + message;
+                chatActivity.storeMessageForChannel("Server Notices", msg);
+                chatActivity.addChatMessage(msg);
                 Log.d("IRC", "NickServ message: " + message);
             }
         }
@@ -337,16 +343,18 @@ public class Listeners extends ListenerAdapter {
 
     @Override
     public void onPart(PartEvent event) {
-        runOnUiThread(() -> {
-            String userNick = event.getUser().getNick();
-            String channel = event.getChannel().getName();
+        String userNick = event.getUser().getNick();
+        String channel = event.getChannel().getName();
 
+        runOnUiThread(() -> {
             if (userNick.equalsIgnoreCase(event.getBot().getNick())) {
                 // Show the message when the bot itself leaves the channel
-                chatActivity.addChatMessage("You have left the channel: " + channel);
+                String msg = "You have left the channel: " + channel;
+                chatActivity.storeMessageForChannel(channel, msg);
+                chatActivity.addChatMessage(msg);
                 chatActivity.partChannel(channel);
-            } else if (channel.equalsIgnoreCase(chatActivity.getActiveChannel())) {
-                // Process server message only for other users
+            } else {
+                // Process server message for other users leaving
                 String partMessage = userNick + " has left the channel.";
                 chatActivity.processServerMessage("SERVER", partMessage, channel);
             }
@@ -591,6 +599,22 @@ public class Listeners extends ListenerAdapter {
         chatActivity.sendBroadcast(intent);
         
         Log.d("Listeners", "Private message from " + sender + ": " + message);
+    }
+
+    @Override
+    public void onQuit(org.pircbotx.hooks.events.QuitEvent event) {
+        String userNick = event.getUser().getNick();
+        String reason = event.getReason();
+        String message = userNick + " has quit (" + reason + ")";
+
+        // Notify all channels this user was in
+        for (Channel channel : event.getUser().getChannels()) {
+             final String channelName = channel.getName();
+             runOnUiThread(() -> {
+                 chatActivity.processServerMessage("SERVER", message, channelName);
+             });
+        }
+        refreshChat();
     }
 
     private void refreshChat() {

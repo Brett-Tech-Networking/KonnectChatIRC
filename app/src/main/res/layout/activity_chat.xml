@@ -111,7 +111,7 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/chatRecyclerView"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:layout_height="match_parent"
             android:layout_above="@id/chatInputLayout"
             android:layout_below="@id/CurrentNick"
             android:background="#111111" />

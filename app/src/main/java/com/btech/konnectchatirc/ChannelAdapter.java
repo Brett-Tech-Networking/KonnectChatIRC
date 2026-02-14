@@ -56,8 +56,10 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.ChannelV
         holder.itemView.setOnClickListener(v -> listener.onChannelClick(channel));
 
         if (channel.getChannelName().equalsIgnoreCase("Server Notices")) {
+            holder.channelIcon.setText("📢"); // Announcement icon
             holder.leaveChannelButton.setVisibility(View.GONE);
         } else {
+            holder.channelIcon.setText("#");
             holder.leaveChannelButton.setVisibility(View.VISIBLE);
             holder.leaveChannelButton.setOnClickListener(v -> {
                 listener.onLeaveChannelClick(channel);
@@ -84,12 +86,14 @@ public class ChannelAdapter extends RecyclerView.Adapter<ChannelAdapter.ChannelV
 
         TextView channelName;
         TextView unreadBadge;
+        TextView channelIcon;
         ImageButton leaveChannelButton;
 
         public ChannelViewHolder(@NonNull View itemView) {
             super(itemView);
             channelName = itemView.findViewById(R.id.channelName);
             unreadBadge = itemView.findViewById(R.id.unreadBadge);
+            channelIcon = itemView.findViewById(R.id.channelIcon);
             leaveChannelButton = itemView.findViewById(R.id.leaveChannelButton);
         }
 
