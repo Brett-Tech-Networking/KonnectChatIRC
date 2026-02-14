@@ -141,6 +141,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private ConnectivityManager connectivityManager;
     private DrawerLayout drawerLayout;
     private ChannelAdapter channelAdapter;
+    private FallingItemsView fallingItemsView;
+    private boolean fallingItemsEnabled = false;
     private List<ChannelItem> channelList = new ArrayList<>(); // List to hold channel items
     private Map<String, List<ChatMessage>> channelMessagesMap = new HashMap<>(); // Stores messages for each channel
     private TextView unreadBadge;
@@ -373,6 +375,14 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             return WindowInsetsCompat.CONSUMED;
         });
 
+        fallingItemsView = findViewById(R.id.fallingItemsView);
+        SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
+        fallingItemsEnabled = prefs.getBoolean("falling_items_enabled", false);
+        if (fallingItemsEnabled && fallingItemsView != null) {
+            fallingItemsView.setVisibility(View.VISIBLE);
+            fallingItemsView.startAnimation();
+        }
+
         String desiredNick = getIntent().getStringExtra("DESIRED_NICK");
         desiredPassword = getIntent().getStringExtra("DESIRED_PASSWORD"); // Retrieve password
         // Initialize ConnectivityManager here
@@ -389,7 +399,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         
         chatAdapter = new ChatAdapter((BotProvider) this, chatMessages);  // Pass ChatActivity instance
         
-        SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
+
 
         showTimestamps = prefs.getBoolean("show_timestamps", false);
         String timestampFormat = prefs.getString("timestamp_format", "HH:mm");
@@ -1050,6 +1060,13 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, formats);
         formatSpinner.setAdapter(adapter);
 
+        // Falling Items Checkbox
+        final CheckBox fallingItemsCheck = new CheckBox(this);
+        fallingItemsCheck.setText("Fun Mode (Titties)");
+        fallingItemsCheck.setChecked(fallingItemsEnabled);
+        fallingItemsCheck.setTextSize(16);
+        fallingItemsCheck.setTextColor(Color.parseColor("#FF69B4")); // Hot Pink for emphasis
+
         // Set current selection
         String currentFormat = chatAdapter.getTimestampFormat();
         int selectionIndex = 0;
@@ -1071,6 +1088,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         layout.addView(timestampCheck);
         // Removed formatCheck addView
         layout.addView(rainbowCheck);
+        layout.addView(fallingItemsCheck);
 
         builder.setView(layout);
 
@@ -1078,10 +1096,27 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             boolean newShowTimestamps = timestampCheck.isChecked();
             // removed boolean newUse24HrFormat = formatCheck.isChecked();
             boolean newRainbowNicks = rainbowCheck.isChecked();
+            boolean newFallingItemsEnabled = fallingItemsCheck.isChecked();
             
             SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
             boolean changesMade = false;
+
+            if (fallingItemsEnabled != newFallingItemsEnabled) {
+                fallingItemsEnabled = newFallingItemsEnabled;
+                editor.putBoolean("falling_items_enabled", fallingItemsEnabled);
+                changesMade = true;
+                
+                if (fallingItemsView != null) {
+                    if (fallingItemsEnabled) {
+                        fallingItemsView.setVisibility(View.VISIBLE);
+                        fallingItemsView.startAnimation();
+                    } else {
+                         fallingItemsView.stopAnimation();
+                         fallingItemsView.setVisibility(View.GONE);
+                    }
+                }
+            }
 
             if (showTimestamps != newShowTimestamps) {
                 showTimestamps = newShowTimestamps;

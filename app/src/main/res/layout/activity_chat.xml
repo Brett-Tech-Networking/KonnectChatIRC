@@ -196,6 +196,15 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_users"
             android:contentDescription="Users" />
+
+        <com.btech.konnectchatirc.FallingItemsView
+            android:id="@+id/fallingItemsView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clickable="false"
+            android:focusable="false"
+            android:visibility="gone"
+            android:elevation="10dp"/>
     </RelativeLayout>
 
     <include
