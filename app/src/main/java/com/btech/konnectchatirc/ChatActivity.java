@@ -15,6 +15,8 @@ import android.graphics.ImageDecoder;
 import android.graphics.PixelFormat;
 import android.net.ConnectivityManager;
 import android.net.Network;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import org.pircbotx.UserLevel;
 import java.util.Set;
 import org.pircbotx.UserLevel;
@@ -2007,6 +2009,18 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                             // Otherwise, increment unread count
                             messageStorage.incrementUnreadCount(userNick, sender);
                             updateGlobalUnreadCount();
+
+                            // Play notification sound if app is active
+                            if (isActivityResumed) {
+                                try {
+                                    ToneGenerator toneGen = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100);
+                                    toneGen.startTone(ToneGenerator.TONE_PROP_ACK);
+                                    // Release the ToneGenerator after a short delay to free resources
+                                    new Handler(Looper.getMainLooper()).postDelayed(toneGen::release, 200);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
                         }
                         privateConversationAdapter.notifyDataSetChanged();
                     });
