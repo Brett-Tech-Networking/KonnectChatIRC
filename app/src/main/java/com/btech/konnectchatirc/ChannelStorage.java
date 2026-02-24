@@ -43,6 +43,20 @@ public class ChannelStorage {
     }
 
     /**
+     * Clear all channel unread counts (used on session start)
+     */
+    public void clearAllUnreadCounts() {
+        SharedPreferences.Editor editor = prefs.edit();
+        Map<String, ?> allPrefs = prefs.getAll();
+        for (String key : allPrefs.keySet()) {
+            if (key.startsWith(KEY_PREFIX)) {
+                editor.remove(key);
+            }
+        }
+        editor.apply();
+    }
+
+    /**
      * Get unread counts for all channels
      */
     public Map<String, Integer> getAllUnreadCounts() {

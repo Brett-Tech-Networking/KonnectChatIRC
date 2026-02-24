@@ -435,6 +435,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         messageStorage = new PrivateMessageStorage(prefs);
         channelStorage = new ChannelStorage(prefs);
         
+        // Reset channel unread counts for a new session (fresh app launch)
+        if (savedInstanceState == null && channelStorage != null) {
+            channelStorage.clearAllUnreadCounts();
+        }
+        
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);  // Ensure the adapter is set here
 
@@ -1048,7 +1053,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         // This prevents duplicate messages.
 
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
-        chatAdapter.notifyItemInserted(chatMessages.size() - 1);
         scrollToBottom();
     }
 
@@ -1276,6 +1280,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         if (channelAdapter != null) {
              channelAdapter.notifyDataSetChanged();
         }
+        updateGlobalUnreadCount(); // Sync badge immediately after reset
 
         chatMessages.clear();
         String lowerCaseChannel = channel.toLowerCase();
@@ -1791,6 +1796,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
              // Only count unread messages for channels we are actually in
              for (ChannelItem item : channelList) {
                  String key = item.getChannelName(); // Use channel name as key
+                 
                  int count = channelStorage.getUnreadCount(key);
                  item.setUnreadCount(count); // Sync memory object with storage
                  totalUnreadMessages += count;
@@ -1875,14 +1881,17 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             if (isActiveChannel && !isViewingPrivateMessages && isActivityResumed) {
                 addChatMessage(formattedMessage);
             } else {
-                updateGlobalUnreadCount();  // Updates the global unread message badge
-                updateUnreadCountForChannel(channel); // Update unread count for the specific channel
+                // Update unread count for the specific channel FIRST
+                updateUnreadCountForChannel(channel); 
+                // Then update the global badge to ensure it has the latest count
+                updateGlobalUnreadCount();  
             }
         });
     }
 
     private void updateUnreadCountForChannel(String channel) {
         Log.d("NotificationDebug", "ChatActivity: Updating unread count for channel: " + channel);
+        
         // Always update storage first to ensure it's persisted, using case-insensitive key internally
         if (channelStorage != null) {
             channelStorage.incrementUnreadCount(channel);
