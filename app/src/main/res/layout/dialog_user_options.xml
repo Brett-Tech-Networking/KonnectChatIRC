@@ -73,6 +73,40 @@
                 android:text="Status: N/A"
                 android:textSize="12sp"
                 android:textColor="#AAAAAA" />
+
+            <!-- Duplicate User Tag Section -->
+            <LinearLayout
+                android:id="@+id/layout_dup_user"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="8dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Dup User"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    android:background="@drawable/rect_badge_orange"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp" />
+
+                <TextView
+                    android:id="@+id/options_dup_nicks"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="nick1, nick2"
+                    android:textSize="12sp"
+                    android:textStyle="italic"
+                    android:textColor="#AAAAAA"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 

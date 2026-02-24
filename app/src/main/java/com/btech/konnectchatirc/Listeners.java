@@ -332,7 +332,17 @@ public class Listeners extends ListenerAdapter {
         } else {
             // Handle when another user joins the channel
             chatActivity.runOnUiThread(() -> {
+                List<String> dupNicks = chatActivity.findDuplicateUsers(event.getUser());
                 String joinMessage = userNick + " has joined the channel.";
+                if (!dupNicks.isEmpty()) {
+                    StringBuilder sb = new StringBuilder(" (DUP of: ");
+                    for (int i = 0; i < dupNicks.size(); i++) {
+                        sb.append(dupNicks.get(i));
+                        if (i < dupNicks.size() - 1) sb.append(", ");
+                    }
+                    sb.append(")");
+                    joinMessage += sb.toString();
+                }
                 chatActivity.processServerMessage("SERVER", joinMessage, channel);
                 chatActivity.markMessageAsProcessed(joinMessage);  // Mark as processed to prevent duplicates
             });

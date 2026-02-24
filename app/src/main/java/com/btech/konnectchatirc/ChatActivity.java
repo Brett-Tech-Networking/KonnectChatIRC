@@ -69,7 +69,6 @@ import org.pircbotx.hooks.Listener;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -85,19 +84,16 @@ import org.pircbotx.PircBotX;
 import org.pircbotx.User;
 import org.pircbotx.exception.DaoException;
 import org.pircbotx.exception.IrcException;
-import org.pircbotx.hooks.Listener;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -114,9 +110,6 @@ import android.text.TextWatcher;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
-import android.text.util.Linkify;
-import androidx.recyclerview.widget.LinearLayoutManager;
-
 
 public class ChatActivity extends AppCompatActivity implements ChannelAdapter.OnChannelClickListener, BotProvider {
 
@@ -141,19 +134,19 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private WifiManager.WifiLock wifiLock;
     private static final int PICK_IMAGE_REQUEST = 1;
     private OkHttpClient client;
-    private static final String IMGUR_CLIENT_ID = "4968ca92805f1b2"; // Replace with your Imgur client ID
+    private static final String IMGUR_CLIENT_ID = "4968ca92805f1b2";
     private ConnectivityManager connectivityManager;
     private DrawerLayout drawerLayout;
     private ChannelAdapter channelAdapter;
     private FallingItemsView fallingItemsView;
     private boolean fallingItemsEnabled = false;
-    private List<ChannelItem> channelList = new ArrayList<>(); // List to hold channel items
-    private Map<String, List<ChatMessage>> channelMessagesMap = new HashMap<>(); // Stores messages for each channel
+    private List<ChannelItem> channelList = new ArrayList<>();
+    private Map<String, List<ChatMessage>> channelMessagesMap = new HashMap<>();
     private TextView unreadBadge;
-    private int totalUnreadMessages = 0; // Tracks channel unread messages
+    private int totalUnreadMessages = 0;
     private String desiredPassword;
-    private ProgressDialog progressDialog; // Declare ProgressDialog
-    private String desiredNick;  // Declare desiredNick as a class-level variable
+    private ProgressDialog progressDialog;
+    private String desiredNick;
     private PopupWindow mentionPopupWindow;
     private MentionSuggestionAdapter suggestionAdapter;
     private RecyclerView suggestionRecyclerView;
@@ -168,7 +161,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private String currentQuery;
     private ArrayAdapter<String> userListAdapter;
     private List<String> userList = new ArrayList<>();
-    
+
     // Private messaging fields
     private boolean showTimestamps;
     private ListView privateConversationListView;
@@ -179,7 +172,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private boolean isActivityResumed = false;
     private PrivateMessageStorage messageStorage;
     private BroadcastReceiver privateMessageReceiver;
-
 
     public SpannableString createMentionSpannable(String messageContent) {
         SpannableString spannableString = new SpannableString(messageContent);
@@ -243,11 +235,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         return spannableString;
     }
 
-
     public String getDesiredPassword() {
         return desiredPassword;
     }
-
 
     // Add bannedUsers list
     private List<String> bannedUsers = new ArrayList<>();
@@ -258,7 +248,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             super.onAvailable(network);
             Log.d("NetworkCallback", "Network available, reconnecting if needed.");
             if (bot != null && !bot.isConnected()) {
-                connectToIrcServer();  // Reconnect when network is back
+                connectToIrcServer();
             }
         }
 
@@ -266,10 +256,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         public void onLost(Network network) {
             super.onLost(network);
             Log.d("NetworkCallback", "Network lost.");
-            // Optionally notify the user, but do not disconnect the bot right away
         }
     };
-
 
     public boolean isViewingPrivateMessages() {
         return isViewingPrivateMessages;
@@ -280,22 +268,21 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private Handler typingHandler = new Handler(Looper.getMainLooper());
     private Runnable stopTypingRunnable;
     private long lastTypingSent = 0;
-    private static final long TYPING_SEND_INTERVAL = 3000; // 3 seconds debounce for sending
+    private static final long TYPING_SEND_INTERVAL = 3000;
     private Set<String> typingUsers = new HashSet<>();
     private ChannelStorage channelStorage;
-    private boolean rainbowNicks = false; // Rainbow Nicks setting
-    private boolean pmSoundEnabled = true; // PM Sound setting
-    private boolean pmBarNotificationEnabled = true; // PM Status Bar Notification setting
+    private boolean rainbowNicks = false;
+    private boolean pmSoundEnabled = true;
+    private boolean pmBarNotificationEnabled = true;
     private static final String PM_CHANNEL_ID = "PM_Notifications";
-    
+
     private final Handler rainbowHandler = new Handler(Looper.getMainLooper());
     private final Runnable rainbowRunnable = new Runnable() {
         @Override
         public void run() {
             if (rainbowNicks && chatAdapter != null) {
-                // Notify adapter to rebind views, which triggers RainbowSpan.updateDrawState
                 chatAdapter.notifyDataSetChanged();
-                rainbowHandler.postDelayed(this, 20); // 50 FPS for smooth color animation
+                rainbowHandler.postDelayed(this, 20);
             }
         }
     };
@@ -323,15 +310,14 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 if (count > 0) sb.append(", ");
                 sb.append(nick);
                 count++;
-                if (count >= 3) break; // Limit to 3 names
+                if (count >= 3) break;
             }
             if (typingUsers.size() > 3) {
                 sb.append(" and ").append(typingUsers.size() - 3).append(" others");
             }
             sb.append(typingUsers.size() == 1 ? " is typing..." : " are typing...");
             typingIndicator.setText(sb.toString());
-            
-            // Auto-hide after 6 seconds if no updates
+
             typingHandler.removeCallbacksAndMessages(null);
             typingHandler.postDelayed(() -> {
                 typingUsers.clear();
@@ -342,11 +328,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
     private void sendTyping(boolean active) {
         if (bot != null && bot.isConnected() && activeChannel != null) {
-            // NEVER send typing notifications to Server Notices
             if (activeChannel.equalsIgnoreCase("Server Notices")) {
                 return;
             }
-            
+
             long now = System.currentTimeMillis();
             if (active) {
                 if (now - lastTypingSent > TYPING_SEND_INTERVAL) {
@@ -355,7 +340,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 }
             } else {
                 new Thread(() -> bot.sendRaw().rawLine("@+typing=done TAGMSG " + activeChannel)).start();
-                lastTypingSent = 0; // Reset to allow immediate active status next time
+                lastTypingSent = 0;
             }
         }
     }
@@ -363,18 +348,15 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Register this activity as the active bot provider
         BotManager.setActiveBotProvider(this);
-        
+
         getWindow().setFormat(PixelFormat.RGBA_8888);
         setContentView(R.layout.activity_chat);
-// Inside onCreate() in ChatActivity
         acquireWakeLock();
         acquireWifiLock();
-        
-        // Start rainbow animation if enabled
+
         if (rainbowNicks) {
-             rainbowHandler.post(rainbowRunnable);
+            rainbowHandler.post(rainbowRunnable);
         }
 
         unreadBadge = findViewById(R.id.unreadBadge);
@@ -397,50 +379,40 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             fallingItemsView.startAnimation();
         }
 
-        String desiredNick = getIntent().getStringExtra("DESIRED_NICK");
-        desiredPassword = getIntent().getStringExtra("DESIRED_PASSWORD"); // Retrieve password
-        // Initialize ConnectivityManager here
+        desiredNick = getIntent().getStringExtra("DESIRED_NICK");
+        desiredPassword = getIntent().getStringExtra("DESIRED_PASSWORD");
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        client = new OkHttpClient(); // Initialize OkHttpClient
+        client = new OkHttpClient();
 
-        // Initialize the RecyclerView for chat messages
         chatRecyclerView = findViewById(R.id.chatRecyclerView);
         chatMessages = new ArrayList<>();
-        // Initialize Server Notices channel
         ChannelItem serverNotices = new ChannelItem("Server Notices");
         channelList.add(serverNotices);
         channelMessagesMap.put("server notices", new ArrayList<>());
-        
-        chatAdapter = new ChatAdapter((BotProvider) this, chatMessages);  // Pass ChatActivity instance
-        
 
+        chatAdapter = new ChatAdapter((BotProvider) this, chatMessages);
 
         showTimestamps = prefs.getBoolean("show_timestamps", false);
         String timestampFormat = prefs.getString("timestamp_format", "HH:mm");
-        rainbowNicks = prefs.getBoolean("rainbow_nicks", false); // Load setting
+        rainbowNicks = prefs.getBoolean("rainbow_nicks", false);
         chatAdapter.setShowTimestamps(showTimestamps);
         chatAdapter.setTimestampFormat(timestampFormat);
         chatAdapter.setRainbowEnabled(rainbowNicks);
         pmSoundEnabled = prefs.getBoolean("pm_sound_enabled", true);
         pmBarNotificationEnabled = prefs.getBoolean("pm_bar_notification_enabled", true);
 
-        // Initialize PrivateMessageStorage
         messageStorage = new PrivateMessageStorage(prefs);
         channelStorage = new ChannelStorage(prefs);
-        
-        // Reset channel unread counts for a new session (fresh app launch)
+
         if (savedInstanceState == null && channelStorage != null) {
             channelStorage.clearAllUnreadCounts();
         }
-        
-        chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        chatRecyclerView.setAdapter(chatAdapter);  // Ensure the adapter is set here
 
-        // Add layout change listener for keyboard handling
+        chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        chatRecyclerView.setAdapter(chatAdapter);
+
         chatRecyclerView.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
             if (bottom < oldBottom) {
-                // Keyboard likely opened (height decreased)
-                // In this case, we almost always want to ensure the last message is visible
                 chatRecyclerView.post(() -> {
                     if (chatMessages.size() > 0) {
                         chatRecyclerView.smoothScrollToPosition(chatMessages.size() - 1);
@@ -453,36 +425,29 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         serviceIntent.putExtra("#ThePlaceToChat", activeChannel);
         startForegroundService(serviceIntent);
 
-        // Check for Notification Permission (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
             }
         }
 
-        // Check for Deep Link (Notification Click)
         if (getIntent().hasExtra("OPEN_PM_NICK")) {
             String targetNick = getIntent().getStringExtra("OPEN_PM_NICK");
             if (targetNick != null && !targetNick.isEmpty()) {
-                // Ensure channels/PM tabs are initialized if needed, then switch
-                // We might need to delay this slightly if things aren't ready, but typically onCreate is fine
-                // However, we need to ensure the UI is ready to switch.
-                // We'll post it to the handler to be safe and ensure View creation is done
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                     Button btnChannelsTab = findViewById(R.id.btnChannelsTab);
-                     Button btnPrivateMessagesTab = findViewById(R.id.btnPrivateMessagesTab);
-                     FrameLayout channelsSection = findViewById(R.id.channelsSection);
-                     FrameLayout privateMessagesSection = findViewById(R.id.privateMessagesSection);
-                     
-                     switchToPrivateMessagesTab(btnChannelsTab, btnPrivateMessagesTab, channelsSection, privateMessagesSection);
-                     
-                     // Ensure user is in the list
-                     if (!privateConversations.contains(targetNick)) {
-                         privateConversations.add(0, targetNick);
-                         privateConversationAdapter.notifyDataSetChanged();
-                     }
-                     
-                     loadPrivateConversation(targetNick);
+                    Button btnChannelsTab = findViewById(R.id.btnChannelsTab);
+                    Button btnPrivateMessagesTab = findViewById(R.id.btnPrivateMessagesTab);
+                    FrameLayout channelsSection = findViewById(R.id.channelsSection);
+                    FrameLayout privateMessagesSection = findViewById(R.id.privateMessagesSection);
+
+                    switchToPrivateMessagesTab(btnChannelsTab, btnPrivateMessagesTab, channelsSection, privateMessagesSection);
+
+                    if (!privateConversations.contains(targetNick)) {
+                        privateConversations.add(0, targetNick);
+                        privateConversationAdapter.notifyDataSetChanged();
+                    }
+
+                    loadPrivateConversation(targetNick);
                 }, 500);
             }
         }
@@ -491,21 +456,16 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         uploadButton.setOnClickListener(v -> {
             if (bot != null && bot.isConnected()) {
                 if (activeChannel != null && bot.getUserChannelDao().containsChannel(activeChannel)) {
-                    // Proceed with image selection
                     openImageSelector();
                 } else {
-                    // Not connected to the active channel
                     Toast.makeText(ChatActivity.this, "Cannot upload images without being connected to a channel.", Toast.LENGTH_SHORT).show();
                 }
             } else {
-                // Not connected to the server
                 Toast.makeText(ChatActivity.this, "Cannot upload images without being connected to the server.", Toast.LENGTH_SHORT).show();
             }
         });
-        // Initialize the user list adapter
-        userListAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, userList);
 
-        // Assuming you have a ListView for the user list in your layout
+        userListAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, userList);
         ListView userListView = findViewById(R.id.userListView);
         userListView.setAdapter(userListAdapter);
 
@@ -519,11 +479,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
         typingIndicator = findViewById(R.id.typingIndicator);
 
-        // Add TextWatcher to chatEditText
         chatEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                // No action needed
             }
 
             @Override
@@ -532,12 +490,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 if (cursorPosition < 0) return;
 
                 String text = s.toString();
-                
-                // Typing Indicator Logic
-                if (!text.startsWith("/")) { // Don't send typing for commands
+
+                if (!text.startsWith("/")) {
                     if (text.length() > 0) {
                         sendTyping(true);
-                        // Schedule stop typing if user pauses
                         if (stopTypingRunnable != null) typingHandler.removeCallbacks(stopTypingRunnable);
                         stopTypingRunnable = () -> sendTyping(false);
                         typingHandler.postDelayed(stopTypingRunnable, 3000);
@@ -548,19 +504,16 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
                 if (cursorPosition > text.length()) return;
 
-                // **Detect if the cursor is currently typing a command** (starts with `/`)
                 int slashIndex = text.lastIndexOf('/', cursorPosition - 1);
                 if (slashIndex != -1 && (slashIndex == 0 || Character.isWhitespace(text.charAt(slashIndex - 1)))) {
-                    // Extract the command text after the '/'
                     String commandText = text.substring(slashIndex + 1, cursorPosition);
-                    if (!commandText.contains(" ")) { // No space within the command
+                    if (!commandText.contains(" ")) {
                         isCommandActive = true;
                         commandStartIndex = slashIndex;
                         currentQuery = text.substring(commandStartIndex + 1, cursorPosition);
                         showCommandPopup(currentQuery);
                     }
                 } else {
-                    // If no active command is detected, dismiss the command popup
                     if (isCommandActive) {
                         isCommandActive = false;
                         commandStartIndex = -1;
@@ -568,19 +521,16 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     }
                 }
 
-                // **Detect if the cursor is currently typing a mention** (starts with `@`)
                 int atIndex = text.lastIndexOf('@', cursorPosition - 1);
                 if (atIndex != -1 && (atIndex == 0 || Character.isWhitespace(text.charAt(atIndex - 1)))) {
-                    // Extract the mention text after the '@'
                     String mentionText = text.substring(atIndex + 1, cursorPosition);
-                    if (!mentionText.contains(" ")) { // No space within the mention
+                    if (!mentionText.contains(" ")) {
                         isMentionActive = true;
                         mentionStartIndex = atIndex;
                         currentQuery = text.substring(mentionStartIndex + 1, cursorPosition);
                         showMentionPopup(currentQuery);
                     }
                 } else {
-                    // If no active mention is detected, dismiss the mention popup
                     if (isMentionActive) {
                         isMentionActive = false;
                         mentionStartIndex = -1;
@@ -591,7 +541,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
             @Override
             public void afterTextChanged(Editable s) {
-                // No action needed
             }
         });
 
@@ -601,9 +550,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         Button disconnectButton = findViewById(R.id.disconnectButton);
 
         if (desiredNick != null && !desiredNick.isEmpty()) {
-            userNick = desiredNick.trim();  // Use the custom nickname if provided
+            userNick = desiredNick.trim();
         } else {
-            userNick = "Guest" + (1000 + (int) (Math.random() * 9000));  // Fallback to Guest nick if no custom nick is provided
+            userNick = "Guest" + (1000 + (int) (Math.random() * 9000));
         }
 
         initializeBot();
@@ -619,22 +568,21 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         operatorPanel = inflater.inflate(R.layout.operator_panel, rootLayout, false);
 
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
-                (int) (320 * getResources().getDisplayMetrics().density), // Width in pixels
-                (int) (600 * getResources().getDisplayMetrics().density)  // Height in pixels
+                (int) (320 * getResources().getDisplayMetrics().density),
+                (int) (600 * getResources().getDisplayMetrics().density)
         );
 
         params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
         params.addRule(RelativeLayout.CENTER_HORIZONTAL);
 
-        int topMargin = (int) (60 * getResources().getDisplayMetrics().density); // Adjust the value as needed
+        int topMargin = (int) (60 * getResources().getDisplayMetrics().density);
         params.setMargins(0, topMargin, 0, 0);
 
         rootLayout.addView(hoverPanel, params);
         rootLayout.addView(operatorPanel, params);
 
-        operatorPanel.setVisibility(View.GONE); // Initially hide operatorPanel
+        operatorPanel.setVisibility(View.GONE);
 
-        // Initialize buttons from hover panel
         Button btnNick = hoverPanel.findViewById(R.id.btnNick);
         Button btnJoin = hoverPanel.findViewById(R.id.btnJoin);
         Button btnKick = hoverPanel.findViewById(R.id.btnKick);
@@ -647,7 +595,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         Button btnUnban = hoverPanel.findViewById(R.id.btnUnban);
         operatorButton = hoverPanel.findViewById(R.id.btnOperator);
 
-        // Initialize buttons from operator panel
         btnKill = operatorPanel.findViewById(R.id.btnKill);
         btnOperLogin = operatorPanel.findViewById(R.id.btnOperLogin);
         btnSajoin = operatorPanel.findViewById(R.id.btnSajoin);
@@ -656,7 +603,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         Button btnZline = operatorPanel.findViewById(R.id.btnZline);
         ImageButton btnOperatorBack = operatorPanel.findViewById(R.id.btnOperatorBack);
 
-        // Ensure the btnShun initialization after inflating operatorPanel
         Button btnShun = operatorPanel.findViewById(R.id.btnShun);
         if (btnShun != null) {
             btnShun.setOnClickListener(v -> {
@@ -692,7 +638,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         btnSajoin.setOnClickListener(v -> new Sajoin(this, bot, this).startSajoinProcess());
         btnSapart.setOnClickListener(v -> new Sajoin(this, bot, this).startSapartProcess());
 
-        // Back navigation
         View.OnClickListener backToMain = v -> {
             fadeOutPanel(operatorPanel, () -> fadeInPanel(hoverPanel));
         };
@@ -719,32 +664,28 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         channelAdapter = new ChannelAdapter(channelList, this);
         channelRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         channelRecyclerView.setAdapter(channelAdapter);
-        
-        // Initial selection highlight
+
         if (activeChannel != null) {
             channelAdapter.setSelectedChannelName(activeChannel);
         }
 
-        // Initialize private messaging
         initializePrivateMessaging();
 
         btnOSLogin.setOnClickListener(v -> Toast.makeText(this, "OS Login not yet implemented", Toast.LENGTH_SHORT).show());
-        btnZline.setOnClickListener(v -> new Kill(this, bot, this).startKillProcess()); // Reusing Kill for now, can be specialized later
+        btnZline.setOnClickListener(v -> new Kill(this, bot, this).startKillProcess());
 
         sendButton.setOnClickListener(v -> {
             String message = chatEditText.getText().toString().trim();
             if (!message.isEmpty()) {
                 if (isViewingPrivateMessages && selectedPrivateConversation != null) {
-                    // Send private message
                     sendPrivateMessage(message);
                 } else if (message.startsWith("/")) {
                     handleCommand(message);
                 } else {
                     addChatMessage(userNick + ": " + message);
                     chatEditText.setText("");
-                    sendTyping(false); // Reset typing status
-                    
-                    // Dismiss mention popup if active
+                    sendTyping(false);
+
                     dismissMentionPopup();
 
                     new Thread(() -> {
@@ -823,52 +764,47 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             String selectedChannel = getIntent().getStringExtra("SELECTED_CHANNEL");
             String selectedServer = getIntent().getStringExtra("SELECTED_SERVER");
 
-        if (selectedChannel == null || selectedChannel.isEmpty()) {
+            if (selectedChannel == null || selectedChannel.isEmpty()) {
                 selectedChannel = "#ThePlaceToChat";
             }
-        
-        // Initialize Private Message Receiver
-        privateMessageReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if ("private_message".equals(intent.getAction())) {
-                    String sender = intent.getStringExtra("sender");
-                    String message = intent.getStringExtra("message");
-                    
-                    if (sender != null && message != null) {
-                        // Store message
-                        if (messageStorage != null) {
-                            messageStorage.saveMessage(sender, userNick, message, false);
-                        }
-                        
-                        // If viewing this conversation, add to UI
-                        if (isViewingPrivateMessages && sender.equalsIgnoreCase(selectedPrivateConversation)) {
-                            ChatMessage chatMsg = new ChatMessage(sender + ": " + message, System.currentTimeMillis());
-                            Log.d("ChatActivity", "Adding private message to list: " + sender + ": " + message);
-                            chatMessages.add(chatMsg);
-                            chatAdapter.notifyItemInserted(chatMessages.size() - 1);
-                            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-                        } else {
-                            // Increment unread count if not viewing this conversation
+
+            privateMessageReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    if ("private_message".equals(intent.getAction())) {
+                        String sender = intent.getStringExtra("sender");
+                        String message = intent.getStringExtra("message");
+
+                        if (sender != null && message != null) {
                             if (messageStorage != null) {
-                                messageStorage.incrementUnreadCount(userNick, sender);
+                                messageStorage.saveMessage(sender, userNick, message, false);
                             }
-                            // Refresh conversation list if visible
-                            if (privateConversationAdapter != null) {
-                                privateConversationAdapter.notifyDataSetChanged();
+
+                            if (isViewingPrivateMessages && sender.equalsIgnoreCase(selectedPrivateConversation)) {
+                                ChatMessage chatMsg = new ChatMessage(sender + ": " + message, System.currentTimeMillis());
+                                Log.d("ChatActivity", "Adding private message to list: " + sender + ": " + message);
+                                chatMessages.add(chatMsg);
+                                chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+                                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                            } else {
+                                if (messageStorage != null) {
+                                    messageStorage.incrementUnreadCount(userNick, sender);
+                                }
+                                if (privateConversationAdapter != null) {
+                                    privateConversationAdapter.notifyDataSetChanged();
+                                }
+                                updateGlobalUnreadCount();
                             }
-                            updateGlobalUnreadCount();
                         }
                     }
                 }
-            }
-        };
-        
-        ContextCompat.registerReceiver(this, privateMessageReceiver, new IntentFilter("private_message"), ContextCompat.RECEIVER_NOT_EXPORTED);
+            };
+
+            ContextCompat.registerReceiver(this, privateMessageReceiver, new IntentFilter("private_message"), ContextCompat.RECEIVER_NOT_EXPORTED);
             Log.d("ChatActivity", "Selected Server: " + selectedServer);
 
             if (selectedServer == null || selectedServer.isEmpty()) {
-                selectedServer = "KonnectChat IRC"; // Default or fallback server
+                selectedServer = "KonnectChat IRC";
             }
 
 
@@ -879,8 +815,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     .setRealName("TPTC IRC Client")
                     .addAutoJoinChannel(selectedChannel)
                     .addListener(new Listeners(this))
-                    // Reverted to individual calls to fix compilation error
-                    // Removed multi-prefix as it appears to be added by default/duplicate causing crashes
                     .addCapHandler(new EnableCapHandler("extended-join"))
                     .addCapHandler(new EnableCapHandler("account-notify"))
                     .addCapHandler(new EnableCapHandler("message-tags"))
@@ -928,37 +862,33 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                             runOnUiThread(() -> {
                                 addChatMessage("Joining channel: " + selectedChannel);
                                 setActiveChannel(selectedChannel);
-                                updateCurrentNick(userNick);  // Apply the custom or guest nickname
+                                updateCurrentNick(userNick);
                             });
 
-                            // Apply the custom or guest nickname immediately
                             bot.sendRaw().rawLine("NICK " + userNick);
 
-                            // Condition 1: Custom Nick, No Password
                             if (desiredNick != null && !desiredNick.isEmpty() && (desiredPassword == null || desiredPassword.isEmpty())) {
                                 runOnUiThread(() -> addChatMessage("Nick changed to: " + userNick + ". No password provided, skipping identification."));
                             }
 
-                            // Condition 2: Custom Nick and Password
                             if (desiredNick != null && !desiredNick.isEmpty() && desiredPassword != null && !desiredPassword.isEmpty()) {
                                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                                     String identifyCommand = "PRIVMSG NickServ :IDENTIFY " + userNick + " " + desiredPassword;
                                     bot.sendRaw().rawLine(identifyCommand);
                                     runOnUiThread(() -> addChatMessage("Identifying user: " + userNick));
-                                }, 500); // Short delay before identification
+                                }, 500);
                             }
 
                             updateChannelListAfterDelay();
 
-                            // Start the custom ping thread after the bot is connected
                             new Thread(() -> {
                                 while (true) {
                                     try {
                                         bot.sendRaw().rawLine("PING " + bot.getServerInfo().getServerName());
-                                        Thread.sleep(60 * 1000); // Send PING every 60 seconds
+                                        Thread.sleep(60 * 1000);
                                     } catch (Exception e) {
                                         e.printStackTrace();
-                                        break; // Exit the loop if something goes wrong
+                                        break;
                                     }
                                 }
                             }).start();
@@ -971,7 +901,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                         Log.e("IRC Connection", "Bot not connected, retrying...");
                         retries++;
                         try {
-                            Thread.sleep(2000); // Wait before retrying
+                            Thread.sleep(2000);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                             break;
@@ -982,7 +912,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Error connecting to IRC server. Retrying...", Toast.LENGTH_LONG).show());
 
                     try {
-                        Thread.sleep(5000); // Wait before retrying
+                        Thread.sleep(5000);
                     } catch (InterruptedException ex) {
                         Thread.currentThread().interrupt();
                         break;
@@ -1032,14 +962,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     }
 
     public void addChatMessage(String message) {
-        // Add the message to the list as a ChatMessage object
-        // We pass the raw String so the ChatAdapter can handle formatting (Rank colors, Mentions, etc.)
         ChatMessage chatMsg = new ChatMessage(message, System.currentTimeMillis());
         chatMessages.add(chatMsg);
-        
-        // Note: We do NOT add to channelMessagesMap here because processServerMessage() 
-        // and sendMessage() already call storeMessageForChannel() to handle history.
-        // This prevents duplicate messages.
 
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
         scrollToBottom();
@@ -1052,8 +976,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         if (layoutManager != null) {
             int lastVisibleItemPosition = layoutManager.findLastVisibleItemPosition();
             int itemCount = layoutManager.getItemCount();
-            
-            // Allow scrolling if we are near the bottom (within last 3 items) or if it's the very first load
+
             boolean isAtBottom = (lastVisibleItemPosition >= itemCount - 3) || lastVisibleItemPosition == -1;
 
             if (isAtBottom) {
@@ -1061,23 +984,19 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             }
         }
     }
-    
-    // Helper to store messages safely
+
     void storeMessageForChannel(String channel, String message) {
         String lowerCaseChannel = channel.toLowerCase();
         if (channelMessagesMap.containsKey(lowerCaseChannel)) {
-            // Create a temporary ChatMessage with current time for storage
-            // Note: This matches the one displayed in UI
             ChatMessage chatMsg = new ChatMessage(message, System.currentTimeMillis());
             channelMessagesMap.get(lowerCaseChannel).add(chatMsg);
         }
     }
-    
-    // Overloaded method to store actual ChatMessage objects
+
     void storeMessageForChannel(String channel, ChatMessage message) {
         String lowerCaseChannel = channel.toLowerCase();
         if (!channelMessagesMap.containsKey(lowerCaseChannel)) {
-             channelMessagesMap.put(lowerCaseChannel, new ArrayList<>());
+            channelMessagesMap.put(lowerCaseChannel, new ArrayList<>());
         }
         channelMessagesMap.get(lowerCaseChannel).add(message);
     }
@@ -1086,18 +1005,15 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Settings");
 
-        // Create a layout for the dialog
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(50, 40, 50, 10);
 
-        // Timestamps Switch
         final CheckBox timestampCheck = new CheckBox(this);
         timestampCheck.setText("Show Timestamps");
         timestampCheck.setChecked(showTimestamps);
         timestampCheck.setTextSize(16);
-        
-        // Timestamp Format Spinner
+
         TextView formatLabel = new TextView(this);
         formatLabel.setText("Timestamp Format");
         formatLabel.setTextSize(16);
@@ -1107,18 +1023,16 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         final android.widget.Spinner formatSpinner = new android.widget.Spinner(this);
         String[] formats = {"24-hour (HH:mm)", "24-hour w/ seconds (HH:mm:ss)", "12-hour (h:mm a)", "12-hour w/ seconds (h:mm:ss a)"};
         final String[] formatValues = {"HH:mm", "HH:mm:ss", "h:mm a", "h:mm:ss a"};
-        
+
         android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, formats);
         formatSpinner.setAdapter(adapter);
 
-        // Falling Items Checkbox
         final CheckBox fallingItemsCheck = new CheckBox(this);
         fallingItemsCheck.setText("Fun Mode (Titties)");
         fallingItemsCheck.setChecked(fallingItemsEnabled);
         fallingItemsCheck.setTextSize(16);
-        fallingItemsCheck.setTextColor(Color.parseColor("#FF69B4")); // Hot Pink for emphasis
+        fallingItemsCheck.setTextColor(Color.parseColor("#FF69B4"));
 
-        // Set current selection
         String currentFormat = chatAdapter.getTimestampFormat();
         int selectionIndex = 0;
         for (int i = 0; i < formatValues.length; i++) {
@@ -1129,20 +1043,19 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         }
         formatSpinner.setSelection(selectionIndex);
         layout.addView(formatSpinner);
-        
+
         final CheckBox rainbowCheck = new CheckBox(this);
         rainbowCheck.setText("Rainbow Nicks");
         rainbowCheck.setChecked(rainbowNicks);
         rainbowCheck.setTextSize(16);
-        rainbowCheck.setTextColor(Color.MAGENTA); // Formatting flair for the option itself
-        
-        // Notification Category Header
+        rainbowCheck.setTextColor(Color.MAGENTA);
+
         TextView notificationHeader = new TextView(this);
         notificationHeader.setText("Notifications");
         notificationHeader.setTextSize(18);
         notificationHeader.setTypeface(null, android.graphics.Typeface.BOLD);
         notificationHeader.setPadding(0, 30, 0, 10);
-        
+
         final CheckBox pmSoundCheck = new CheckBox(this);
         pmSoundCheck.setText("Play Sound (Pop)");
         pmSoundCheck.setChecked(pmSoundEnabled);
@@ -1154,7 +1067,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         pmBarCheck.setTextSize(16);
 
         layout.addView(timestampCheck);
-        // Removed formatCheck addView
         layout.addView(rainbowCheck);
         layout.addView(notificationHeader);
         layout.addView(pmSoundCheck);
@@ -1165,12 +1077,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
         builder.setPositiveButton("Save", (dialog, which) -> {
             boolean newShowTimestamps = timestampCheck.isChecked();
-            // removed boolean newUse24HrFormat = formatCheck.isChecked();
             boolean newRainbowNicks = rainbowCheck.isChecked();
             boolean newPmSoundEnabled = pmSoundCheck.isChecked();
             boolean newPmBarNotificationEnabled = pmBarCheck.isChecked();
             boolean newFallingItemsEnabled = fallingItemsCheck.isChecked();
-             
+
             SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
             boolean changesMade = false;
@@ -1180,7 +1091,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 editor.putBoolean("pm_sound_enabled", pmSoundEnabled);
                 changesMade = true;
             }
-            
+
             if (pmBarNotificationEnabled != newPmBarNotificationEnabled) {
                 pmBarNotificationEnabled = newPmBarNotificationEnabled;
                 editor.putBoolean("pm_bar_notification_enabled", pmBarNotificationEnabled);
@@ -1191,14 +1102,14 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 fallingItemsEnabled = newFallingItemsEnabled;
                 editor.putBoolean("falling_items_enabled", fallingItemsEnabled);
                 changesMade = true;
-                
+
                 if (fallingItemsView != null) {
                     if (fallingItemsEnabled) {
                         fallingItemsView.setVisibility(View.VISIBLE);
                         fallingItemsView.startAnimation();
                     } else {
-                         fallingItemsView.stopAnimation();
-                         fallingItemsView.setVisibility(View.GONE);
+                        fallingItemsView.stopAnimation();
+                        fallingItemsView.setVisibility(View.GONE);
                     }
                 }
             }
@@ -1209,10 +1120,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 chatAdapter.setShowTimestamps(showTimestamps);
                 changesMade = true;
             }
-            
+
             int selectedFormatIndex = formatSpinner.getSelectedItemPosition();
             String newTimestampFormat = formatValues[selectedFormatIndex];
-            
+
             if (!chatAdapter.getTimestampFormat().equals(newTimestampFormat)) {
                 editor.putString("timestamp_format", newTimestampFormat);
                 chatAdapter.setTimestampFormat(newTimestampFormat);
@@ -1224,9 +1135,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 editor.putBoolean("rainbow_nicks", rainbowNicks);
                 chatAdapter.setRainbowEnabled(rainbowNicks);
                 if (rainbowNicks) {
-                    rainbowHandler.post(rainbowRunnable); // Start animation
+                    rainbowHandler.post(rainbowRunnable);
                 } else {
-                    rainbowHandler.removeCallbacks(rainbowRunnable); // Stop animation
+                    rainbowHandler.removeCallbacks(rainbowRunnable);
                 }
                 changesMade = true;
             }
@@ -1253,13 +1164,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     public void setActiveChannel(String channel) {
         this.activeChannel = channel;
         updateChannelName(channel);
-        updateUserCount(); // Update user count for new channel
-        
-        // Reset unread count for this channel
+        updateUserCount();
+
         if (channelStorage != null) {
             channelStorage.resetUnreadCount(channel);
         }
-        // Also update the item in the list immediately to reflect the change visually
         for (ChannelItem item : channelList) {
             if (item.getChannelName().equalsIgnoreCase(channel)) {
                 item.setUnreadCount(0);
@@ -1267,9 +1176,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             }
         }
         if (channelAdapter != null) {
-             channelAdapter.notifyDataSetChanged();
+            channelAdapter.notifyDataSetChanged();
         }
-        updateGlobalUnreadCount(); // Sync badge immediately after reset
+        updateGlobalUnreadCount();
 
         chatMessages.clear();
         String lowerCaseChannel = channel.toLowerCase();
@@ -1280,13 +1189,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         }
         chatAdapter.notifyDataSetChanged();
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-        
-        // Update channel selection highlight in sidebar
+
         if (channelAdapter != null) {
             channelAdapter.setSelectedChannelName(channel);
         }
-        
-        // Disable input for Server Notices
+
         if (channel.equalsIgnoreCase("Server Notices")) {
             chatEditText.setEnabled(false);
             chatEditText.setHint("Server Notices (Read-Only)");
@@ -1295,7 +1202,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             chatEditText.setHint("Message " + channel);
         }
 
-        // Hide Bottom Bar in Server Notices
         View chatInputLayout = findViewById(R.id.chatInputLayout);
         RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) chatRecyclerView.getLayoutParams();
 
@@ -1371,7 +1277,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         }).start();
     }
 
-    private String requestedNick; // Variable to keep track of the requested nickname
+    private String requestedNick;
 
     private void changeNick(String newNick) {
         if (newNick.isEmpty()) {
@@ -1413,7 +1319,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         if (hoverPanel != null) {
             Button btnNick = hoverPanel.findViewById(R.id.btnNick);
             if (btnNick != null) {
-                 btnNick.setText(newNick);
+                btnNick.setText(newNick);
             }
         }
         updateCurrentNick(newNick);
@@ -1426,7 +1332,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             return;
         }
 
-        // Convert the channel name to lowercase
         final String lowerCaseChannelName = channelName.toLowerCase();
 
         new Thread(() -> {
@@ -1435,7 +1340,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     if (bot.isConnected()) {
                         bot.sendIRC().joinChannel(lowerCaseChannelName);
                         runOnUiThread(() -> {
-                            // Check if the channel is already in the list before adding
                             if (!isChannelInList(lowerCaseChannelName)) {
                                 channelList.add(new ChannelItem(lowerCaseChannelName));
                                 if (!channelMessagesMap.containsKey(lowerCaseChannelName)) {
@@ -1490,8 +1394,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     bot.sendIRC().message(channel, message);
                     storeMessageForChannel(channel, message);
                     runOnUiThread(() -> {
-                         addChatMessage(message);
-                         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                        addChatMessage(message);
+                        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
                     });
                 } else {
                     runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Not connected to IRC server.", Toast.LENGTH_SHORT).show());
@@ -1534,7 +1438,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     public void updateCurrentNick(String newNick) {
         TextView currentNickTextView = findViewById(R.id.CurrentNick);
         currentNickTextView.setText(newNick);
-        updateUserCount(); // Update user count when nick changes
+        updateUserCount();
     }
 
     public void updateUserCount() {
@@ -1565,7 +1469,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
     public boolean isDiscordUser(String realName) {
         if (realName == null || realName.isEmpty()) return false;
-        // The user specified: name#numbers followed by @ Discord/Konnect-Chat Bot name IRCRELAY
         return realName.matches(".*#\\d{4,}.*@ Discord/Konnect-Chat.*") || realName.contains("IRCRELAY");
     }
 
@@ -1646,6 +1549,14 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         dialog.show();
     }
 
+    public String extractHost(String hostmaskOrHost) {
+        if (hostmaskOrHost == null) return "";
+        if (hostmaskOrHost.contains("@")) {
+            return hostmaskOrHost.substring(hostmaskOrHost.lastIndexOf("@") + 1).trim();
+        }
+        return hostmaskOrHost.trim();
+    }
+
     public void showWhoisDialog(String nick, String realName, String ident, String host, String server, String channels, String idleTime, String signonTime, String awayMessage) {
         runOnUiThread(() -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.CustomDialogTheme_NoAnimation);
@@ -1664,40 +1575,35 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             ImageView avatarView = dialogView.findViewById(R.id.whois_avatar);
 
             nickView.setText(nick);
-            
-            // Highlight Discord Users visually
+
             if (isDiscordUser(realName)) {
-                avatarView.setImageResource(android.R.drawable.ic_lock_idle_lock); // Shield/Lock icon for Discord
+                avatarView.setImageResource(android.R.drawable.ic_lock_idle_lock);
                 avatarView.setBackgroundResource(R.drawable.circle_badge);
-                avatarView.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#7289DA"))); // Discord Blurple
+                avatarView.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#7289DA")));
             }
-            
+
             realNameView.setText("Name: " + (realName != null ? realName : "N/A"));
             identView.setText("User: " + (ident != null ? ident : "N/A"));
             hostView.setText("Host: " + (host != null ? host : "N/A"));
             serverView.setText("Server: " + (server != null ? server : "N/A"));
-            
-            // Handle clickable channels
+
             if (channels != null && !channels.isEmpty()) {
                 SpannableStringBuilder builderChannels = new SpannableStringBuilder("Channels: ");
-                // Channels string is usually "[#chan1, @#chan2, ...]" or "#chan1 #chan2" depending on PircBotX conversion
-                // The toString() of a list is usually [#chan, @#chan]
                 String listContent = channels;
                 if (listContent.startsWith("[") && listContent.endsWith("]")) {
                     listContent = listContent.substring(1, listContent.length() - 1);
                 }
-                
+
                 String[] channelArray = listContent.split(",?\\s+");
                 for (int i = 0; i < channelArray.length; i++) {
                     final String rawChan = channelArray[i].trim();
                     if (rawChan.isEmpty()) continue;
-                    
-                    // Remove prefixes like @, +, %, etc. to get the pure channel name for joining
+
                     String cleanChan = rawChan;
                     while (!cleanChan.isEmpty() && !cleanChan.startsWith("#") && !cleanChan.startsWith("&")) {
                         cleanChan = cleanChan.substring(1);
                     }
-                    
+
                     if (cleanChan.isEmpty()) {
                         builderChannels.append(rawChan);
                     } else {
@@ -1705,7 +1611,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                         int start = builderChannels.length();
                         builderChannels.append(rawChan);
                         int end = builderChannels.length();
-                        
+
                         builderChannels.setSpan(new ClickableSpan() {
                             @Override
                             public void onClick(@NonNull View widget) {
@@ -1720,12 +1626,12 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                             @Override
                             public void updateDrawState(@NonNull TextPaint ds) {
                                 super.updateDrawState(ds);
-                                ds.setColor(Color.parseColor("#4FC3F7")); // Light blue for links
+                                ds.setColor(Color.parseColor("#4FC3F7"));
                                 ds.setUnderlineText(true);
                             }
                         }, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
-                    
+
                     if (i < channelArray.length - 1) {
                         builderChannels.append(", ");
                     }
@@ -1737,19 +1643,52 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             }
 
             idleView.setText("Idle: " + (idleTime != null ? idleTime : "0") + "s (Signed on: " + (signonTime != null ? signonTime : "N/A") + ")");
-            
+
             if (awayMessage != null && !awayMessage.isEmpty()) {
                 awayView.setText("Away: " + awayMessage);
-                awayView.setTextColor(Color.parseColor("#FF9800")); // Orange for away
+                awayView.setTextColor(Color.parseColor("#FF9800"));
             } else {
-                awayView.setText("Status: Online");
+                awayView.setText("Status: Not Away");
+            }
+
+            // FIND DUPLICATES LOGIC
+            List<String> dupes = new ArrayList<>();
+            String extractedHost = extractHost(host);
+
+            if (bot != null && bot.isConnected() && !extractedHost.isEmpty()) {
+                try {
+                    // Search globally across all users the bot knows about
+                    for (User u : bot.getUserChannelDao().getAllUsers()) {
+
+                        String uHost = extractHost(u.getHostname());
+                        if (uHost.isEmpty()) uHost = extractHost(u.getHostmask());
+
+                        if (!uHost.isEmpty() && uHost.equalsIgnoreCase(extractedHost)) {
+                            if (!isExcludedHost(u) && !dupes.contains(u.getNick())) {
+                                dupes.add(u.getNick());
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // ONLY SHOW IF MORE THAN 1 RESULT
+            if (dupes.size() > 1) {
+                String dupesStr = android.text.TextUtils.join(", ", dupes);
+                SpannableStringBuilder ssb = new SpannableStringBuilder(awayView.getText());
+                ssb.append("\n\nDuplicate Hosts: ");
+                int start = ssb.length();
+                ssb.append(dupesStr);
+                ssb.setSpan(new android.text.style.ForegroundColorSpan(Color.parseColor("#FF5252")), start, ssb.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                awayView.setText(ssb);
             }
 
             AlertDialog dialog = builder.create();
             dialogView.findViewById(R.id.btnWhoisClose).setOnClickListener(v -> dialog.dismiss());
             dialog.show();
 
-            // Adjust dialog size and center
             if (dialog.getWindow() != null) {
                 WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
                 layoutParams.copyFrom(dialog.getWindow().getAttributes());
@@ -1774,30 +1713,25 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         if (messageStorage != null && userNick != null) {
             pmUnreadCount = messageStorage.getTotalUnreadCount(userNick);
         }
-        
-        // Recalculate channel unread counts
+
         totalUnreadMessages = 0;
-        // Recalculate channel unread counts from storage + active list (sync if needed)
-        totalUnreadMessages = 0;
-        
-        // If we have storage, use it as source of truth for unread counts, but only for active channels
+
         if (channelStorage != null) {
-             // Only count unread messages for channels we are actually in
-             for (ChannelItem item : channelList) {
-                 String key = item.getChannelName(); // Use channel name as key
-                 
-                 int count = channelStorage.getUnreadCount(key);
-                 item.setUnreadCount(count); // Sync memory object with storage
-                 totalUnreadMessages += count;
-             }
+            for (ChannelItem item : channelList) {
+                String key = item.getChannelName();
+
+                int count = channelStorage.getUnreadCount(key);
+                item.setUnreadCount(count);
+                totalUnreadMessages += count;
+            }
         } else {
             for (ChannelItem item : channelList) {
                 totalUnreadMessages += item.getUnreadCount();
             }
         }
-        
+
         int total = totalUnreadMessages + pmUnreadCount;
-        
+
         runOnUiThread(() -> {
             if (total > 0) {
                 unreadBadge.setVisibility(View.VISIBLE);
@@ -1810,23 +1744,19 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
 
     private void resetUnreadCount() {
-        // Only resets the badge visibility if there are no unread messages total
         updateGlobalUnreadCount();
     }
 
     public void processServerMessage(String sender, String message, String requestChannel) {
         runOnUiThread(() -> {
-            // Never add channel messages while viewing private messages
             if (isViewingPrivateMessages) {
-                // Still store the message for the channel, but don't add to current display
                 storeMessageForChannel(requestChannel, sender + ": " + message);
                 return;
             }
 
             String channel = requestChannel;
             if (channel == null) {
-                // Handle null case if necessary, e.g., skip or set to a default channel
-                channel = getActiveChannel(); // Set to active channel as fallback
+                channel = getActiveChannel();
             }
 
             String prefix = "";
@@ -1837,16 +1767,14 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 try {
                     channelObj = bot.getUserChannelDao().getChannel(channel);
                 } catch (Exception e) {
-                    // Channel might not be tracked yet or invalid
                     Log.w("processServerMessage", "Channel not found in DAO: " + channel);
                 }
 
                 if (channelObj != null) {
-                    // Retrieve the senderUser from the channel's user list
                     senderUser = channelObj.getUsers().stream()
-                        .filter(user -> user.getNick().equals(sender))
-                        .findFirst()
-                        .orElse(null);
+                            .filter(user -> user.getNick().equals(sender))
+                            .findFirst()
+                            .orElse(null);
 
                     if (senderUser != null) {
                         prefix = getUserPrefix(senderUser, channelObj);
@@ -1866,22 +1794,18 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
             boolean isActiveChannel = channel.equalsIgnoreCase(getActiveChannel());
 
-            // Since we are now on the UI thread, isActivityResumed reading is safe and accurate
             if (isActiveChannel && !isViewingPrivateMessages && isActivityResumed) {
                 addChatMessage(formattedMessage);
             } else {
-                // Update unread count for the specific channel FIRST
-                updateUnreadCountForChannel(channel); 
-                // Then update the global badge to ensure it has the latest count
-                updateGlobalUnreadCount();  
+                updateUnreadCountForChannel(channel);
+                updateGlobalUnreadCount();
             }
         });
     }
 
     private void updateUnreadCountForChannel(String channel) {
         Log.d("NotificationDebug", "ChatActivity: Updating unread count for channel: " + channel);
-        
-        // Always update storage first to ensure it's persisted, using case-insensitive key internally
+
         if (channelStorage != null) {
             channelStorage.incrementUnreadCount(channel);
             Log.d("NotificationDebug", "ChatActivity: Storage updated. New count: " + channelStorage.getUnreadCount(channel));
@@ -1894,11 +1818,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             }
         }
         channelAdapter.notifyDataSetChanged();
-        
-        // Broadcast the new message event for other activities (like PrivateChatActivity)
+
         Intent intent = new Intent("com.btech.konnectchatirc.CHANNEL_MESSAGE");
         intent.putExtra("channel", channel);
-        intent.setPackage(getPackageName()); // Explicitly target our own app
+        intent.setPackage(getPackageName());
         sendBroadcast(intent);
         Log.d("NotificationDebug", "ChatActivity: Broadcast sent for channel: " + channel);
     }
@@ -1959,7 +1882,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             try {
                 ContextCompat.registerReceiver(this, privateMessageReceiver, new IntentFilter("private_message"), ContextCompat.RECEIVER_NOT_EXPORTED);
             } catch (Exception e) {
-                // Already registered
             }
         }
     }
@@ -1968,12 +1890,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     protected void onResume() {
         super.onResume();
         if (rainbowNicks) {
-            rainbowHandler.post(rainbowRunnable); // Start animation
+            rainbowHandler.post(rainbowRunnable);
         }
         isActivityResumed = true;
-        // Resume updates and refresh UI
         refreshChat();
-        // Always refresh private conversations when resuming, in case PrivateChatActivity added new ones
         loadPrivateConversationList();
         updateGlobalUnreadCount();
     }
@@ -1981,7 +1901,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     @Override
     protected void onPause() {
         super.onPause();
-        rainbowHandler.removeCallbacks(rainbowRunnable); // Stop animation to save battery
+        rainbowHandler.removeCallbacks(rainbowRunnable);
         isActivityResumed = false;
     }
 
@@ -1992,7 +1912,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             try {
                 unregisterReceiver(privateMessageReceiver);
             } catch (IllegalArgumentException e) {
-                // Receiver was not registered
             }
         }
     }
@@ -2000,19 +1919,17 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Clear the bot provider registration
         BotManager.clearActiveBotProvider();
-        
+
         dismissMentionPopup();
         disconnectFromServer();
         releaseWakeLock();
         releaseWifiLock();
-        
+
         if (privateMessageReceiver != null) {
             try {
                 unregisterReceiver(privateMessageReceiver);
             } catch (IllegalArgumentException e) {
-                // Receiver not registered
             }
         }
     }
@@ -2022,8 +1939,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             new Thread(() -> {
                 try {
                     bot.sendIRC().quitServer("https://play.google.com/store/apps/details?id=com.btech.konnectchatirc, Download KonnectChatIRC app today!");
-                    bot.stopBotReconnect(); // Stop auto-reconnect attempts
-                    bot.close(); // Properly close the connection
+                    bot.stopBotReconnect();
+                    bot.close();
                     Log.d("ChatActivity", "IRC connection terminated.");
                 } catch (Exception e) {
                     Log.e("ChatActivity", "Error while disconnecting from IRC", e);
@@ -2033,78 +1950,59 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     }
 
     private void initializePrivateMessaging() {
-        // Initialize message storage
         SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
         messageStorage = new PrivateMessageStorage(prefs);
 
-        // Get UI elements
         privateConversationListView = findViewById(R.id.privateConversationListView);
         Button btnChannelsTab = findViewById(R.id.btnChannelsTab);
         Button btnPrivateMessagesTab = findViewById(R.id.btnPrivateMessagesTab);
         FrameLayout channelsSection = findViewById(R.id.channelsSection);
         FrameLayout privateMessagesSection = findViewById(R.id.privateMessagesSection);
 
-        // Set up adapter for conversations using custom adapter with delete button
         privateConversationAdapter = new PrivateConversationAdapter(this, privateConversations, messageStorage, userNick);
         privateConversationListView.setAdapter(privateConversationAdapter);
 
-        // Set delete listener for conversations
         privateConversationAdapter.setOnConversationDeleteListener(nick -> {
-            // Delete all messages for this conversation
             messageStorage.clearConversation(userNick, nick);
         });
 
-        // Set selection listener for conversations
         privateConversationAdapter.setOnConversationSelectListener((nick, position) -> {
             selectedPrivateConversation = nick;
             privateConversationAdapter.setSelectedPosition(position);
             loadPrivateConversation(selectedPrivateConversation);
-            // Close sidebar when selecting a conversation
             drawerLayout.closeDrawer(GravityCompat.START);
         });
 
-        // Handle conversation selection
         privateConversationListView.setOnItemClickListener((parent, view, position, id) -> {
             selectedPrivateConversation = privateConversations.get(position);
             loadPrivateConversation(selectedPrivateConversation);
-            // Close sidebar when selecting a conversation
             drawerLayout.closeDrawer(GravityCompat.START);
         });
 
-        // Set up tab switching with smooth animations
         btnChannelsTab.setOnClickListener(v -> switchToChannelsTab(btnChannelsTab, btnPrivateMessagesTab, channelsSection, privateMessagesSection));
 
         btnPrivateMessagesTab.setOnClickListener(v -> switchToPrivateMessagesTab(btnChannelsTab, btnPrivateMessagesTab, channelsSection, privateMessagesSection));
 
-        // Set up broadcast receiver for private messages
         privateMessageReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String sender = intent.getStringExtra("sender");
                 String message = intent.getStringExtra("message");
-                
-                // Don't process messages from ourselves
+
                 if (sender != null && !sender.equalsIgnoreCase(userNick) && !message.isEmpty()) {
-                    // Save message to storage (only from other users)
-                    // Check if it's already saved to prevent duplicates (rudimentary check or rely on DB constraint)
                     messageStorage.saveMessage(userNick, sender, message, false);
-                    
-                    // Move/Add to conversation list (always move to top)
+
                     runOnUiThread(() -> {
                         if (privateConversations.contains(sender)) {
                             privateConversations.remove(sender);
                         }
                         privateConversations.add(0, sender);
-                        
-                        // If this conversation is selected and we are viewing it, update display
+
                         if (sender.equalsIgnoreCase(selectedPrivateConversation) && isViewingPrivateMessages) {
                             loadPrivateConversation(sender);
                         } else {
-                            // Otherwise, increment unread count
-                            // Only increment if we haven't already counting this exact message (storage handles this, but logic here determines badge)
-                             messageStorage.incrementUnreadCount(userNick, sender);
-                             updateGlobalUnreadCount();
-                            // Play notification sound if enabled and app is active (or handled by showPrivatMessageNotification)
+                            messageStorage.incrementUnreadCount(userNick, sender);
+                            updateGlobalUnreadCount();
                             if (pmSoundEnabled || pmBarNotificationEnabled) {
                                 showPrivateMessageNotification(sender, message);
                             }
@@ -2119,16 +2017,15 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private void loadPrivateConversationList() {
         privateConversations.clear();
         List<String> convs = messageStorage.getAllConversations(userNick);
-        
-        // Sort conversations by last message timestamp (newest first)
+
         Collections.sort(convs, (c1, c2) -> {
             List<PrivateMessageStorage.PrivateMessage> m1 = messageStorage.getMessages(userNick, c1);
             List<PrivateMessageStorage.PrivateMessage> m2 = messageStorage.getMessages(userNick, c2);
             long t1 = m1.isEmpty() ? 0 : m1.get(m1.size() - 1).timestamp;
             long t2 = m2.isEmpty() ? 0 : m2.get(m2.size() - 1).timestamp;
-            return Long.compare(t2, t1); // Newest first
+            return Long.compare(t2, t1);
         });
-        
+
         privateConversations.addAll(convs);
         privateConversationAdapter.notifyDataSetChanged();
     }
@@ -2137,19 +2034,15 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         selectedPrivateConversation = nick;
         isViewingPrivateMessages = true;
         channelNameTextView.setText("Private: " + nick);
-        
+
         chatMessages.clear();
-        
-        // Load ONLY messages from this private conversation, NOT from channels
+
         List<PrivateMessageStorage.PrivateMessage> messages = messageStorage.getMessages(userNick, nick);
         for (PrivateMessageStorage.PrivateMessage msg : messages) {
             String content = msg.sender + ": " + msg.message;
             chatMessages.add(new ChatMessage(content, msg.timestamp));
         }
-        
 
-        
-        // Reset unread count for this conversation
         messageStorage.resetUnreadCount(userNick, nick);
         updateGlobalUnreadCount();
         chatAdapter.notifyDataSetChanged();
@@ -2165,22 +2058,17 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         }
 
         if (bot != null && bot.isConnected()) {
-            // Move/Add to top of conversation list
             privateConversations.remove(selectedPrivateConversation);
             privateConversations.add(0, selectedPrivateConversation);
             privateConversationAdapter.notifyDataSetChanged();
-            
-            // Re-sync selection position to the top
+
             privateConversationAdapter.setSelectedPosition(0);
-            
-            // Save message immediately to storage
+
             messageStorage.saveMessage(userNick, selectedPrivateConversation, message, true);
-            
-            // Update UI immediately to show sent message
+
             loadPrivateConversation(selectedPrivateConversation);
             chatEditText.setText("");
-            
-            // Send via IRC in background
+
             new Thread(() -> {
                 try {
                     bot.sendIRC().message(selectedPrivateConversation, message);
@@ -2205,10 +2093,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
             Uri imageUri = data.getData();
 
-            // Close the image selector immediately by resetting the data
             data.setData(null);
 
-            // Process the image in a separate thread to avoid blocking the UI thread
             new Thread(() -> {
                 Bitmap bitmap = null;
                 try {
@@ -2237,7 +2123,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     }
 
     private void uploadImageToImgur(String encodedImage) {
-        // Show a toast to inform the user that the image is being processed
         runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Processing image...", Toast.LENGTH_SHORT).show());
 
         RequestBody requestBody = new MultipartBody.Builder()
@@ -2265,16 +2150,15 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                         JSONObject json = new JSONObject(responseData);
                         String imageUrl = json.getJSONObject("data").getString("link");
 
-                        // Send the link to the server immediately
                         new Thread(() -> {
                             try {
                                 if (bot != null && bot.isConnected()) {
                                     bot.sendIRC().message(activeChannel, imageUrl);
                                     runOnUiThread(() -> {
-                                        chatEditText.setText("");  // Clear the text box
+                                        chatEditText.setText("");
                                         String msg = userNick + ": " + imageUrl;
                                         storeMessageForChannel(activeChannel, msg);
-                                        addChatMessage(msg);  // Display the sent message in the chat
+                                        addChatMessage(msg);
                                     });
                                 } else {
                                     runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Not connected to IRC server.", Toast.LENGTH_SHORT).show());
@@ -2293,12 +2177,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         });
     }
 
-
     public List<String> getUserListFromActiveChannel() {
         List<String> userList = new ArrayList<>();
 
         if (bot == null || !bot.isConnected()) {
-            return userList; // Return an empty list if the bot is not connected
+            return userList;
         }
 
         try {
@@ -2310,11 +2193,62 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 }
             }
         } catch (DaoException e) {
-            // Handle the case where the channel is not found
             runOnUiThread(() -> Toast.makeText(ChatActivity.this, "Channel not found or not yet joined.", Toast.LENGTH_SHORT).show());
         }
 
         return userList;
+    }
+
+    // Refactored to scan the entire server context globally
+    public List<String> findDuplicateUsers(User selectedUser) {
+        List<String> dupNicks = new ArrayList<>();
+        if (selectedUser == null || bot == null || !bot.isConnected()) return dupNicks;
+
+        String currentHost = extractHost(selectedUser.getHostname());
+        if (currentHost.isEmpty()) {
+            currentHost = extractHost(selectedUser.getHostmask());
+        }
+
+        if (currentHost.isEmpty() || isExcludedHost(selectedUser)) {
+            return dupNicks;
+        }
+
+        try {
+            // Search globally across all users the bot knows about
+            for (User user : bot.getUserChannelDao().getAllUsers()) {
+
+                String uHost = extractHost(user.getHostname());
+                if (uHost.isEmpty()) {
+                    uHost = extractHost(user.getHostmask());
+                }
+
+                if (!uHost.isEmpty() && currentHost.equalsIgnoreCase(uHost)) {
+                    if (!isExcludedHost(user) && !dupNicks.contains(user.getNick())) {
+                        dupNicks.add(user.getNick());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return dupNicks;
+    }
+
+    public boolean isExcludedHost(User user) {
+        if (user == null) return false;
+        if (user.isIrcop()) return true;
+
+        String hostmask = user.getHostmask();
+        String hostname = user.getHostname();
+        String lowerHost = "";
+
+        if (hostmask != null) {
+            lowerHost = hostmask.toLowerCase();
+        } else if (hostname != null) {
+            lowerHost = hostname.toLowerCase();
+        }
+
+        return lowerHost.contains("ircoperator") || lowerHost.contains("netadmin");
     }
 
     private String getUserPrefix(User user, Channel channel) {
@@ -2328,7 +2262,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         if (levels.contains(UserLevel.VOICE)) return "+";
         return "";
     }
-
 
     public void addBannedUser(String banEntry) {
         if (!bannedUsers.contains(banEntry)) {
@@ -2355,15 +2288,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         return chatAdapter;
     }
 
-
     private void initializeMentionPopup() {
-        // Inflate the suggestion list layout
         View popupView = LayoutInflater.from(this).inflate(R.layout.popup_mentions, null);
         suggestionRecyclerView = popupView.findViewById(R.id.suggestionRecyclerView);
         suggestionRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // Initialize the adapter with an empty list
-        // After:
         suggestionAdapter = new MentionSuggestionAdapter(new ArrayList<>(), suggestion -> {
             insertMention(suggestion, mentionStartIndex);
             dismissMentionPopup();
@@ -2371,10 +2300,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
         suggestionRecyclerView.setAdapter(suggestionAdapter);
 
-        // Measure the height of the RecyclerView to adjust the PopupWindow height dynamically
         suggestionRecyclerView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             int height = suggestionRecyclerView.getHeight();
-            if (height > 600) { // Set a maximum height (e.g., 600 pixels)
+            if (height > 600) {
                 height = 600;
             }
             mentionPopupWindow.setHeight(height);
@@ -2383,23 +2311,21 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         mentionPopupWindow = new PopupWindow(
                 popupView,
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                dpToPx(200), // Set maximum height to 200dp
+                dpToPx(200),
                 true
         );
 
-        // Allow the PopupWindow to adjust its position based on the keyboard
         mentionPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-
-        // Ensure the PopupWindow doesn't overlap the EditText
         mentionPopupWindow.setBackgroundDrawable(getResources().getDrawable(R.drawable.popup_background));
         mentionPopupWindow.setOutsideTouchable(true);
-        mentionPopupWindow.setFocusable(false); // Allow EditText to retain focus
+        mentionPopupWindow.setFocusable(false);
     }
-    // Method to convert dp to pixels
+
     private int dpToPx(int dp) {
         return (int) TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
     }
+
     private void showMentionPopup(String currentQuery) {
         if (bot == null || !bot.isConnected()) {
             return;
@@ -2412,10 +2338,8 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
         List<String> filteredList;
         if (currentQuery.isEmpty()) {
-            // Show all users if no query is present
             filteredList = new ArrayList<>(userList);
         } else {
-            // Filter users based on the current query
             filteredList = new ArrayList<>();
             for (String user : userList) {
                 if (user.toLowerCase().startsWith(currentQuery.toLowerCase())) {
@@ -2429,25 +2353,18 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             return;
         }
 
-        // Update the adapter with the new list
         suggestionAdapter.updateSuggestions(filteredList);
 
-        // Calculate the position to show the popup above the EditText
         int[] location = new int[2];
         chatEditText.getLocationOnScreen(location);
         int yOffset = location[1] - chatEditText.getHeight() - mentionPopupWindow.getHeight();
 
-        // Ensure yOffset is not negative to prevent the popup from appearing off-screen
         if (yOffset < 0) {
             yOffset = 0;
         }
 
-        // Show the popup at the calculated position
         mentionPopupWindow.showAtLocation(chatEditText, Gravity.NO_GRAVITY, 0, yOffset);
     }
-
-
-
 
     private void updateMentionSuggestions() {
         int cursorPosition = chatEditText.getSelectionStart();
@@ -2456,7 +2373,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             return;
         }
 
-        // Ensure that mentionStartIndex + 1 <= cursorPosition to prevent IndexOutOfBounds
         if (mentionStartIndex + 1 > cursorPosition) {
             dismissMentionPopup();
             return;
@@ -2465,11 +2381,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         String query = chatEditText.getText().toString().substring(mentionStartIndex + 1, cursorPosition).toLowerCase();
 
         if (query.isEmpty()) {
-            // If there's nothing typed after '@', show all users
             List<String> userList = getUserListFromActiveChannel();
             suggestionAdapter.updateSuggestions(userList);
         } else {
-            // Filter the user list based on the query
             List<String> userList = getUserListFromActiveChannel();
             List<String> filteredList = new ArrayList<>();
 
@@ -2496,9 +2410,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         Log.d("MentionFeature", "Mention popup dismissed and indices reset.");
     }
 
-
     private void insertMention(String nickname, int mentionStartIndex) {
-        // Enhanced implementation with safety checks...
         if (mentionStartIndex < 0) {
             Log.e("MentionFeature", "Invalid mentionStartIndex: " + mentionStartIndex);
             return;
@@ -2517,14 +2429,12 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             return;
         }
 
-        // Ensure that mentionStartIndex + 1 <= cursorPosition to prevent IndexOutOfBounds
         if (mentionStartIndex + 1 > cursorPosition) {
             Log.e("MentionFeature", "mentionStartIndex + 1 (" + (mentionStartIndex + 1) + ") exceeds cursorPosition (" + cursorPosition + ").");
             dismissMentionPopup();
             return;
         }
 
-        // Remove the '@' and partial text
         try {
             editable.delete(mentionStartIndex, cursorPosition);
         } catch (IndexOutOfBoundsException e) {
@@ -2533,38 +2443,36 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             return;
         }
 
-        // Insert the selected nickname with '@' and a space
         editable.insert(mentionStartIndex, "@" + nickname + " ");
 
-        // Reset mention tracking
         isMentionActive = false;
         mentionStartIndex = -1;
 
         Log.d("MentionFeature", "Inserted mention: @" + nickname + " at index: " + mentionStartIndex);
     }
+
     public void onRemoveChannel(String channelName) {
-        partChannel(channelName); // Part the channel
-        removeChannel(channelName); // Remove from the list
+        partChannel(channelName);
+        removeChannel(channelName);
 
         if (!channelList.isEmpty()) {
             setActiveChannel(channelList.get(channelList.size() - 1).getChannelName());
         } else {
-            // No channels left, so do not set any active channel
             activeChannel = null;
-            updateChannelName(""); // Clear the displayed channel name or handle it accordingly
-            chatMessages.clear(); // Clear chat messages since no channel is active
+            updateChannelName("");
+            chatMessages.clear();
             chatAdapter.notifyDataSetChanged();
         }
     }
 
     @Override
     public void onChannelClick(ChannelItem channel) {
-        switchChannel(channel); // Adjust this method as needed for your channel switching logic
+        switchChannel(channel);
     }
 
     @Override
     public void onLeaveChannelClick(ChannelItem channel) {
-        onRemoveChannel(channel.getChannelName()); // Use onRemoveChannel instead
+        onRemoveChannel(channel.getChannelName());
     }
 
     public interface OnChannelClickListener {
@@ -2573,12 +2481,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     }
 
     private void initializeCommandPopup() {
-        // Inflate the layout for the command suggestions
         View popupView = LayoutInflater.from(this).inflate(R.layout.popup_commands, null);
         commandSuggestionRecyclerView = popupView.findViewById(R.id.suggestionRecyclerView);
         commandSuggestionRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // Initialize the adapter with an empty list
         commandSuggestionAdapter = new MentionSuggestionAdapter(new ArrayList<>(), suggestion -> {
             insertCommand(suggestion, commandStartIndex);
             dismissCommandPopup();
@@ -2586,7 +2492,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
         commandSuggestionRecyclerView.setAdapter(commandSuggestionAdapter);
 
-        // Create the PopupWindow
         commandPopupWindow = new PopupWindow(
                 popupView,
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -2594,10 +2499,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 true
         );
 
-        // Adjust the popup window to work with the soft keyboard
         commandPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         commandPopupWindow.setOutsideTouchable(true);
-        commandPopupWindow.setFocusable(false); // Allow EditText to retain focus
+        commandPopupWindow.setFocusable(false);
     }
 
     private void showCommandPopup(String currentQuery) {
@@ -2620,10 +2524,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             return;
         }
 
-        // Update the adapter with filtered commands
         commandSuggestionAdapter.updateSuggestions(filteredCommands);
-
-        // Display the popup below the EditText
         commandPopupWindow.showAsDropDown(chatEditText);
     }
 
@@ -2651,12 +2552,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             return;
         }
 
-        // Insert the selected command with a space
         editable.insert(commandStartIndex, command + " ");
     }
 
     public void updateUserList() {
-        // Get the active channel
         String activeChannel = getActiveChannel();
         if (activeChannel != null && bot != null) {
             Channel channel = bot.getUserChannelDao().getChannel(activeChannel);
@@ -2666,16 +2565,12 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     String prefix = String.valueOf(IrcUtils.getUserPrefix(user, channel));
                     userList.add(prefix + user.getNick());
                 }
-                // Notify the adapter of the changes
                 runOnUiThread(() -> userListAdapter.notifyDataSetChanged());
             }
         }
     }
 
-    /**
-     * Switch to Channels tab with smooth animation
-     */
-    private void switchToChannelsTab(Button btnChannelsTab, Button btnPrivateMessagesTab, 
+    private void switchToChannelsTab(Button btnChannelsTab, Button btnPrivateMessagesTab,
                                      FrameLayout channelsSection, FrameLayout privateMessagesSection) {
         isViewingPrivateMessages = false;
         selectedPrivateConversation = null;
@@ -2685,15 +2580,13 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         }
         chatAdapter.notifyDataSetChanged();
         animateSectionTransition(channelsSection, privateMessagesSection);
-        
-        // Animate selected tab
+
         btnChannelsTab.clearAnimation();
         btnChannelsTab.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, R.anim.tab_select));
         btnChannelsTab.setBackgroundResource(R.drawable.tab_indicator_active);
         btnChannelsTab.setTextColor(Color.WHITE);
         btnChannelsTab.setAlpha(1.0f);
-        
-        // Animate deselected tab
+
         btnPrivateMessagesTab.clearAnimation();
         btnPrivateMessagesTab.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, R.anim.tab_deselect));
         btnPrivateMessagesTab.setBackgroundResource(R.drawable.tab_indicator);
@@ -2701,26 +2594,20 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         btnPrivateMessagesTab.setAlpha(0.8f);
     }
 
-    /**
-     * Switch to Private Messages tab with smooth animation
-     */
     private void switchToPrivateMessagesTab(Button btnChannelsTab, Button btnPrivateMessagesTab,
                                             FrameLayout channelsSection, FrameLayout privateMessagesSection) {
         isViewingPrivateMessages = true;
         chatMessages.clear();
         chatAdapter.notifyDataSetChanged();
-        // Reload conversations from storage to pick up any new ones from other activities
         loadPrivateConversationList();
         animateSectionTransition(privateMessagesSection, channelsSection);
-        
-        // Animate selected tab
+
         btnPrivateMessagesTab.clearAnimation();
         btnPrivateMessagesTab.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, R.anim.tab_select));
         btnPrivateMessagesTab.setBackgroundResource(R.drawable.tab_indicator_active);
         btnPrivateMessagesTab.setTextColor(Color.WHITE);
         btnPrivateMessagesTab.setAlpha(1.0f);
-        
-        // Animate deselected tab
+
         btnChannelsTab.clearAnimation();
         btnChannelsTab.startAnimation(android.view.animation.AnimationUtils.loadAnimation(this, R.anim.tab_deselect));
         btnChannelsTab.setBackgroundResource(R.drawable.tab_indicator);
@@ -2728,9 +2615,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         btnChannelsTab.setAlpha(0.8f);
     }
 
-    /**
-     * Animate section transitions with fade effect
-     */
     private void animateSectionTransition(View showView, View hideView) {
         showView.setVisibility(View.VISIBLE);
         showView.setAlpha(0f);
@@ -2757,7 +2641,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             int importance = NotificationManager.IMPORTANCE_HIGH;
             NotificationChannel channel = new NotificationChannel(PM_CHANNEL_ID, name, importance);
             channel.setDescription(description);
-            // Register the channel with the system
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             if (notificationManager != null) {
                 notificationManager.createNotificationChannel(channel);
@@ -2766,50 +2649,42 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     }
 
     public void showPrivateMessageNotification(String sender, String message) {
-        // If we are currently viewing this exact conversation, do not notify/sound
         if (isActivityResumed && isViewingPrivateMessages && sender.equalsIgnoreCase(selectedPrivateConversation)) {
             return;
         }
 
-        // Play Pop sound if enabled
         if (pmSoundEnabled) {
             try {
-               ToneGenerator toneGen = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100);
-               toneGen.startTone(ToneGenerator.TONE_PROP_ACK);
-               // Release on a background thread to prevent Main Thread deadlock/timeout
-               new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                   new Thread(toneGen::release).start();
-               }, 200);
+                ToneGenerator toneGen = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100);
+                toneGen.startTone(ToneGenerator.TONE_PROP_ACK);
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    new Thread(toneGen::release).start();
+                }, 200);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
-        // Show Bar Notification if enabled
         if (pmBarNotificationEnabled) {
-            // Create Intent to open ChatActivity
             Intent intent = new Intent(this, ChatActivity.class);
-            // Fix: Use SINGLE_TOP to bring existing activity to front instead of restarting (CLEAR_TASK kills connection)
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            intent.putExtra("OPEN_PM_NICK", sender); 
-            
+            intent.putExtra("OPEN_PM_NICK", sender);
+
             PendingIntent pendingIntent = PendingIntent.getActivity(this, sender.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-    
+
             NotificationCompat.Builder builder = new NotificationCompat.Builder(this, PM_CHANNEL_ID)
-                    .setSmallIcon(R.drawable.ic_notification) // Ensure this resource exists, or use a fallback
-                    .setContentTitle("Message From: \"" + sender + "\"") // Updated format
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setContentTitle("Message From: \"" + sender + "\"")
                     .setContentText(message)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(true)
-                    .setDefaults(NotificationCompat.DEFAULT_LIGHTS); // We handle sound manually
-    
+                    .setDefaults(NotificationCompat.DEFAULT_LIGHTS);
+
             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-            // notificationId is a unique int for each notification that you must define
             try {
                 notificationManager.notify(sender.hashCode(), builder.build());
             } catch (SecurityException e) {
-                // Log or handle missing permission
                 Log.e("ChatActivity", "Missing POST_NOTIFICATIONS permission", e);
             }
         }
@@ -2832,23 +2707,20 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        
-        // Handle Notification Click while app is running
+
         if (intent.hasExtra("OPEN_PM_NICK")) {
             String targetNick = intent.getStringExtra("OPEN_PM_NICK");
             if (targetNick != null && !targetNick.isEmpty()) {
-                // Determine if we need to switch tabs
                 Button btnChannelsTab = findViewById(R.id.btnChannelsTab);
                 Button btnPrivateMessagesTab = findViewById(R.id.btnPrivateMessagesTab);
                 FrameLayout channelsSection = findViewById(R.id.channelsSection);
                 FrameLayout privateMessagesSection = findViewById(R.id.privateMessagesSection);
 
-                if (btnChannelsTab != null && btnPrivateMessagesTab != null && 
-                    channelsSection != null && privateMessagesSection != null) {
+                if (btnChannelsTab != null && btnPrivateMessagesTab != null &&
+                        channelsSection != null && privateMessagesSection != null) {
                     switchToPrivateMessagesTab(btnChannelsTab, btnPrivateMessagesTab, channelsSection, privateMessagesSection);
                 }
 
-                // Ensure user is in the list
                 if (!privateConversations.contains(targetNick)) {
                     privateConversations.add(0, targetNick);
                     privateConversationAdapter.notifyDataSetChanged();
@@ -2858,5 +2730,4 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             }
         }
     }
-
 }

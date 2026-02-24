@@ -5,14 +5,19 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.text.Editable;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -60,7 +65,7 @@ public class ListUsers {
         this.context = context;
         this.bot = bot;
         this.activity = activity;
-        
+
         // Initialize message storage
         SharedPreferences prefs = context.getSharedPreferences("konnect_chat", Context.MODE_PRIVATE);
         this.messageStorage = new PrivateMessageStorage(prefs);
@@ -150,7 +155,7 @@ public class ListUsers {
             }
         };
 
-            // Set the adapter to the ListView
+        // Set the adapter to the ListView
         userListView.setAdapter(adapter);
 
         // Handle the search EditText
@@ -217,7 +222,7 @@ public class ListUsers {
             }
         }
 
-        // Update the adapter on the UI thread. 
+        // Update the adapter on the UI thread.
         // ArrayAdapter.clear() also clears the underlying list (filteredUserList).
         final List<UserItem> finalResults = results;
         activity.runOnUiThread(() -> {
@@ -249,10 +254,21 @@ public class ListUsers {
         TextView nickTextView = optionsView.findViewById(R.id.options_nick);
         nickTextView.setText(selectedUserWithPrefix);
 
-        // Set the host and IP information
+        // Extract and format host robustly
         TextView hostIpTextView = optionsView.findViewById(R.id.options_host_ip);
-        String host = (user != null && user.getHostmask() != null) ? user.getHostmask() : "N/A";
-        hostIpTextView.setText("Host: " + host);
+        String rawHost = (user != null && user.getHostname() != null) ? user.getHostname() :
+                ((user != null && user.getHostmask() != null) ? user.getHostmask() : "N/A");
+        String cleanHost = rawHost;
+
+        if (activity instanceof ChatActivity) {
+            cleanHost = ((ChatActivity) activity).extractHost(rawHost);
+        } else {
+            // Fallback safe extraction if not ChatActivity
+            if (rawHost != null && rawHost.contains("@")) {
+                cleanHost = rawHost.substring(rawHost.lastIndexOf("@") + 1).trim();
+            }
+        }
+        hostIpTextView.setText("Host: " + (cleanHost != null && !cleanHost.isEmpty() ? cleanHost : "N/A"));
 
         // Set additional user information
         TextView identTextView = optionsView.findViewById(R.id.options_ident);
@@ -263,9 +279,42 @@ public class ListUsers {
         String realName = (user != null && user.getRealName() != null) ? user.getRealName() : "N/A";
         realNameTextView.setText("Real Name: " + realName);
 
+        // Set Account Status & Append Duplicate Users natively to the Status string
         TextView accountTextView = optionsView.findViewById(R.id.options_account);
-        String awayMsg = (user != null && user.isAway()) ? user.getAwayMessage() : "Not Away";
-        accountTextView.setText("Status: " + awayMsg);
+        String statusText = "Status: Not Away";
+        int statusColor = Color.parseColor("#AAAAAA"); // Default gray
+
+        if (user != null && user.isAway()) {
+            statusText = "Status: Away (" + user.getAwayMessage() + ")";
+            statusColor = Color.parseColor("#FF9800"); // Orange
+        } else if (user != null && user.isIrcop()) {
+            statusText = "Status: IRC Operator";
+            statusColor = Color.parseColor("#F44336"); // Red
+        }
+
+        SpannableStringBuilder ssb = new SpannableStringBuilder(statusText);
+        ssb.setSpan(new ForegroundColorSpan(statusColor), 0, statusText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        // Get Duplicate Users and append directly under Status
+        if (user != null && activity instanceof ChatActivity) {
+            List<String> dupNicks = ((ChatActivity) activity).findDuplicateUsers(user);
+            // ONLY SHOW IF MORE THAN 1 RESULT
+            if (dupNicks.size() > 1) {
+                ssb.append("\nDuplicates: ");
+                int start = ssb.length();
+                String dupesStr = android.text.TextUtils.join(", ", dupNicks);
+                ssb.append(dupesStr);
+                // Make the duplicate nicks bright red so they stand out
+                ssb.setSpan(new ForegroundColorSpan(Color.parseColor("#FF5252")), start, ssb.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+        }
+        accountTextView.setText(ssb);
+
+        // Hide legacy duplicate layout if exists in XML to prevent formatting clashes
+        LinearLayout layoutDupUser = optionsView.findViewById(R.id.layout_dup_user);
+        if (layoutDupUser != null) {
+            layoutDupUser.setVisibility(View.GONE);
+        }
 
         AlertDialog.Builder optionsDialog = new AlertDialog.Builder(context, R.style.CustomDialogTheme_NoAnimation);
         optionsDialog.setView(optionsView);
