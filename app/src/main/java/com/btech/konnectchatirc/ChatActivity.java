@@ -274,6 +274,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private boolean rainbowNicks = false;
     private boolean pmSoundEnabled = true;
     private boolean pmBarNotificationEnabled = true;
+    private boolean detailedJPQEnabled = true;
     private static final String PM_CHANNEL_ID = "PM_Notifications";
 
     private final Handler rainbowHandler = new Handler(Looper.getMainLooper());
@@ -400,6 +401,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         chatAdapter.setRainbowEnabled(rainbowNicks);
         pmSoundEnabled = prefs.getBoolean("pm_sound_enabled", true);
         pmBarNotificationEnabled = prefs.getBoolean("pm_bar_notification_enabled", true);
+        detailedJPQEnabled = prefs.getBoolean("detailed_jpq_enabled", true);
 
         messageStorage = new PrivateMessageStorage(prefs);
         channelStorage = new ChannelStorage(prefs);
@@ -779,7 +781,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     .setName(userNick)
                     .setLogin("KCIRC")
                     .setAutoNickChange(true)
-                    .setRealName("TPTC IRC Client")
+                    .setRealName("KonnectChatIRC Client")
                     .addAutoJoinChannel(selectedChannel)
                     .addListener(new Listeners(this))
                     .addCapHandler(new EnableCapHandler("extended-join"))
@@ -1033,11 +1035,17 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         pmBarCheck.setChecked(pmBarNotificationEnabled);
         pmBarCheck.setTextSize(16);
 
+        final CheckBox detailedJPQCheck = new CheckBox(this);
+        detailedJPQCheck.setText("Detailed Join/Part/Quit");
+        detailedJPQCheck.setChecked(detailedJPQEnabled);
+        detailedJPQCheck.setTextSize(16);
+
         layout.addView(timestampCheck);
         layout.addView(rainbowCheck);
         layout.addView(notificationHeader);
         layout.addView(pmSoundCheck);
         layout.addView(pmBarCheck);
+        layout.addView(detailedJPQCheck);
         layout.addView(fallingItemsCheck);
 
         builder.setView(layout);
@@ -1048,6 +1056,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             boolean newPmSoundEnabled = pmSoundCheck.isChecked();
             boolean newPmBarNotificationEnabled = pmBarCheck.isChecked();
             boolean newFallingItemsEnabled = fallingItemsCheck.isChecked();
+            boolean newDetailedJPQEnabled = detailedJPQCheck.isChecked();
 
             SharedPreferences prefs = getSharedPreferences("konnect_chat", MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
@@ -1079,6 +1088,12 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                         fallingItemsView.setVisibility(View.GONE);
                     }
                 }
+            }
+
+            if (detailedJPQEnabled != newDetailedJPQEnabled) {
+                detailedJPQEnabled = newDetailedJPQEnabled;
+                editor.putBoolean("detailed_jpq_enabled", detailedJPQEnabled);
+                changesMade = true;
             }
 
             if (showTimestamps != newShowTimestamps) {
@@ -1122,6 +1137,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
     public String getUserNick() {
         return userNick;
+    }
+
+    public boolean isDetailedJPQEnabled() {
+        return detailedJPQEnabled;
     }
 
     public String getActiveChannel() {

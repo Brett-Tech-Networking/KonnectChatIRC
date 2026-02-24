@@ -333,7 +333,12 @@ public class Listeners extends ListenerAdapter {
             // Handle when another user joins the channel
             chatActivity.runOnUiThread(() -> {
                 List<String> dupNicks = chatActivity.findDuplicateUsers(event.getUser());
-                String joinMessage = userNick + " has joined the channel.";
+                String joinMessage;
+                if (chatActivity.isDetailedJPQEnabled()) {
+                    joinMessage = userNick + " (" + event.getUser().getLogin() + "@" + event.getUser().getHostname() + ") has joined the channel.";
+                } else {
+                    joinMessage = userNick + " has joined the channel.";
+                }
                 if (!dupNicks.isEmpty()) {
                     StringBuilder sb = new StringBuilder(" (DUP of: ");
                     for (int i = 0; i < dupNicks.size(); i++) {
@@ -365,7 +370,12 @@ public class Listeners extends ListenerAdapter {
                 chatActivity.partChannel(channel);
             } else {
                 // Process server message for other users leaving
-                String partMessage = userNick + " has left the channel.";
+                String partMessage;
+            if (chatActivity.isDetailedJPQEnabled()) {
+                partMessage = userNick + " (" + event.getUser().getLogin() + "@" + event.getUser().getHostname() + ") has left the channel.";
+            } else {
+                partMessage = userNick + " has left the channel.";
+            }
                 chatActivity.processServerMessage("SERVER", partMessage, channel);
             }
 
@@ -619,7 +629,12 @@ public class Listeners extends ListenerAdapter {
     public void onQuit(org.pircbotx.hooks.events.QuitEvent event) {
         String userNick = event.getUser().getNick();
         String reason = event.getReason();
-        String message = userNick + " has quit (" + reason + ")";
+        String message;
+        if (chatActivity.isDetailedJPQEnabled()) {
+            message = userNick + " (" + event.getUser().getLogin() + "@" + event.getUser().getHostname() + ") has quit (" + reason + ")";
+        } else {
+            message = userNick + " has quit (" + reason + ")";
+        }
 
         // Notify all channels this user was in
         for (Channel channel : event.getUser().getChannels()) {
