@@ -1,43 +1,92 @@
-<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
+    android:orientation="vertical"
     android:padding="8dp">
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/prefixImageView"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="4dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/prefixTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
+            android:padding="8dp"
+            android:background="@drawable/rounded_background"
+            android:textStyle="bold"
+            android:layout_gravity="center_vertical" />
+
+        <TextView
+            android:id="@+id/timestampTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#AAAAAA"
+            android:textSize="12sp"
+            android:paddingEnd="4dp"
+            android:layout_gravity="center_vertical"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/messageTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@android:color/white"
+            android:layout_gravity="center_vertical"
+            android:paddingStart="4dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/translationLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp"
+        android:layout_marginStart="8dp"
+        android:visibility="gone">
+
+        <View
+            android:layout_width="3dp"
+            android:layout_height="match_parent"
+            android:background="#8E24AA" /> <!-- Deep Purple side bar -->
+
+        <TextView
+            android:id="@+id/translationTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="12dp"
+            android:textColor="#CE93D8"
+            android:textSize="14sp"
+            tools:text="Translated message" />
+    </LinearLayout>
+
     <ImageView
-        android:id="@+id/prefixImageView"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:layout_marginEnd="4dp"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/prefixTextView"
-        android:layout_width="wrap_content"
+        android:id="@+id/messageImageView"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@android:color/white"
-        android:padding="8dp"
-        android:background="@drawable/rounded_background"
-        android:textStyle="bold"
-        android:layout_gravity="center_vertical" />
+        android:layout_marginTop="8dp"
+        android:adjustViewBounds="true"
+        android:maxHeight="300dp"
+        android:visibility="gone"
+        android:scaleType="fitStart" />
 
-    <TextView
-        android:id="@+id/timestampTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="#AAAAAA"
-        android:textSize="12sp"
-        android:paddingEnd="4dp"
-        android:layout_gravity="center_vertical"
-        android:visibility="gone" />
+    <View
+        android:id="@+id/messageDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#33AAAAAA"
+        android:visibility="gone"
+        android:layout_marginTop="4dp" />
 
-    <TextView
-        android:id="@+id/messageTextView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:textColor="@android:color/white"
-        android:layout_gravity="center_vertical"
-        android:paddingStart="4dp" />
 </LinearLayout>

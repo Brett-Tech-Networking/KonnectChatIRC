@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import androidx.core.content.ContextCompat;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -435,24 +436,14 @@ public class PrivateChatActivity extends AppCompatActivity implements BotProvide
         super.onStart();
         // Register to receive private message broadcasts
         try {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                registerReceiver(privateMessageReceiver, new IntentFilter("private_message"), 
-                        Context.RECEIVER_EXPORTED);
-            } else {
-                registerReceiver(privateMessageReceiver, new IntentFilter("private_message"));
-            }
+            ContextCompat.registerReceiver(this, privateMessageReceiver, new IntentFilter("private_message"), ContextCompat.RECEIVER_NOT_EXPORTED);
         } catch (Exception e) {
             // Already registered
         }
         
         // Register channel message receiver
         try {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                registerReceiver(channelMessageReceiver, new IntentFilter("com.btech.konnectchatirc.CHANNEL_MESSAGE"), 
-                        Context.RECEIVER_EXPORTED);
-            } else {
-                registerReceiver(channelMessageReceiver, new IntentFilter("com.btech.konnectchatirc.CHANNEL_MESSAGE"));
-            }
+            ContextCompat.registerReceiver(this, channelMessageReceiver, new IntentFilter("com.btech.konnectchatirc.CHANNEL_MESSAGE"), ContextCompat.RECEIVER_NOT_EXPORTED);
         } catch (Exception e) {
             // Already registered
         }

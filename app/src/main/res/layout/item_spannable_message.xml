@@ -1,4 +1,5 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -26,6 +27,30 @@
             android:linksClickable="true"
             android:textColor="@android:color/white"
             android:textColorLink="@color/lightblue" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/translationLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp"
+        android:layout_marginStart="8dp"
+        android:visibility="gone">
+
+        <View
+            android:layout_width="3dp"
+            android:layout_height="match_parent"
+            android:background="#8E24AA" /> <!-- Deep Purple side bar -->
+
+        <TextView
+            android:id="@+id/translationTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="12dp"
+            android:textColor="#CE93D8"
+            android:textSize="14sp"
+            tools:text="Translated message" />
     </LinearLayout>
 
     <ImageView

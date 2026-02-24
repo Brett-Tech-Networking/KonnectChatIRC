@@ -136,6 +136,8 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         TextView timestampTextView;
         ImageView messageImageView;
         View messageDivider;
+        View translationLayout;
+        TextView translationTextView;
 
         public TextViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -143,6 +145,8 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             timestampTextView = itemView.findViewById(R.id.timestampTextView);
             messageImageView = itemView.findViewById(R.id.messageImageView);
             messageDivider = itemView.findViewById(R.id.messageDivider);
+            translationLayout = itemView.findViewById(R.id.translationLayout);
+            translationTextView = itemView.findViewById(R.id.translationTextView);
         }
 
         public void bind(ChatMessage chatMessage) {
@@ -327,9 +331,36 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 timestampTextView.setVisibility(View.GONE);
             }
 
+            // Translation Logic
+            if (chatMessage.getTranslatedContent() != null) {
+                translationLayout.setVisibility(View.VISIBLE);
+                translationTextView.setText(chatMessage.getTranslatedContent());
+            } else {
+                translationLayout.setVisibility(View.GONE);
+            }
+
+            messageTextView.setOnClickListener(v -> {
+                if (chatMessage.getTranslatedContent() == null) {
+                    Toast.makeText(v.getContext(), "Translating...", Toast.LENGTH_SHORT).show();
+                    TranslationService.translate(message, new TranslationService.TranslationCallback() {
+                        @Override
+                        public void onTranslationComplete(String translatedText) {
+                            chatMessage.setTranslatedContent(translatedText);
+                            notifyItemChanged(getAdapterPosition());
+                        }
+
+                        @Override
+                        public void onTranslationError(Exception e) {
+                            Toast.makeText(v.getContext(), "Translation failed", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            });
+
+            final String finalMessageStr = finalMessageBuilder.toString();
             messageTextView.setOnLongClickListener(v -> {
                 ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText("chat message", finalMessageBuilder);
+                ClipData clip = ClipData.newPlainText("chat message", finalMessageStr);
                 if (clipboard != null) {
                     clipboard.setPrimaryClip(clip);
                     Toast.makeText(v.getContext(), "Message copied to clipboard", Toast.LENGTH_SHORT).show();
@@ -355,6 +386,8 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         TextView timestampTextView;
         ImageView messageImageView;
         View messageDivider;
+        View translationLayout;
+        TextView translationTextView;
 
         public SpannableMessageViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -362,6 +395,8 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             timestampTextView = itemView.findViewById(R.id.timestampTextView);
             messageImageView = itemView.findViewById(R.id.messageImageView);
             messageDivider = itemView.findViewById(R.id.messageDivider);
+            translationLayout = itemView.findViewById(R.id.translationLayout);
+            translationTextView = itemView.findViewById(R.id.translationTextView);
         }
 
         public void bind(ChatMessage chatMessage) {
@@ -375,6 +410,32 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             } else {
                 timestampTextView.setVisibility(View.GONE);
             }
+
+            // Translation Logic
+            if (chatMessage.getTranslatedContent() != null) {
+                translationLayout.setVisibility(View.VISIBLE);
+                translationTextView.setText(chatMessage.getTranslatedContent());
+            } else {
+                translationLayout.setVisibility(View.GONE);
+            }
+
+            messageTextView.setOnClickListener(v -> {
+                if (chatMessage.getTranslatedContent() == null) {
+                    Toast.makeText(v.getContext(), "Translating...", Toast.LENGTH_SHORT).show();
+                    TranslationService.translate(message.toString(), new TranslationService.TranslationCallback() {
+                        @Override
+                        public void onTranslationComplete(String translatedText) {
+                            chatMessage.setTranslatedContent(translatedText);
+                            notifyItemChanged(getAdapterPosition());
+                        }
+
+                        @Override
+                        public void onTranslationError(Exception e) {
+                            Toast.makeText(v.getContext(), "Translation failed", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            });
 
             messageTextView.setOnLongClickListener(v -> {
                 ClipboardManager clipboard = (ClipboardManager) v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);

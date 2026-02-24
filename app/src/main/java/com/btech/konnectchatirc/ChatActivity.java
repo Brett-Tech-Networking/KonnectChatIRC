@@ -1,7 +1,5 @@
 package com.btech.konnectchatirc;
 
-import static androidx.core.util.TypedValueCompat.dpToPx;
-
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
@@ -19,11 +17,8 @@ import android.media.AudioManager;
 import android.media.ToneGenerator;
 import org.pircbotx.UserLevel;
 import java.util.Set;
-import org.pircbotx.UserLevel;
 import org.pircbotx.cap.EnableCapHandler;
-import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
-import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -41,13 +36,11 @@ import androidx.core.app.NotificationManagerCompat;
 import android.net.wifi.WifiManager;
 import android.os.PowerManager;
 import android.provider.MediaStore;
-import android.provider.Settings;
 import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
-import android.text.style.ForegroundColorSpan;
 import android.util.Base64;
 import android.util.Log;
 import android.util.TypedValue;
@@ -871,11 +864,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             }
         };
         
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(privateMessageReceiver, new IntentFilter("private_message"), Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(privateMessageReceiver, new IntentFilter("private_message"));
-        }
+        ContextCompat.registerReceiver(this, privateMessageReceiver, new IntentFilter("private_message"), ContextCompat.RECEIVER_NOT_EXPORTED);
             Log.d("ChatActivity", "Selected Server: " + selectedServer);
 
             if (selectedServer == null || selectedServer.isEmpty()) {
@@ -1968,7 +1957,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         super.onStart();
         if (privateMessageReceiver != null) {
             try {
-                registerReceiver(privateMessageReceiver, new IntentFilter("private_message"), Context.RECEIVER_EXPORTED);
+                ContextCompat.registerReceiver(this, privateMessageReceiver, new IntentFilter("private_message"), ContextCompat.RECEIVER_NOT_EXPORTED);
             } catch (Exception e) {
                 // Already registered
             }
