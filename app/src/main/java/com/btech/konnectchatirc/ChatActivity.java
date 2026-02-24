@@ -628,7 +628,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         btnKick.setOnClickListener(v -> new Kick(this, bot, this).startKickProcess());
         btnIdent.setOnClickListener(v -> new Identify(this, bot, this, v).startIdentifyProcess());
 
-        btnNickRegister.setOnClickListener(v -> Toast.makeText(this, "Nick Registration: Use /msg NickServ REGISTER <pass> <email>", Toast.LENGTH_LONG).show());
+        btnNickRegister.setOnClickListener(v -> new NickRegister(this, bot, this, hoverPanel).startRegistrationProcess());
         btnChanRegister.setOnClickListener(v -> Toast.makeText(this, "Chan Registration: Use /msg ChanServ REGISTER #chan <pass> <desc>", Toast.LENGTH_LONG).show());
         btnSOP.setOnClickListener(v -> Toast.makeText(this, "SOP: Use /msg ChanServ SOP #chan ADD <nick>", Toast.LENGTH_SHORT).show());
         btnAOP.setOnClickListener(v -> Toast.makeText(this, "AOP: Use /msg ChanServ AOP #chan ADD <nick>", Toast.LENGTH_SHORT).show());
@@ -1224,6 +1224,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 break;
             case "join":
                 joinChannel(args);
+                break;
+            case "register":
+                new NickRegister(this, bot, this, hoverPanel).startRegistrationProcess();
                 break;
             case "clear":
                 clearChat();
