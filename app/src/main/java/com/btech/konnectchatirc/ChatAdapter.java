@@ -332,7 +332,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
 
             // Translation Logic
-            if (chatMessage.getTranslatedContent() != null) {
+            if (chatMessage.isTranslationVisible() && chatMessage.getTranslatedContent() != null) {
                 translationLayout.setVisibility(View.VISIBLE);
                 translationTextView.setText(chatMessage.getTranslatedContent());
             } else {
@@ -346,6 +346,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                         @Override
                         public void onTranslationComplete(String translatedText) {
                             chatMessage.setTranslatedContent(translatedText);
+                            chatMessage.setTranslationVisible(true);
                             notifyItemChanged(getAdapterPosition());
                         }
 
@@ -354,6 +355,9 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                             Toast.makeText(v.getContext(), "Translation failed", Toast.LENGTH_SHORT).show();
                         }
                     });
+                } else {
+                    chatMessage.setTranslationVisible(!chatMessage.isTranslationVisible());
+                    notifyItemChanged(getAdapterPosition());
                 }
             });
 
@@ -412,7 +416,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
 
             // Translation Logic
-            if (chatMessage.getTranslatedContent() != null) {
+            if (chatMessage.isTranslationVisible() && chatMessage.getTranslatedContent() != null) {
                 translationLayout.setVisibility(View.VISIBLE);
                 translationTextView.setText(chatMessage.getTranslatedContent());
             } else {
@@ -426,6 +430,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                         @Override
                         public void onTranslationComplete(String translatedText) {
                             chatMessage.setTranslatedContent(translatedText);
+                            chatMessage.setTranslationVisible(true);
                             notifyItemChanged(getAdapterPosition());
                         }
 
@@ -434,6 +439,9 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                             Toast.makeText(v.getContext(), "Translation failed", Toast.LENGTH_SHORT).show();
                         }
                     });
+                } else {
+                    chatMessage.setTranslationVisible(!chatMessage.isTranslationVisible());
+                    notifyItemChanged(getAdapterPosition());
                 }
             });
 
