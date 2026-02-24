@@ -131,6 +131,7 @@ public class IrcForegroundService extends Service {
             Intent intent = new Intent("private_message");
             intent.putExtra("sender", event.getUser().getNick());
             intent.putExtra("message", event.getMessage());
+            intent.setPackage(getPackageName());
             sendBroadcast(intent);
         }
     }

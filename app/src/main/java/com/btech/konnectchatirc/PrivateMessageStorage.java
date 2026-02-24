@@ -3,209 +3,113 @@ package com.btech.konnectchatirc;
 import android.content.SharedPreferences;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Manages local storage of private messages using SharedPreferences
- */
 public class PrivateMessageStorage {
     private final SharedPreferences prefs;
-    private static final String PREFS_NAME = "private_messages";
     private static final String KEY_PREFIX = "pm_";
 
     public PrivateMessageStorage(SharedPreferences prefs) {
         this.prefs = prefs;
     }
 
-    /**
-     * Save a message to local storage
-     */
     public void saveMessage(String userNick, String recipientNick, String message, boolean isSent) {
-        String conversationKey = getConversationKey(userNick, recipientNick);
+        createConversation(userNick, recipientNick);
+        String key = getConversationKey(userNick, recipientNick);
         List<PrivateMessage> messages = getMessages(userNick, recipientNick);
-        
-        messages.add(new PrivateMessage(
-                isSent ? userNick : recipientNick,
-                message,
-                System.currentTimeMillis(),
-                isSent
-        ));
-        
-        String json = messagesToJson(messages);
-        prefs.edit().putString(conversationKey, json).apply();
+        messages.add(new PrivateMessage(isSent ? userNick : recipientNick, message, System.currentTimeMillis(), isSent));
+        prefs.edit().putString(key, messagesToJson(messages)).apply();
     }
 
-    /**
-     * Get all messages for a conversation
-     */
     public List<PrivateMessage> getMessages(String userNick, String recipientNick) {
-        String conversationKey = getConversationKey(userNick, recipientNick);
-        String json = prefs.getString(conversationKey, "[]");
-        
-        return messagesFromJson(json);
+        return messagesFromJson(prefs.getString(getConversationKey(userNick, recipientNick), "[]"));
     }
 
-    /**
-     * Get all conversations (unique list of users)
-     */
     public List<String> getAllConversations(String userNick) {
-        Map<String, ?> allPrefs = prefs.getAll();
+        Map<String, ?> all = prefs.getAll();
         List<String> conversations = new ArrayList<>();
-        String userNickLower = userNick.toLowerCase();
-
-        for (String key : allPrefs.keySet()) {
-            if (key.startsWith(KEY_PREFIX)) {
-                if (key.endsWith("_unread")) {
-                    continue;
-                }
-                
-                String remaining = key.substring(KEY_PREFIX.length());
-                String otherNick = null;
-
-                // Check if the key starts with the userNick followed by a separator
-                if (remaining.startsWith(userNickLower + "_")) {
-                    otherNick = remaining.substring(userNickLower.length() + 1);
-                } 
-                // Check if the key ends with the userNick preceded by a separator
-                else if (remaining.endsWith("_" + userNickLower)) {
-                    otherNick = remaining.substring(0, remaining.length() - userNickLower.length() - 1);
-                }
-
-                if (otherNick != null && !conversations.contains(otherNick)) {
-                    conversations.add(otherNick);
-                }
+        String u = userNick.toLowerCase();
+        for (String key : all.keySet()) {
+            if (key.startsWith(KEY_PREFIX) && !key.endsWith("_unread")) {
+                String rem = key.substring(KEY_PREFIX.length());
+                String other = null;
+                if (rem.startsWith(u + "_")) other = rem.substring(u.length() + 1);
+                else if (rem.endsWith("_" + u)) other = rem.substring(0, rem.length() - u.length() - 1);
+                if (other != null && !conversations.contains(other)) conversations.add(other);
             }
         }
         return conversations;
     }
 
-    /**
-     * Clear all messages for a conversation
-     */
     public void clearConversation(String userNick, String recipientNick) {
-        String conversationKey = getConversationKey(userNick, recipientNick);
-        prefs.edit().remove(conversationKey).apply();
+        String key = getConversationKey(userNick, recipientNick);
+        prefs.edit().remove(key).remove(key + "_unread").apply();
     }
 
-    /**
-     * Create an empty conversation if it doesn't exist
-     */
     public void createConversation(String userNick, String recipientNick) {
-        String conversationKey = getConversationKey(userNick, recipientNick);
-        if (!prefs.contains(conversationKey)) {
-            prefs.edit().putString(conversationKey, "[]").apply();
-        }
+        String key = getConversationKey(userNick, recipientNick);
+        if (!prefs.contains(key)) prefs.edit().putString(key, "[]").apply();
     }
 
-    /**
-     * Get or create a conversation key
-     */
-    private String getConversationKey(String userNick, String recipientNick) {
-        // Always use alphabetical order to ensure same key regardless of direction
-        String[] nicks = {userNick.toLowerCase(), recipientNick.toLowerCase()};
-        java.util.Arrays.sort(nicks);
-        return KEY_PREFIX + nicks[0] + "_" + nicks[1];
+    private String getConversationKey(String u1, String u2) {
+        String[] n = {u1.toLowerCase(), u2.toLowerCase()};
+        java.util.Arrays.sort(n);
+        return KEY_PREFIX + n[0] + "_" + n[1];
     }
 
-    /**
-     * Convert messages to JSON string
-     */
-    private String messagesToJson(List<PrivateMessage> messages) {
-        JSONArray array = new JSONArray();
-        for (PrivateMessage msg : messages) {
+    private String messagesToJson(List<PrivateMessage> msgs) {
+        JSONArray arr = new JSONArray();
+        for (PrivateMessage m : msgs) {
             try {
-                JSONObject obj = new JSONObject();
-                obj.put("sender", msg.sender);
-                obj.put("message", msg.message);
-                obj.put("timestamp", msg.timestamp);
-                obj.put("isSent", msg.isSent);
-                array.put(obj);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+                JSONObject o = new JSONObject();
+                o.put("sender", m.sender); o.put("message", m.message);
+                o.put("timestamp", m.timestamp); o.put("isSent", m.isSent);
+                arr.put(o);
+            } catch (Exception ignored) {}
         }
-        return array.toString();
+        return arr.toString();
     }
 
-    /**
-     * Convert JSON string to messages
-     */
     private List<PrivateMessage> messagesFromJson(String json) {
-        List<PrivateMessage> messages = new ArrayList<>();
+        List<PrivateMessage> msgs = new ArrayList<>();
         try {
-            JSONArray array = new JSONArray(json);
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject obj = array.getJSONObject(i);
-                messages.add(new PrivateMessage(
-                        obj.getString("sender"),
-                        obj.getString("message"),
-                        obj.getLong("timestamp"),
-                        obj.getBoolean("isSent")
-                ));
+            JSONArray arr = new JSONArray(json);
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.getJSONObject(i);
+                msgs.add(new PrivateMessage(o.getString("sender"), o.getString("message"), o.getLong("timestamp"), o.getBoolean("isSent")));
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return messages;
+        } catch (Exception ignored) {}
+        return msgs;
     }
 
-    /**
-     * Model class for private messages
-     */
     public static class PrivateMessage {
-        public String sender;
-        public String message;
+        public String sender, message;
         public long timestamp;
         public boolean isSent;
-
-        public PrivateMessage(String sender, String message, long timestamp, boolean isSent) {
-            this.sender = sender;
-            this.message = message;
-            this.timestamp = timestamp;
-            this.isSent = isSent;
-        }
+        public PrivateMessage(String s, String m, long t, boolean i) { sender=s; message=m; timestamp=t; isSent=i; }
     }
 
-    /**
-     * Get unread count for a conversation
-     */
-    public int getUnreadCount(String userNick, String recipientNick) {
-        String conversationKey = getConversationKey(userNick, recipientNick) + "_unread";
-        return prefs.getInt(conversationKey, 0);
+    public int getUnreadCount(String u1, String u2) {
+        return prefs.getInt(getConversationKey(u1, u2) + "_unread", 0);
     }
 
-    /**
-     * Increment unread count for a conversation
-     */
-    public void incrementUnreadCount(String userNick, String recipientNick) {
-        String conversationKey = getConversationKey(userNick, recipientNick) + "_unread";
-        int currentCount = prefs.getInt(conversationKey, 0);
-        prefs.edit().putInt(conversationKey, currentCount + 1).apply();
+    public void incrementUnreadCount(String u1, String u2) {
+        String k = getConversationKey(u1, u2) + "_unread";
+        prefs.edit().putInt(k, prefs.getInt(k, 0) + 1).apply();
     }
 
-    /**
-     * Reset unread count for a conversation
-     */
-    public void resetUnreadCount(String userNick, String recipientNick) {
-        String conversationKey = getConversationKey(userNick, recipientNick) + "_unread";
-        prefs.edit().remove(conversationKey).apply();
+    public void resetUnreadCount(String u1, String u2) {
+        prefs.edit().remove(getConversationKey(u1, u2) + "_unread").apply();
     }
 
-    /**
-     * Get total unread count for all private messages
-     */
     public int getTotalUnreadCount(String userNick) {
         int total = 0;
-        List<String> conversations = getAllConversations(userNick);
-        for (String recipient : conversations) {
+        List<String> convs = getAllConversations(userNick);
+        for (String recipient : convs) {
             total += getUnreadCount(userNick, recipient);
         }
         return total;
     }
-
-
 }

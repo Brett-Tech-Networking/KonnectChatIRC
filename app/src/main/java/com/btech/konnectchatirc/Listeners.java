@@ -605,6 +605,7 @@ public class Listeners extends ListenerAdapter {
         Intent intent = new Intent("private_message");
         intent.putExtra("sender", sender);
         intent.putExtra("message", message);
+        intent.setPackage(chatActivity.getPackageName());
         Log.d("Listeners", "Sending private_message broadcast: " + sender + ": " + message);
         chatActivity.sendBroadcast(intent);
         

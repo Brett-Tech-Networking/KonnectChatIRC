@@ -768,39 +768,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                 selectedChannel = "#ThePlaceToChat";
             }
 
-            privateMessageReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    if ("private_message".equals(intent.getAction())) {
-                        String sender = intent.getStringExtra("sender");
-                        String message = intent.getStringExtra("message");
-
-                        if (sender != null && message != null) {
-                            if (messageStorage != null) {
-                                messageStorage.saveMessage(sender, userNick, message, false);
-                            }
-
-                            if (isViewingPrivateMessages && sender.equalsIgnoreCase(selectedPrivateConversation)) {
-                                ChatMessage chatMsg = new ChatMessage(sender + ": " + message, System.currentTimeMillis());
-                                Log.d("ChatActivity", "Adding private message to list: " + sender + ": " + message);
-                                chatMessages.add(chatMsg);
-                                chatAdapter.notifyItemInserted(chatMessages.size() - 1);
-                                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-                            } else {
-                                if (messageStorage != null) {
-                                    messageStorage.incrementUnreadCount(userNick, sender);
-                                }
-                                if (privateConversationAdapter != null) {
-                                    privateConversationAdapter.notifyDataSetChanged();
-                                }
-                                updateGlobalUnreadCount();
-                            }
-                        }
-                    }
-                }
-            };
-
-            ContextCompat.registerReceiver(this, privateMessageReceiver, new IntentFilter("private_message"), ContextCompat.RECEIVER_NOT_EXPORTED);
             Log.d("ChatActivity", "Selected Server: " + selectedServer);
 
             if (selectedServer == null || selectedServer.isEmpty()) {
@@ -1323,6 +1290,12 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             }
         }
         updateCurrentNick(newNick);
+        
+        // Broadcast nick change to other activities
+        Intent intent = new Intent("com.btech.konnectchatirc.NICK_CHANGED");
+        intent.putExtra("new_nick", newNick);
+        intent.setPackage(getPackageName());
+        sendBroadcast(intent);
     }
 
     public void joinChannel(String channelName) {
