@@ -791,7 +791,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             if (bot != null) {
                 new Thread(() -> {
                     try {
-                        bot.sendIRC().quitServer("https://www.BrettTechCoding.com, A BrettTech Client, Goodbye!");
+                        bot.sendIRC().quitServer("https://play.google.com/store/apps/details?id=com.btech.konnectchatirc, Download KonnectChatIRC app today!");
                         bot.close();
                         runOnUiThread(this::finish);
                     } catch (Exception e) {
@@ -2023,7 +2023,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         if (bot != null && bot.isConnected()) {
             new Thread(() -> {
                 try {
-                    bot.sendIRC().quitServer("https://www.BrettTechCoding.com, A BrettTech Client, Goodbye!");
+                    bot.sendIRC().quitServer("https://play.google.com/store/apps/details?id=com.btech.konnectchatirc, Download KonnectChatIRC app today!");
                     bot.stopBotReconnect(); // Stop auto-reconnect attempts
                     bot.close(); // Properly close the connection
                     Log.d("ChatActivity", "IRC connection terminated.");
