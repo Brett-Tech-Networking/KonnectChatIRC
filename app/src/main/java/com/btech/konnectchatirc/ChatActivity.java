@@ -679,10 +679,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         sendButton.setOnClickListener(v -> {
             String message = chatEditText.getText().toString().trim();
             if (!message.isEmpty()) {
-                if (isViewingPrivateMessages && selectedPrivateConversation != null) {
-                    sendPrivateMessage(message);
-                } else if (message.startsWith("/")) {
+                if (message.startsWith("/")) {
                     handleCommand(message);
+                } else if (isViewingPrivateMessages && selectedPrivateConversation != null) {
+                    sendPrivateMessage(message);
                 } else {
                     addChatMessage(userNick + ": " + message);
                     chatEditText.setText("");
@@ -1180,25 +1180,27 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             channelAdapter.setSelectedChannelName(channel);
         }
 
-        if (channel.equalsIgnoreCase("Server Notices")) {
-            chatEditText.setEnabled(false);
-            chatEditText.setHint("Server Notices (Read-Only)");
-        } else {
-            chatEditText.setEnabled(true);
-            chatEditText.setHint("Message " + channel);
-        }
+        updateInputVisibility(!channel.equalsIgnoreCase("Server Notices"), channel);
+    }
 
+    private void updateInputVisibility(boolean visible, String targetName) {
         View chatInputLayout = findViewById(R.id.chatInputLayout);
+        if (chatInputLayout == null) return;
+
         RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) chatRecyclerView.getLayoutParams();
 
-        if (channel.equalsIgnoreCase("Server Notices")) {
+        if (!visible) {
             chatInputLayout.setVisibility(View.GONE);
             params.removeRule(RelativeLayout.ABOVE);
             params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+            chatEditText.setEnabled(false);
+            chatEditText.setHint(targetName + " (Read-Only)");
         } else {
             chatInputLayout.setVisibility(View.VISIBLE);
             params.addRule(RelativeLayout.ABOVE, R.id.chatInputLayout);
             params.removeRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+            chatEditText.setEnabled(true);
+            chatEditText.setHint("Message " + targetName);
         }
         params.height = RelativeLayout.LayoutParams.MATCH_PARENT;
         chatRecyclerView.setLayoutParams(params);
@@ -1225,6 +1227,38 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             case "join":
                 joinChannel(args);
                 break;
+            case "msg":
+                String[] msgParts = args.split(" ", 2);
+                if (msgParts.length == 2) {
+                    sendPrivateMessageTo(msgParts[0], msgParts[1], false);
+                } else {
+                    addChatMessage("Usage: /msg <target> <message>");
+                }
+                break;
+            case "ns":
+            case "nickserv":
+                if (!args.isEmpty()) {
+                    sendPrivateMessageTo("NickServ", args, false);
+                } else {
+                    addChatMessage("Usage: /ns <message>");
+                }
+                break;
+            case "cs":
+            case "chanserv":
+                if (!args.isEmpty()) {
+                    sendPrivateMessageTo("ChanServ", args, false);
+                } else {
+                    addChatMessage("Usage: /cs <message>");
+                }
+                break;
+            case "os":
+            case "operserv":
+                if (!args.isEmpty()) {
+                    sendPrivateMessageTo("OperServ", args, false);
+                } else {
+                    addChatMessage("Usage: /os <message>");
+                }
+                break;
             case "register":
                 new NickRegister(this, bot, this, hoverPanel).startRegistrationProcess();
                 break;
@@ -1234,6 +1268,45 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             default:
                 addChatMessage("Unknown command: " + commandName);
                 break;
+        }
+        chatEditText.setText("");
+    }
+
+    private void sendPrivateMessageTo(String target, String message, boolean switchToTarget) {
+        if (target == null || target.isEmpty()) return;
+
+        if (bot != null && bot.isConnected()) {
+            runOnUiThread(() -> {
+                if (!privateConversations.contains(target)) {
+                    privateConversations.add(0, target);
+                } else {
+                    privateConversations.remove(target);
+                    privateConversations.add(0, target);
+                }
+                privateConversationAdapter.notifyDataSetChanged();
+
+                messageStorage.saveMessage(userNick, target, message, true);
+
+                if (switchToTarget) {
+                    selectedPrivateConversation = target;
+                    loadPrivateConversation(target);
+                    chatEditText.setText("");
+                    chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                } else if (isViewingPrivateMessages && target.equalsIgnoreCase(selectedPrivateConversation)) {
+                    loadPrivateConversation(target);
+                    chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                }
+            });
+
+            new Thread(() -> {
+                try {
+                    bot.sendIRC().message(target, message);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        } else {
+            runOnUiThread(() -> Toast.makeText(this, "Not connected to IRC.", Toast.LENGTH_SHORT).show());
         }
     }
 
@@ -1249,9 +1322,18 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
             try {
                 if (isNetworkAvailable()) {
                     if (bot.isConnected()) {
-                        bot.sendIRC().action(activeChannel, action);
+                        String target = isViewingPrivateMessages && selectedPrivateConversation != null ? selectedPrivateConversation : activeChannel;
+                        if (target == null) {
+                            runOnUiThread(() -> addChatMessage("No target for action."));
+                            return;
+                        }
+                        bot.sendIRC().action(target, action);
                         String actionMsg = "* " + userNick + " " + action;
-                        storeMessageForChannel(activeChannel, actionMsg);
+                        if (isViewingPrivateMessages && selectedPrivateConversation != null) {
+                            messageStorage.saveMessage(userNick, selectedPrivateConversation, actionMsg, true);
+                        } else {
+                            storeMessageForChannel(activeChannel, actionMsg);
+                        }
                         runOnUiThread(() -> addChatMessage(actionMsg));
                         chatEditText.setText("");
                     } else {
@@ -2028,6 +2110,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     private void loadPrivateConversation(String nick) {
         selectedPrivateConversation = nick;
         isViewingPrivateMessages = true;
+        updateInputVisibility(true, nick);
         channelNameTextView.setText("Private: " + nick);
 
         chatMessages.clear();
@@ -2047,6 +2130,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
     }
 
     private void sendPrivateMessage(String message) {
+        if (message.startsWith("/")) {
+            handleCommand(message);
+            return;
+        }
         if (selectedPrivateConversation == null || selectedPrivateConversation.isEmpty()) {
             Toast.makeText(this, "No conversation selected", Toast.LENGTH_SHORT).show();
             return;
@@ -2595,6 +2682,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
         chatMessages.clear();
         chatAdapter.notifyDataSetChanged();
         loadPrivateConversationList();
+        updateInputVisibility(selectedPrivateConversation != null, selectedPrivateConversation != null ? selectedPrivateConversation : "Private Messages");
         animateSectionTransition(privateMessagesSection, channelsSection);
 
         btnPrivateMessagesTab.clearAnimation();
