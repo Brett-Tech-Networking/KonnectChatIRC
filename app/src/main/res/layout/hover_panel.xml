@@ -10,14 +10,14 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:background="@drawable/dialog_background"
-        android:padding="16dp"
+        android:padding="12dp"
         android:elevation="8dp">
 
         <!-- Title Section -->
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="6dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -36,16 +36,16 @@
             android:layout_height="wrap_content"
             android:text="NICKSERV SERVICES"
             android:textColor="#C5B0B0"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold"
-            android:layout_marginBottom="8dp"/>
+            android:layout_marginBottom="4dp"/>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:weightSum="2"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="4dp">
 
             <Button
                 android:id="@+id/btnNick"
@@ -77,7 +77,7 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="#33FFFFFF"
-            android:layout_marginVertical="12dp"/>
+            android:layout_marginVertical="6dp"/>
 
         <!-- Chanserv Section -->
         <TextView
@@ -85,16 +85,16 @@
             android:layout_height="wrap_content"
             android:text="CHANSERV SERVICES"
             android:textColor="#B0BEC5"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold"
-            android:layout_marginBottom="8dp"/>
+            android:layout_marginBottom="4dp"/>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:weightSum="2"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="4dp">
 
             <Button
                 android:id="@+id/btnJoin"
@@ -120,7 +120,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:weightSum="2"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="4dp">
 
             <Button
                 android:id="@+id/btnOP"
@@ -172,7 +172,7 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="#33FFFFFF"
-            android:layout_marginVertical="12dp"/>
+            android:layout_marginVertical="6dp"/>
 
         <!-- Moderation Section -->
         <TextView
@@ -180,16 +180,16 @@
             android:layout_height="wrap_content"
             android:text="CHANNEL MODERATION"
             android:textColor="#B0BEC5"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold"
-            android:layout_marginBottom="8dp"/>
+            android:layout_marginBottom="4dp"/>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:weightSum="2"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="4dp">
 
             <Button
                 android:id="@+id/btnKick"
@@ -222,11 +222,11 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnOperator"
             android:layout_width="160dp"
-            android:layout_height="40dp"
+            android:layout_height="36dp"
             android:text="OP CONSOLE"
             android:textColor="#FF5252"
             android:background="@drawable/operator_button_black"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="8dp"
             android:layout_gravity="end"
             android:textSize="11sp"
             android:textStyle="bold"
