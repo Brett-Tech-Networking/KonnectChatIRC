@@ -50,12 +50,11 @@ public class ServerSpinnerAdapter extends ArrayAdapter<ServerItem> {
         bindView(convertView, position);
 
         // Add long-click listener to dropdown items
-        // Skip KonnectChat IRC (position 0) and "Add Server..." (last item)
         if (longClickListener != null && position > 0 && position < serverList.size() - 1) {
             final ServerItem item = getItem(position);
             convertView.setOnLongClickListener(v -> {
                 longClickListener.onServerLongClick(position, item);
-                return true;
+                return false;
             });
         }
 

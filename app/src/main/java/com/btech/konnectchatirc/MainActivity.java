@@ -15,6 +15,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,8 +43,8 @@ import java.util.Set;
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
-    private Spinner channelSpinner;
-    private Spinner serverSpinner;
+    private TextView serverSpinner;
+    private TextView channelSpinner;
     private ArrayAdapter<String> channelAdapter;
     private ArrayList<String> channels;
     private SharedPreferences sharedPreferences;
@@ -90,9 +91,7 @@ public class MainActivity extends AppCompatActivity {
 
         serverItems = new ArrayList<>();
         // Preset servers
-        serverItems.add(new ServerItem("KonnectChat IRC", R.drawable.konnectchattrans));
-        serverItems.add(new ServerItem("KonnectChat IRC NSFW", R.drawable.nsfw));
-        serverItems.add(new ServerItem("ThePlaceToChat IRC", R.drawable.chat));
+        loadPresetServers();
 
         // Load user-added custom servers
         loadCustomServers();
@@ -100,47 +99,10 @@ public class MainActivity extends AppCompatActivity {
         // Add the "Add Server..." entry at the end
         serverItems.add(new ServerItem("✚  Add Server...", 0));
 
-        serverAdapter = new ServerSpinnerAdapter(this, serverItems);
-        serverSpinner.setAdapter(serverAdapter);
+        initServerAdapter();
+        serverSpinner.setOnClickListener(v -> showServerSelectionDialog());
 
-        // Long-press individual server items to remove them
-        serverAdapter.setOnServerLongClickListener((position, item) -> {
-            confirmRemoveServer(position, item);
-        });
 
-        // Warning message for NSFW server selection + handle "Add Server..."
-        serverSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                ServerItem selected = serverItems.get(position);
-
-                // "Add Server..." is the last item
-                if (position == serverItems.size() - 1) {
-                    showAddServerDialog();
-                    return;
-                }
-
-                if (position == 1) { // "KonnectChat IRC NSFW" is selected
-                    new AlertDialog.Builder(MainActivity.this)
-                            .setTitle("NSFW Server Warning")
-                            .setMessage("You have selected a server that contains NSFW (Not Safe For Work) content. Proceed with caution.")
-                            .setPositiveButton("Proceed", (dialog, which) -> {
-                                previousServerSelection = position;
-                            })
-                            .setNegativeButton("Cancel", (dialog, which) -> {
-                                serverSpinner.setSelection(previousServerSelection);
-                            })
-                            .show();
-                } else {
-                    previousServerSelection = position;
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                // Do nothing
-            }
-        });
 
         // Retrieve the preset channels and add user-defined channels
         channels = new ArrayList<>();
@@ -152,57 +114,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize channel spinner and adapter
         channelSpinner = findViewById(R.id.channelSpinner);
-        channelAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, channels) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                View view = super.getView(position, convertView, parent);
-                TextView textView = (TextView) view.findViewById(android.R.id.text1);
-                if (textView != null) {
-                    textView.setTextColor(getResources().getColor(R.color.white));
-                }
-                return view;
-            }
-
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                View view = super.getDropDownView(position, convertView, parent);
-                view.setBackgroundColor(0xFF000000);
-                TextView textView = (TextView) view.findViewById(android.R.id.text1);
-                if (textView != null) {
-                    textView.setTextColor(getResources().getColor(R.color.white));
-                }
-
-                // Long-press to remove channels (skip "Add Channel..." which is last)
-                if (position < channels.size() - 1) {
-                    final int pos = position;
-                    view.setOnLongClickListener(v -> {
-                        confirmRemoveChannel(pos);
-                        return true;
-                    });
-                }
-
-                return view;
-            }
-        };
-        channelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        channelSpinner.setAdapter(channelAdapter);
-
-        // Handle "Add Channel..." selection
-        previousChannelSelection = 0;
-        channelSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position == channels.size() - 1) {
-                    showAddChannelDialog();
-                    return;
-                }
-                previousChannelSelection = position;
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
+        initChannelAdapter();
+        channelSpinner.setOnClickListener(v -> showChannelSelectionDialog());
 
         // Initialize Remember Me checkbox
         CheckBox rememberMeCheckBox = findViewById(R.id.rememberMeCheckBox);
@@ -221,20 +134,20 @@ public class MainActivity extends AppCompatActivity {
 
         Button joinButton = findViewById(R.id.joinButton);
         joinButton.setOnClickListener(view -> {
-            String selectedChannel = channelSpinner.getSelectedItem().toString();
-            ServerItem selectedServerItem = (ServerItem) serverSpinner.getSelectedItem();
-
-            // Don't allow joining with "Add Server..." selected
-            if (serverSpinner.getSelectedItemPosition() == serverItems.size() - 1) {
+            // Don't allow joining with "Add Server..." selected or nothing selected
+            if (previousServerSelection == serverItems.size() - 1 || serverItems.isEmpty()) {
                 Toast.makeText(this, "Please select a server first.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Don't allow joining with "Add Channel..." selected
-            if (channelSpinner.getSelectedItemPosition() == channels.size() - 1) {
+            // Don't allow joining with "Add Channel..." selected or nothing selected
+            if (previousChannelSelection == channels.size() - 1 || channels.isEmpty()) {
                 Toast.makeText(this, "Please select a channel first.", Toast.LENGTH_SHORT).show();
                 return;
             }
+
+            String selectedChannel = channels.get(previousChannelSelection);
+            ServerItem selectedServerItem = serverItems.get(previousServerSelection);
             
             // Handle Remember Me Logic
             SharedPreferences.Editor editor = sharedPreferences.edit();
@@ -338,15 +251,159 @@ public class MainActivity extends AppCompatActivity {
                 .setTitle("Remove \"" + serverName + "\"?")
                 .setMessage("Are you sure you want to remove this server?")
                 .setPositiveButton("Remove", (d, w) -> {
-                    serverItems.remove(position);
-                    serverAdapter.notifyDataSetChanged();
-                    saveCustomServers();
-                    serverSpinner.setSelection(0);
+                    // Update storage
+                serverItems.remove(position);
+                saveCustomServers();
+
+                Set<String> deletedServers = new HashSet<>(sharedPreferences.getStringSet("DELETED_PRESET_SERVERS", new HashSet<>()));
+                deletedServers.add(serverName);
+                sharedPreferences.edit().putStringSet("DELETED_PRESET_SERVERS", deletedServers).apply();
+
+                // Rebuild array entirely to break Spinner reference caching
+                serverItems = new ArrayList<>();
+                loadPresetServers();
+                loadCustomServers();
+                serverItems.add(new ServerItem("✚  Add Server...", 0));
+
+                    // Fully recreate adapter to reset spinner's corrupted popup state
                     previousServerSelection = 0;
+                    initServerAdapter();
                     Toast.makeText(this, "\"" + serverName + "\" removed.", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void initServerAdapter() {
+        serverAdapter = new ServerSpinnerAdapter(this, serverItems);
+        serverAdapter.setOnServerLongClickListener((position, item) -> {
+            confirmRemoveServer(position, item);
+        });
+        
+        // Update the TextView to match current selection
+        if (serverItems.size() > previousServerSelection) {
+            serverSpinner.setText(serverItems.get(previousServerSelection).getServerName());
+        } else if (!serverItems.isEmpty()) {
+            previousServerSelection = 0;
+            serverSpinner.setText(serverItems.get(0).getServerName());
+        }
+    }
+
+    private void initChannelAdapter() {
+        channelAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, channels) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                TextView textView = (TextView) view.findViewById(android.R.id.text1);
+                if (textView != null) {
+                    textView.setTextColor(getResources().getColor(R.color.white));
+                    textView.setPadding(32, 32, 32, 32);
+                }
+                view.setBackgroundColor(0xFF000000);
+                return view;
+            }
+        };
+
+        // Update the TextView to match current selection
+        if (channels.size() > previousChannelSelection) {
+            channelSpinner.setText(channels.get(previousChannelSelection));
+        } else if (!channels.isEmpty()) {
+            previousChannelSelection = 0;
+            channelSpinner.setText(channels.get(0));
+        }
+    }
+
+    private void showServerSelectionDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select Server");
+        
+        ListView listView = new ListView(this);
+        listView.setAdapter(serverAdapter);
+        listView.setBackgroundColor(0xFF000000);
+        listView.setDividerHeight(0);
+        
+        builder.setView(listView);
+        
+        AlertDialog dialog = builder.create();
+        
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            dialog.dismiss();
+            
+            // "Add Server..." is the last item
+            if (position == serverItems.size() - 1) {
+                showAddServerDialog();
+                return;
+            }
+
+            if (position == 1) { // "KonnectChat IRC NSFW" is selected
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("NSFW Server Warning")
+                        .setMessage("You have selected a server that contains NSFW (Not Safe For Work) content. Proceed with caution.")
+                        .setPositiveButton("Proceed", (d, which) -> {
+                            previousServerSelection = position;
+                            serverSpinner.setText(serverItems.get(position).getServerName());
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            } else {
+            previousServerSelection = position;
+            serverSpinner.setText(serverItems.get(position).getServerName());
+        }
+    });
+
+    listView.setOnItemLongClickListener((parent, view, position, id) -> {
+        dialog.dismiss();
+        if (position < serverItems.size() - 1) {
+            ServerItem item = serverItems.get(position);
+            if ("KonnectChat IRC".equalsIgnoreCase(item.getServerName())) {
+                Toast.makeText(MainActivity.this, "\"KonnectChat IRC\" cannot be deleted.", Toast.LENGTH_SHORT).show();
+            } else {
+                confirmRemoveServer(position, item);
+            }
+        }
+        return true;
+    });
+    
+    dialog.show();
+}
+    private void showChannelSelectionDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select Channel");
+        
+        ListView listView = new ListView(this);
+        listView.setAdapter(channelAdapter);
+        listView.setBackgroundColor(0xFF000000);
+        listView.setDividerHeight(0);
+        
+        builder.setView(listView);
+        
+        AlertDialog dialog = builder.create();
+        
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            dialog.dismiss();
+            
+            if (position == channels.size() - 1) {
+                showAddChannelDialog();
+                return;
+            }
+            
+            previousChannelSelection = position;
+            channelSpinner.setText(channels.get(position));
+        });
+        
+        listView.setOnItemLongClickListener((parent, view, position, id) -> {
+        dialog.dismiss();
+        if (position < channels.size() - 1) {
+            if ("#konnect-chat".equalsIgnoreCase(channels.get(position))) {
+                Toast.makeText(MainActivity.this, "\"#konnect-chat\" cannot be deleted.", Toast.LENGTH_SHORT).show();
+            } else {
+                confirmRemoveChannel(position);
+            }
+        }
+        return true;
+    });
+        
+        dialog.show();
     }
 
     private void showAddServerDialog() {
@@ -382,7 +439,6 @@ public class MainActivity extends AppCompatActivity {
 
             if (name.isEmpty() || address.isEmpty()) {
                 Toast.makeText(this, "Server name and address are required.", Toast.LENGTH_SHORT).show();
-                serverSpinner.setSelection(previousServerSelection);
                 return;
             }
 
@@ -401,31 +457,41 @@ public class MainActivity extends AppCompatActivity {
             saveCustomServers();
 
             // Select the newly added server
-            serverSpinner.setSelection(insertPos);
             previousServerSelection = insertPos;
+            serverSpinner.setText(serverItems.get(insertPos).getServerName());
 
             Toast.makeText(this, "Server \"" + name + "\" added!", Toast.LENGTH_SHORT).show();
         });
 
         builder.setNegativeButton("Cancel", (dialog, which) -> {
-            serverSpinner.setSelection(previousServerSelection);
             dialog.cancel();
-        });
-
-        builder.setOnCancelListener(dialog -> {
-            serverSpinner.setSelection(previousServerSelection);
         });
 
         builder.show();
     }
 
     private void loadPresetChannels() {
-        String[] presetChannels = {"#konnect-chat", "#ThePlaceToChat", "#robz", "#trivia"};
-        for (String channel : presetChannels) {
+    Set<String> deletedChannels = sharedPreferences.getStringSet("DELETED_PRESET_CHANNELS", new HashSet<>());
+    String[] presetChannels = {"#konnect-chat", "#ThePlaceToChat", "#robz", "#trivia"};
+    for (String channel : presetChannels) {
+        if (!deletedChannels.contains(channel)) {
             channels.add(channel);
         }
     }
+}
 
+private void loadPresetServers() {
+    Set<String> deletedServers = sharedPreferences.getStringSet("DELETED_PRESET_SERVERS", new HashSet<>());
+    if (!deletedServers.contains("KonnectChat IRC")) {
+        serverItems.add(new ServerItem("KonnectChat IRC", R.drawable.konnectchattrans));
+    }
+    if (!deletedServers.contains("KonnectChat IRC NSFW")) {
+        serverItems.add(new ServerItem("KonnectChat IRC NSFW", R.drawable.nsfw));
+    }
+    if (!deletedServers.contains("ThePlaceToChat IRC")) {
+        serverItems.add(new ServerItem("ThePlaceToChat IRC", R.drawable.chat));
+    }
+}
     private void loadUserChannels() {
         Set<String> savedChannels = sharedPreferences.getStringSet(CHANNELS_KEY, new HashSet<>());
         channels.addAll(savedChannels);
@@ -447,22 +513,16 @@ public class MainActivity extends AppCompatActivity {
                 channels.add(insertPos, newChannel);
                 channelAdapter.notifyDataSetChanged();
                 saveChannel(newChannel);
-                channelSpinner.setSelection(insertPos);
                 previousChannelSelection = insertPos;
+                channelSpinner.setText(channels.get(insertPos));
                 Toast.makeText(MainActivity.this, "Channel added", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(MainActivity.this, "Channel already exists or is invalid", Toast.LENGTH_SHORT).show();
-                channelSpinner.setSelection(previousChannelSelection);
             }
         });
 
         builder.setNegativeButton("Cancel", (dialog, which) -> {
-            channelSpinner.setSelection(previousChannelSelection);
             dialog.cancel();
-        });
-
-        builder.setOnCancelListener(dialog -> {
-            channelSpinner.setSelection(previousChannelSelection);
         });
 
         builder.show();
@@ -475,11 +535,23 @@ public class MainActivity extends AppCompatActivity {
                 .setTitle("Remove \"" + channelName + "\"?")
                 .setMessage("Are you sure you want to remove this channel?")
                 .setPositiveButton("Remove", (d, w) -> {
-                    channels.remove(position);
-                    channelAdapter.notifyDataSetChanged();
-                    removeUserChannel(channelName);
-                    channelSpinner.setSelection(0);
+                    // Update storage
+                channels.remove(position);
+                removeUserChannel(channelName);
+
+                Set<String> deletedChannels = new HashSet<>(sharedPreferences.getStringSet("DELETED_PRESET_CHANNELS", new HashSet<>()));
+                deletedChannels.add(channelName);
+                sharedPreferences.edit().putStringSet("DELETED_PRESET_CHANNELS", deletedChannels).apply();
+
+                // Rebuild array entirely to break Spinner reference caching
+                channels = new ArrayList<>();
+                loadPresetChannels();
+                loadUserChannels();
+                channels.add("✚  Add Channel...");
+
+                    // Fully recreate adapter to reset spinner's corrupted popup state
                     previousChannelSelection = 0;
+                    initChannelAdapter();
                     Toast.makeText(this, "\"" + channelName + "\" removed.", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", null)
@@ -487,15 +559,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void saveChannel(String channel) {
-        Set<String> savedChannels = new HashSet<>(sharedPreferences.getStringSet(CHANNELS_KEY, new HashSet<>()));
-        savedChannels.add(channel);
-        sharedPreferences.edit().putStringSet(CHANNELS_KEY, savedChannels).apply();
+        Set<String> savedChannels = sharedPreferences.getStringSet(CHANNELS_KEY, new HashSet<>());
+        Set<String> newChannels = new HashSet<>(savedChannels);
+        newChannels.add(channel);
+        sharedPreferences.edit().putStringSet(CHANNELS_KEY, newChannels).apply();
     }
 
     private void removeUserChannel(String channel) {
-        Set<String> savedChannels = new HashSet<>(sharedPreferences.getStringSet(CHANNELS_KEY, new HashSet<>()));
-        savedChannels.remove(channel);
-        sharedPreferences.edit().putStringSet(CHANNELS_KEY, savedChannels).apply();
+        Set<String> savedChannels = sharedPreferences.getStringSet(CHANNELS_KEY, new HashSet<>());
+        Set<String> newChannels = new HashSet<>(savedChannels);
+        newChannels.remove(channel);
+        
+        // SharedPreferences requires a modified Set to actually have a different memory reference
+        sharedPreferences.edit().remove(CHANNELS_KEY).apply();
+        sharedPreferences.edit().putStringSet(CHANNELS_KEY, newChannels).apply();
     }
 
 

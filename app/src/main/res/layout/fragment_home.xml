@@ -119,11 +119,17 @@
                 android:layout_marginStart="4dp"
                 android:layout_marginBottom="4dp"/>
 
-            <Spinner
+            <TextView
                 android:id="@+id/serverSpinner"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:background="@drawable/bg_edit_text"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:drawableEnd="@android:drawable/arrow_down_float"
                 android:layout_marginBottom="16dp"/>
 
             <!-- Channel Spinner -->
@@ -136,11 +142,17 @@
                 android:layout_marginStart="4dp"
                 android:layout_marginBottom="4dp"/>
 
-            <Spinner
+            <TextView
                 android:id="@+id/channelSpinner"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:background="@drawable/bg_edit_text"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:drawableEnd="@android:drawable/arrow_down_float"
                 android:layout_marginBottom="16dp"/>
 
             <!-- Remember Me Checkbox -->
