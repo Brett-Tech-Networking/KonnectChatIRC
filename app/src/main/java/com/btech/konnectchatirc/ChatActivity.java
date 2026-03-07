@@ -1387,12 +1387,6 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
 
     public void updateNickUI(String newNick) {
         userNick = newNick;
-        if (hoverPanel != null) {
-            Button btnNick = hoverPanel.findViewById(R.id.btnNick);
-            if (btnNick != null) {
-                btnNick.setText(newNick);
-            }
-        }
         updateCurrentNick(newNick);
         
         // Broadcast nick change to other activities
