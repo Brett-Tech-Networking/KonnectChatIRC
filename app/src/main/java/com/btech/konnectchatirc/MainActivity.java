@@ -103,14 +103,9 @@ public class MainActivity extends AppCompatActivity {
         serverAdapter = new ServerSpinnerAdapter(this, serverItems);
         serverSpinner.setAdapter(serverAdapter);
 
-        // Long-press the server spinner to remove the currently selected server
-        serverSpinner.setOnLongClickListener(v -> {
-            int pos = serverSpinner.getSelectedItemPosition();
-            // Can't remove KonnectChat IRC (pos 0) or "Add Server..." (last)
-            if (pos > 0 && pos < serverItems.size() - 1) {
-                confirmRemoveServer(pos, serverItems.get(pos));
-            }
-            return true;
+        // Long-press individual server items to remove them
+        serverAdapter.setOnServerLongClickListener((position, item) -> {
+            confirmRemoveServer(position, item);
         });
 
         // Warning message for NSFW server selection + handle "Add Server..."
@@ -119,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 ServerItem selected = serverItems.get(position);
 
-                // "Add Server..." is always the last item
+                // "Add Server..." is the last item
                 if (position == serverItems.size() - 1) {
                     showAddServerDialog();
                     return;
@@ -176,21 +171,21 @@ public class MainActivity extends AppCompatActivity {
                 if (textView != null) {
                     textView.setTextColor(getResources().getColor(R.color.white));
                 }
+
+                // Long-press to remove channels (skip "Add Channel..." which is last)
+                if (position < channels.size() - 1) {
+                    final int pos = position;
+                    view.setOnLongClickListener(v -> {
+                        confirmRemoveChannel(pos);
+                        return true;
+                    });
+                }
+
                 return view;
             }
         };
         channelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         channelSpinner.setAdapter(channelAdapter);
-
-        // Long-press the channel spinner to remove the currently selected channel
-        channelSpinner.setOnLongClickListener(v -> {
-            int pos = channelSpinner.getSelectedItemPosition();
-            // Can't remove "Add Channel..." (last)
-            if (pos < channels.size() - 1) {
-                confirmRemoveChannel(pos);
-            }
-            return true;
-        });
 
         // Handle "Add Channel..." selection
         previousChannelSelection = 0;
@@ -398,7 +393,7 @@ public class MainActivity extends AppCompatActivity {
                 // Use default
             }
 
-            // Insert before the "Add Server..." entry (which is the last item)
+            // Insert before the "Add Server..." entry (last item)
             int insertPos = serverItems.size() - 1;
             ServerItem newServer = new ServerItem(name, 0, address, port);
             serverItems.add(insertPos, newServer);
@@ -502,6 +497,7 @@ public class MainActivity extends AppCompatActivity {
         savedChannels.remove(channel);
         sharedPreferences.edit().putStringSet(CHANNELS_KEY, savedChannels).apply();
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

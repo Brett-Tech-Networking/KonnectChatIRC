@@ -17,7 +17,7 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="12dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -30,206 +30,193 @@
                 android:letterSpacing="0.1"/>
         </RelativeLayout>
 
-        <ScrollView
+        <!-- Nickserv Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="NICKSERV SERVICES"
+            android:textColor="#C5B0B0"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="420dp"
-            android:scrollbars="none">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="8dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <Button
+                android:id="@+id/btnNick"
+                style="@style/HoverPanelButtonStyle"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_weight="1"
+                android:text="CHANGE NICK"
+                android:layout_marginEnd="4dp"/>
 
-                <!-- Nickserv Section -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="NICKSERV SERVICES"
-                     android:textColor="#C5B0B0"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp"/>
+            <Button
+                android:id="@+id/btnIdent"
+                style="@style/HoverPanelButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="IDENTIFY"
+                android:layout_marginStart="4dp"/>
+        </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:weightSum="2"
-                    android:layout_marginBottom="8dp">
+        <Button
+            android:id="@+id/btnNickRegister"
+            style="@style/HoverPanelButtonStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="REGISTER NICKNAME"/>
 
-                    <Button
-                        android:id="@+id/btnNick"
-                        style="@style/HoverPanelButtonStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="CHANGE NICK"
-                        android:layout_marginEnd="4dp"/>
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#33FFFFFF"
+            android:layout_marginVertical="12dp"/>
 
-                    <Button
-                        android:id="@+id/btnIdent"
-                        style="@style/HoverPanelButtonStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="IDENTIFY"
-                        android:layout_marginStart="4dp"/>
-                </LinearLayout>
+        <!-- Chanserv Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CHANSERV SERVICES"
+            android:textColor="#B0BEC5"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
 
-                <Button
-                    android:id="@+id/btnNickRegister"
-                    style="@style/HoverPanelButtonStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="REGISTER NICKNAME"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="8dp">
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#33FFFFFF"
-                    android:layout_marginVertical="16dp"/>
+            <Button
+                android:id="@+id/btnJoin"
+                style="@style/HoverPanelButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="JOIN CHANNEL"
+                android:layout_marginEnd="4dp"/>
 
-                <!-- Chanserv Section -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="CHANSERV SERVICES"
-                    android:textColor="#B0BEC5"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp"/>
+            <Button
+                android:id="@+id/btnChanRegister"
+                style="@style/HoverPanelButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="REGISTER CHANNEL"
+                android:layout_marginStart="4dp"/>
+        </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:weightSum="2"
-                    android:layout_marginBottom="8dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="8dp">
 
-                    <Button
-                        android:id="@+id/btnJoin"
-                        style="@style/HoverPanelButtonStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="JOIN CHANNEL"
-                        android:layout_marginEnd="4dp"/>
+            <Button
+                android:id="@+id/btnOP"
+                style="@style/HoverPanelButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="OP USER"
+                android:layout_marginEnd="4dp"/>
 
-                    <Button
-                        android:id="@+id/btnChanRegister"
-                        style="@style/HoverPanelButtonStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="REGISTER CHANNEL"
-                        android:layout_marginStart="4dp"/>
-                </LinearLayout>
+            <Button
+                android:id="@+id/btnDEOP"
+                style="@style/HoverPanelButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="DEOP USER"
+                android:layout_marginStart="4dp"/>
+        </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:weightSum="2"
-                    android:layout_marginBottom="8dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2">
 
-                    <Button
-                        android:id="@+id/btnOP"
-                        style="@style/HoverPanelButtonStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="OP USER"
-                        android:layout_marginEnd="4dp"/>
+            <Button
+                android:id="@+id/btnSOP"
+                style="@style/HoverPanelButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="ADD SOP"
+                android:enabled="false"
+                android:layout_marginEnd="4dp"/>
 
-                    <Button
-                        android:id="@+id/btnDEOP"
-                        style="@style/HoverPanelButtonStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="DEOP USER"
-                        android:layout_marginStart="4dp"/>
-                </LinearLayout>
+            <Button
+                android:id="@+id/btnAOP"
+                style="@style/HoverPanelButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="ADD AOP"
+                android:enabled="false"
+                android:layout_marginStart="4dp"/>
+        </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:weightSum="2">
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#33FFFFFF"
+            android:layout_marginVertical="12dp"/>
 
-                    <Button
-                        android:id="@+id/btnSOP"
-                        style="@style/HoverPanelButtonStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="ADD SOP"
-                        android:enabled="false"
-                        android:layout_marginEnd="4dp"/>
+        <!-- Moderation Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CHANNEL MODERATION"
+            android:textColor="#B0BEC5"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
 
-                    <Button
-                        android:id="@+id/btnAOP"
-                        style="@style/HoverPanelButtonStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="ADD AOP"
-                        android:enabled="false"
-                        android:layout_marginStart="4dp"/>
-                </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="8dp">
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#33FFFFFF"
-                    android:layout_marginVertical="16dp"/>
+            <Button
+                android:id="@+id/btnKick"
+                style="@style/HoverPanelButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="KICK USER"
+                android:layout_marginEnd="4dp"/>
 
-                <!-- Moderation Section -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="CHANNEL MODERATION"
-                    android:textColor="#B0BEC5"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp"/>
+            <Button
+                android:id="@+id/btnBan"
+                style="@style/HoverPanelButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="BAN USER"
+                android:layout_marginStart="4dp"/>
+        </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:weightSum="2"
-                    android:layout_marginBottom="8dp">
-
-                    <Button
-                        android:id="@+id/btnKick"
-                        style="@style/HoverPanelButtonStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="KICK USER"
-                        android:layout_marginEnd="4dp"/>
-
-                    <Button
-                        android:id="@+id/btnBan"
-                        style="@style/HoverPanelButtonStyle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="BAN USER"
-                        android:layout_marginStart="4dp"/>
-                </LinearLayout>
-
-                <Button
-                    android:id="@+id/btnUnban"
-                    style="@style/HoverPanelButtonStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="UNBAN HOST/NICK"
-                    android:visibility="visible"/>
-
-            </LinearLayout>
-        </ScrollView>
+        <Button
+            android:id="@+id/btnUnban"
+            style="@style/HoverPanelButtonStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="UNBAN HOST/NICK"
+            android:visibility="visible"/>
 
         <!-- Fancy Operator Button - Right Aligned and Sleek -->
         <androidx.appcompat.widget.AppCompatButton
