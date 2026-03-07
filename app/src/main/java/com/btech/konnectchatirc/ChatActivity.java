@@ -784,23 +784,37 @@ public class ChatActivity extends AppCompatActivity implements ChannelAdapter.On
                     .setRealName("KonnectChatIRC Client")
                     .addAutoJoinChannel(selectedChannel)
                     .addListener(new Listeners(this))
-                    .addCapHandler(new EnableCapHandler("extended-join"))
-                    .addCapHandler(new EnableCapHandler("account-notify"))
-                    .addCapHandler(new EnableCapHandler("message-tags"))
                     .setAutoSplitMessage(true)
                     .setAutoReconnect(true)
-
+                    .setSocketTimeout(120000)
                     .addListener((Listener) new NickChangeListener(this));
 
+            // Check for custom server address first (from "Add Server..." on login)
+            String customAddress = getIntent().getStringExtra("SELECTED_SERVER_ADDRESS");
+            int customPort = getIntent().getIntExtra("SELECTED_SERVER_PORT", 6667);
 
-            if ("KonnectChat IRC".equals(selectedServer)) {
-                configurationBuilder.addServer("irc.konnectchatirc.net", 6667);
-            } else if ("KonnectChat IRC NSFW".equals(selectedServer)) {
-                configurationBuilder.addServer("Aaronz.konnectchatirc.net", 7100);
-            } else if ("ThePlaceToChat IRC".equals(selectedServer)) {
-                configurationBuilder.addServer("irc.theplacetochat.net", 6667);
+            boolean isPresetServer = (customAddress == null || customAddress.isEmpty());
+
+            if (!isPresetServer) {
+                // Custom server: skip CAP negotiation entirely since we don't know what the server supports
+                configurationBuilder.setCapEnabled(false);
+                configurationBuilder.addServer(customAddress, customPort);
             } else {
-                throw new IllegalArgumentException("Unknown server: " + selectedServer);
+                // Preset servers: add IRCv3 CAP handlers (these servers are known to support them)
+                configurationBuilder
+                    .addCapHandler(new EnableCapHandler("extended-join", false))
+                    .addCapHandler(new EnableCapHandler("account-notify", false))
+                    .addCapHandler(new EnableCapHandler("message-tags", false));
+
+                if ("KonnectChat IRC".equals(selectedServer)) {
+                    configurationBuilder.addServer("irc.konnectchatirc.net", 6667);
+                } else if ("KonnectChat IRC NSFW".equals(selectedServer)) {
+                    configurationBuilder.addServer("Aaronz.konnectchatirc.net", 7100);
+                } else if ("ThePlaceToChat IRC".equals(selectedServer)) {
+                    configurationBuilder.addServer("irc.theplacetochat.net", 6667);
+                } else {
+                    configurationBuilder.addServer("irc.konnectchatirc.net", 6667);
+                }
             }
 
             Configuration configuration = configurationBuilder.buildConfiguration();

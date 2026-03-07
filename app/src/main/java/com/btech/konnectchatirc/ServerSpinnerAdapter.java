@@ -36,16 +36,21 @@ public class ServerSpinnerAdapter extends ArrayAdapter<ServerItem> {
     }
 
     private View createServerView(int position, View convertView, ViewGroup parent) {
-        ServerItem serverItem = getItem(position);
         if (convertView == null) {
             convertView = LayoutInflater.from(context).inflate(R.layout.spinner_item, parent, false);
         }
 
+        ServerItem serverItem = getItem(position);
         ImageView serverIcon = convertView.findViewById(R.id.serverIcon);
         TextView serverName = convertView.findViewById(R.id.serverName);
 
         if (serverItem != null) {
-            serverIcon.setImageResource(serverItem.getIconResId());
+            if (serverItem.getIconResId() != 0) {
+                serverIcon.setImageResource(serverItem.getIconResId());
+                serverIcon.setVisibility(View.VISIBLE);
+            } else {
+                serverIcon.setVisibility(View.GONE);
+            }
             serverName.setText(serverItem.getServerName());
         }
 

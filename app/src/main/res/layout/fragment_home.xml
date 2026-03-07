@@ -40,6 +40,16 @@
                 android:shadowDx="2"
                 android:shadowDy="2"
                 android:shadowRadius="4"/>
+
+            <TextView
+                android:id="@+id/subtitleTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Your server. Your channel. Always connected."
+                android:textColor="#B0FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="italic"
+                android:layout_marginTop="4dp"/>
         </LinearLayout>
 
         <!-- Login Card -->
@@ -158,6 +168,18 @@
 
         </LinearLayout>
 
+        <!-- Tip -->
+        <TextView
+            android:id="@+id/tipText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="💡 Tip: Long-press a server or channel to remove it"
+            android:textColor="#50FFFFFF"
+            android:textSize="11sp"
+            android:layout_below="@id/loginCard"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="16dp"/>
+
         <!-- Credits -->
         <TextView
             android:id="@+id/Credits"
@@ -166,9 +188,9 @@
             android:text="Developed by Brett @ ThePlaceToChat"
             android:textColor="#80FFFFFF"
             android:textSize="12sp"
-            android:layout_below="@id/loginCard"
+            android:layout_below="@id/tipText"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="8dp"
             android:layout_marginBottom="16dp"/>
 
     </RelativeLayout>
