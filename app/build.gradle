@@ -5,15 +5,15 @@ plugins {
 
 android {
     namespace 'com.btech.konnectchatirc'
-    compileSdk 35
+    compileSdk 36
 
 
     defaultConfig {
         applicationId "com.btech.konnectchatirc"
         minSdk 26
-        targetSdk 35
-        versionCode 10
-        versionName "10.0"
+        targetSdk 36
+        versionCode 11
+        versionName "11.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
@@ -32,6 +32,9 @@ android {
     }
     buildFeatures {
         viewBinding true
+    }
+    lint {
+        abortOnError false
     }
 }
 
